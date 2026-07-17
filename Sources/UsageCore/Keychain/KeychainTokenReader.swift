@@ -30,6 +30,8 @@ public struct KeychainTokenReader: TokenReader {
         case errSecAuthFailed, errSecInteractionNotAllowed, errSecUserCanceled:
             throw TokenReaderError.accessDenied
         default:
+            // TokenReaderError is intentionally a small 3-case enum, so any other/transient
+            // OSStatus is conservatively folded into `.accessDenied` rather than surfacing raw codes.
             throw TokenReaderError.accessDenied
         }
     }

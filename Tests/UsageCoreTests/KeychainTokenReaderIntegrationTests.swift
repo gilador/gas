@@ -1,8 +1,12 @@
+import Foundation
 import XCTest
 @testable import UsageCore
 
 final class KeychainTokenReaderIntegrationTests: XCTestCase {
     func testReadsRealTokenIfPresent() throws {
+        guard ProcessInfo.processInfo.environment["RUN_KEYCHAIN_INTEGRATION_TESTS"] != nil else {
+            throw XCTSkip("Set RUN_KEYCHAIN_INTEGRATION_TESTS=1 to exercise the real keychain")
+        }
         let reader = KeychainTokenReader()
         do {
             let token = try reader.readClaudeToken()
