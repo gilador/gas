@@ -15,8 +15,9 @@ final class UsageViewModel: ObservableObject {
     private let notifications: NotificationManager
     private var timer: Timer?
 
-    init(refreshInterval: TimeInterval = 60) {
-        self.refreshInterval = refreshInterval
+    init(refreshInterval: TimeInterval? = nil) {
+        let stored = UserDefaults.standard.object(forKey: "refreshInterval") as? Double
+        self.refreshInterval = refreshInterval ?? stored ?? 60
         let base = ProcessInfo.processInfo.environment["ANTHROPIC_BASE_URL"]
             .flatMap { URL(string: $0) } ?? URL(string: "https://api.anthropic.com")!
         self.registry = ProviderRegistry.makeDefault(
@@ -40,9 +41,25 @@ final class UsageViewModel: ObservableObject {
 
     func refresh() async {
         guard let provider = registry.providers.first else { return }
-        let snap = (try? await provider.fetch())
-            ?? UsageSnapshot(provider: .claude, fetchedAt: Date(),
-                             limits: [], status: .error(message: "Fetch failed"))
+        let fetched = (try? await provider.fetch())
+            ?? UsageSnapshot(provider: .claude, fetchedAt: Date(), limits: [], status: .error(message: "Fetch failed"))
+
+        let snap: UsageSnapshot
+        switch fetched.status {
+        case .stale, .error:
+            if fetched.limits.isEmpty, let previous = self.snapshot, !previous.limits.isEmpty {
+                // Preserve last-good limits + their timestamp; surface the transient status.
+                snap = UsageSnapshot(provider: fetched.provider,
+                                     fetchedAt: previous.fetchedAt,
+                                     limits: previous.limits,
+                                     status: fetched.status)
+            } else {
+                snap = fetched
+            }
+        case .ok, .needsSignIn, .keychainDenied:
+            snap = fetched
+        }
+
         self.snapshot = snap
         try? store.save(snap)
         notifications.process(snap)
