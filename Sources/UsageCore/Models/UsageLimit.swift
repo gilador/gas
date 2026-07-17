@@ -13,7 +13,7 @@ public enum Severity: String, Codable, Sendable {
     }
 }
 
-public struct UsageLimit: Codable, Sendable, Identifiable {
+public struct UsageLimit: Codable, Sendable, Identifiable, Equatable {
     public let id: String
     public let label: String
     public let percentUsed: Double
