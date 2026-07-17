@@ -1,0 +1,50 @@
+name: AgentUsage
+options:
+  bundleIdPrefix: com.gilad
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+packages:
+  UsageCore:
+    path: .
+targets:
+  AgentUsageApp:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    dependencies:
+      - package: UsageCore
+        product: UsageCore
+      - target: AgentUsageWidget
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gilad.agentusage
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/AgentUsageApp.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: YES
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+  AgentUsageWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Widget
+    dependencies:
+      - package: UsageCore
+        product: UsageCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gilad.agentusage.widget
+        INFOPLIST_FILE: Widget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Widget/AgentUsageWidget.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: YES
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
