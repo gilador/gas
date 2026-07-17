@@ -2,10 +2,13 @@ import SwiftUI
 
 @main
 struct AgentUsageApp: App {
+    @StateObject private var viewModel = UsageViewModel()
+
     var body: some Scene {
-        MenuBarExtra("Agent Usage", systemImage: "gauge") {
-            Text("Loading…")
-            Button("Quit") { NSApplication.shared.terminate(nil) }
+        MenuBarExtra {
+            MenuContentView(viewModel: viewModel)
+        } label: {
+            MenuBarLabelView(snapshot: viewModel.snapshot)
         }
         .menuBarExtraStyle(.window)
     }
