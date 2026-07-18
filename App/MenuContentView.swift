@@ -3,7 +3,7 @@ import UsageCore
 
 struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
-    @State private var showingPreferences = false
+    let onSettings: () -> Void
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
 
     var body: some View {
@@ -28,7 +28,7 @@ struct MenuContentView: View {
                 .buttonStyle(.plain)
                 .help("Refresh now")
 
-                Button { showingPreferences = true } label: {
+                Button(action: onSettings) {
                     Image(systemName: "gearshape")
                 }
                 .buttonStyle(.plain)
@@ -48,9 +48,6 @@ struct MenuContentView: View {
         }
         .padding(12)
         .frame(width: 280)
-        .sheet(isPresented: $showingPreferences) {
-            PreferencesView(viewModel: viewModel)
-        }
     }
 
     private func confirmQuit() {

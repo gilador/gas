@@ -8,7 +8,7 @@ struct AgentUsageApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContentView(viewModel: viewModel)
+            MenuContentView(viewModel: viewModel, onSettings: { panelController.openSettings() })
         } label: {
             MenuBarLabelView(snapshot: viewModel.snapshot)
                 .onAppear {
