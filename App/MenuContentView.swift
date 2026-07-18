@@ -23,8 +23,17 @@ struct MenuContentView: View {
             }
             Divider()
             Button("Refresh now") { Task { await viewModel.refresh() } }
-            Toggle("Show desktop panel", isOn: $showDesktopPanel)
-            Button("Bring Panel to Front") { onBringPanelFront() }
+
+            Divider()
+            HStack {
+                Toggle("Show desktop panel", isOn: $showDesktopPanel)
+                Spacer()
+                if showDesktopPanel {
+                    Button("Bring to Front") { onBringPanelFront() }
+                }
+            }
+
+            Divider()
             Button("Preferences…") { showingPreferences = true }
             Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
