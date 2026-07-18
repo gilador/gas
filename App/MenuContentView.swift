@@ -4,6 +4,7 @@ import UsageCore
 struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
     @State private var showingPreferences = false
+    @AppStorage("showDesktopPanel") private var showDesktopPanel = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -21,6 +22,7 @@ struct MenuContentView: View {
             }
             Divider()
             Button("Refresh now") { Task { await viewModel.refresh() } }
+            Toggle("Show desktop panel", isOn: $showDesktopPanel)
             Button("Preferences…") { showingPreferences = true }
             Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
