@@ -17,6 +17,7 @@ final class DesktopPanelController {
         guard let viewModel else { return }
         if panel == nil { panel = makePanel(viewModel: viewModel) }
         guard let panel else { return }
+        panel.level = .floating   // re-assert always-on-top each time it's shown
         panel.layoutIfNeeded()
         positionPanel(panel)
         panel.orderFrontRegardless()
@@ -49,7 +50,7 @@ final class DesktopPanelController {
             backing: .buffered,
             defer: false)
         panel.level = .floating   // always on top of normal windows
-        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = false
