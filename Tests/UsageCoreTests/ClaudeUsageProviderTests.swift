@@ -38,6 +38,13 @@ final class ClaudeUsageProviderTests: XCTestCase {
         guard case .stale = snap.status else { return XCTFail("expected .stale") }
     }
 
+    func test429ReturnsStale() async throws {
+        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
+                         client: StubHTTPClient(data: Data(), statusCode: 429))
+        let snap = try await p.fetch()
+        guard case .stale = snap.status else { return XCTFail("expected .stale") }
+    }
+
     func testNotFoundReturnsNeedsSignIn() async throws {
         let p = provider(token: .failure(TokenReaderError.notFound),
                          client: StubHTTPClient(data: Data(), statusCode: 200))

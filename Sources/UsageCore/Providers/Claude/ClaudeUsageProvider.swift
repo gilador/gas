@@ -48,6 +48,9 @@ public struct ClaudeUsageProvider: UsageProvider {
             if response.statusCode == 401 {
                 return snapshot(now, .stale(reason: "Unauthorized — open Claude Code to refresh"))
             }
+            if response.statusCode == 429 {
+                return snapshot(now, .stale(reason: "Rate limited — retrying"))
+            }
             guard (200..<300).contains(response.statusCode) else {
                 return snapshot(now, .error(message: "HTTP \(response.statusCode)"))
             }
