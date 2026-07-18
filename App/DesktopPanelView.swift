@@ -9,9 +9,17 @@ struct DesktopPanelView: View {
             Text("Claude Usage").font(.caption.bold())
             content
         }
-        .padding(12)
+        .padding(14)
         .frame(width: 240, alignment: .topLeading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(red: 0.12, green: 0.22, blue: 0.34))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(.white.opacity(0.18), lineWidth: 1)
+        )
+        .environment(\.colorScheme, .dark)
     }
 
     @ViewBuilder
