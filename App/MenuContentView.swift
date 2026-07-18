@@ -34,7 +34,7 @@ struct MenuContentView: View {
                 .buttonStyle(.plain)
                 .help("Preferences")
 
-                Button { NSApplication.shared.terminate(nil) } label: {
+                Button(action: confirmQuit) {
                     Image(systemName: "power")
                 }
                 .buttonStyle(.plain)
@@ -50,6 +50,19 @@ struct MenuContentView: View {
         .frame(width: 280)
         .sheet(isPresented: $showingPreferences) {
             PreferencesView(viewModel: viewModel)
+        }
+    }
+
+    private func confirmQuit() {
+        let alert = NSAlert()
+        alert.messageText = "Quit Claude Usage?"
+        alert.informativeText = "The menu bar item and desktop panel will stop updating until you reopen the app."
+        alert.addButton(withTitle: "Quit")
+        let cancel = alert.addButton(withTitle: "Cancel")
+        cancel.keyEquivalent = "\u{1b}"   // Escape cancels
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSApplication.shared.terminate(nil)
         }
     }
 
