@@ -21,15 +21,30 @@ struct MenuContentView: View {
                 Text("Loading…")
             }
             Divider()
-            Button("Refresh now") { Task { await viewModel.refresh() } }
+            HStack(spacing: 14) {
+                Button { Task { await viewModel.refresh() } } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.plain)
+                .help("Refresh now")
 
-            Divider()
-            Toggle("Floating panel", isOn: $showDesktopPanel)
+                Button { showingPreferences = true } label: {
+                    Image(systemName: "gearshape")
+                }
+                .buttonStyle(.plain)
+                .help("Preferences")
 
-            Divider()
-            Button("Preferences…") { showingPreferences = true }
-            Divider()
-            Button("Quit") { NSApplication.shared.terminate(nil) }
+                Button { NSApplication.shared.terminate(nil) } label: {
+                    Image(systemName: "power")
+                }
+                .buttonStyle(.plain)
+                .help("Quit")
+
+                Spacer()
+
+                Toggle("Floating panel", isOn: $showDesktopPanel)
+                    .toggleStyle(.checkbox)
+            }
         }
         .padding(12)
         .frame(width: 280)
