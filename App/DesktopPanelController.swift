@@ -8,8 +8,9 @@ final class DesktopPanelController {
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
     private static let size = NSSize(width: 220, height: 120)
-    private static let originXKey = "desktopPanelOriginX"
-    private static let originYKey = "desktopPanelOriginY"
+    // nonisolated: immutable Sendable constants referenced from the @Sendable didMove observer closure.
+    nonisolated private static let originXKey = "desktopPanelOriginX"
+    nonisolated private static let originYKey = "desktopPanelOriginY"
 
     func show() {
         guard let viewModel else { return }
