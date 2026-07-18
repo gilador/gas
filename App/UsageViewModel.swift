@@ -17,7 +17,7 @@ final class UsageViewModel: ObservableObject {
 
     init(refreshInterval: TimeInterval? = nil) {
         let stored = UserDefaults.standard.object(forKey: "refreshInterval") as? Double
-        self.refreshInterval = refreshInterval ?? stored ?? 60
+        self.refreshInterval = refreshInterval ?? stored ?? 780   // default 13 min
         let base = ProcessInfo.processInfo.environment["ANTHROPIC_BASE_URL"]
             .flatMap { URL(string: $0) } ?? URL(string: "https://api.anthropic.com")!
         self.registry = ProviderRegistry.makeDefault(

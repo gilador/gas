@@ -9,7 +9,7 @@ struct PreferencesView: View {
 
     @AppStorage("warningThreshold") private var warningThreshold = 80.0
     @AppStorage("criticalThreshold") private var criticalThreshold = 95.0
-    @AppStorage("refreshInterval") private var refreshInterval = 60.0
+    @AppStorage("refreshInterval") private var refreshInterval = 780.0   // default 13 min
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     /// Fibonacci-minute refresh stops, stored/used as seconds.
@@ -29,9 +29,9 @@ struct PreferencesView: View {
                     Text("\(Int(criticalThreshold))")
                 }
             }
-            Section("Refresh") {
+            Section {
                 HStack {
-                    Text("Interval")
+                    Text("Refresh")
                     FibonacciIntervalSlider(seconds: $refreshInterval, fibSeconds: Self.fibSeconds)
                     Text("\(Int((refreshInterval / 60).rounded())) min")
                         .monospacedDigit()
