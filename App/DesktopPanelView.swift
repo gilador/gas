@@ -1,16 +1,16 @@
 import SwiftUI
-import AppKit
 import UsageCore
 
 struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
+    let onSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Text("Claude Usage").font(.caption.bold())
                 Spacer()
-                Button(action: openSettings) {
+                Button(action: onSettings) {
                     Image(systemName: "gearshape")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -31,11 +31,6 @@ struct DesktopPanelView: View {
                 .strokeBorder(.white.opacity(0.18), lineWidth: 1)
         )
         .environment(\.colorScheme, .dark)
-    }
-
-    private func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     @ViewBuilder

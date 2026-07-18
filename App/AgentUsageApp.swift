@@ -20,10 +20,6 @@ struct AgentUsageApp: App {
                 }
         }
         .menuBarExtraStyle(.window)
-
-        Settings {
-            PreferencesView(viewModel: viewModel)
-        }
     }
 
     private func applyPanelVisibility() {

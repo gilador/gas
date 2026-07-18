@@ -7,6 +7,7 @@ final class DesktopPanelController {
 
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
+    private var settingsWindow: NSWindow?
     private static let size = NSSize(width: 240, height: 160)
     // nonisolated: immutable Sendable constants referenced from the @Sendable didMove observer closure.
     nonisolated private static let originXKey = "desktopPanelOriginX"
@@ -25,6 +26,22 @@ final class DesktopPanelController {
         panel?.orderOut(nil)
     }
 
+    func openSettings() {
+        guard let viewModel else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        if settingsWindow == nil {
+            let hosting = NSHostingController(rootView: PreferencesView(viewModel: viewModel))
+            let window = NSWindow(contentViewController: hosting)
+            window.title = "Settings"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
+        }
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        settingsWindow?.orderFrontRegardless()
+    }
+
     private func makePanel(viewModel: UsageViewModel) -> NSPanel {
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: Self.size),
@@ -40,7 +57,7 @@ final class DesktopPanelController {
         panel.hidesOnDeactivate = false
         panel.isFloatingPanel = false
 
-        let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel))
+        let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel, onSettings: { [weak self] in self?.openSettings() }))
         host.sizingOptions = [.preferredContentSize]
         panel.contentView = host
 
