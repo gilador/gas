@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import UsageCore
 
 struct DesktopPanelView: View {
@@ -6,7 +7,17 @@ struct DesktopPanelView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Claude Usage").font(.caption.bold())
+            HStack(spacing: 6) {
+                Text("Claude Usage").font(.caption.bold())
+                Spacer()
+                Button(action: openSettings) {
+                    Image(systemName: "gearshape")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Settings")
+            }
             content
         }
         .padding(14)
@@ -20,6 +31,11 @@ struct DesktopPanelView: View {
                 .strokeBorder(.white.opacity(0.18), lineWidth: 1)
         )
         .environment(\.colorScheme, .dark)
+    }
+
+    private func openSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     @ViewBuilder
