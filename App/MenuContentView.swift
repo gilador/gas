@@ -3,7 +3,6 @@ import UsageCore
 
 struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
-    let onBringPanelFront: () -> Void
     @State private var showingPreferences = false
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
 
@@ -25,13 +24,7 @@ struct MenuContentView: View {
             Button("Refresh now") { Task { await viewModel.refresh() } }
 
             Divider()
-            HStack {
-                Toggle("Show desktop panel", isOn: $showDesktopPanel)
-                Spacer()
-                if showDesktopPanel {
-                    Button("Bring to Front") { onBringPanelFront() }
-                }
-            }
+            Toggle("Floating panel", isOn: $showDesktopPanel)
 
             Divider()
             Button("Preferences…") { showingPreferences = true }

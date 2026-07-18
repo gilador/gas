@@ -8,7 +8,6 @@ final class DesktopPanelController {
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
     private var settingsWindow: NSWindow?
-    private var raiseMonitor: Any?
     private static let size = NSSize(width: 240, height: 160)
     // nonisolated: immutable Sendable constants referenced from the @Sendable didMove observer closure.
     nonisolated private static let originXKey = "desktopPanelOriginX"
@@ -25,28 +24,6 @@ final class DesktopPanelController {
 
     func hide() {
         panel?.orderOut(nil)
-    }
-
-    /// Temporarily raise the panel above other windows; it drops back to desktop
-    /// level as soon as the user clicks another window (not permanently on top).
-    func bringToFront() {
-        show()
-        guard let panel else { return }
-        panel.level = .floating
-        panel.orderFrontRegardless()
-        if raiseMonitor == nil {
-            raiseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-                self?.lowerToDesktop()
-            }
-        }
-    }
-
-    private func lowerToDesktop() {
-        panel?.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
-        if let monitor = raiseMonitor {
-            NSEvent.removeMonitor(monitor)
-            raiseMonitor = nil
-        }
     }
 
     func openSettings() {
@@ -71,7 +48,7 @@ final class DesktopPanelController {
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false)
-        panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
+        panel.level = .floating   // always on top of normal windows
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         panel.backgroundColor = .clear
         panel.isOpaque = false
