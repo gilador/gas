@@ -11,7 +11,7 @@ struct DesktopPanelView: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .frame(width: 220, height: 120, alignment: .topLeading)
+        .frame(width: 240, height: 160, alignment: .topLeading)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
