@@ -16,6 +16,7 @@ final class DesktopPanelController {
         guard let viewModel else { return }
         if panel == nil { panel = makePanel(viewModel: viewModel) }
         guard let panel else { return }
+        panel.layoutIfNeeded()
         positionPanel(panel)
         panel.orderFrontRegardless()
     }
@@ -40,7 +41,7 @@ final class DesktopPanelController {
         panel.isFloatingPanel = false
 
         let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel))
-        host.frame = NSRect(origin: .zero, size: Self.size)
+        host.sizingOptions = [.preferredContentSize]
         panel.contentView = host
 
         moveObserver = NotificationCenter.default.addObserver(
@@ -54,28 +55,29 @@ final class DesktopPanelController {
     }
 
     private func positionPanel(_ panel: NSPanel) {
+        let size = panel.frame.size
         let defaults = UserDefaults.standard
         if defaults.object(forKey: Self.originXKey) != nil,
            defaults.object(forKey: Self.originYKey) != nil {
             let origin = NSPoint(x: defaults.double(forKey: Self.originXKey),
                                  y: defaults.double(forKey: Self.originYKey))
-            panel.setFrameOrigin(clampedOrigin(origin))
+            panel.setFrameOrigin(clampedOrigin(origin, size: size))
         } else {
-            panel.setFrameOrigin(defaultOrigin())
+            panel.setFrameOrigin(defaultOrigin(size: size))
         }
     }
 
-    private func clampedOrigin(_ origin: NSPoint) -> NSPoint {
-        let rect = NSRect(origin: origin, size: Self.size)
+    private func clampedOrigin(_ origin: NSPoint, size: NSSize) -> NSPoint {
+        let rect = NSRect(origin: origin, size: size)
         if NSScreen.screens.contains(where: { $0.visibleFrame.intersects(rect) }) {
             return origin
         }
-        return defaultOrigin()
+        return defaultOrigin(size: size)
     }
 
-    private func defaultOrigin() -> NSPoint {
+    private func defaultOrigin(size: NSSize) -> NSPoint {
         guard let vf = NSScreen.main?.visibleFrame else { return .zero }
-        return NSPoint(x: vf.maxX - Self.size.width - 20,
-                       y: vf.maxY - Self.size.height - 20)
+        return NSPoint(x: vf.maxX - size.width - 20,
+                       y: vf.maxY - size.height - 20)
     }
 }
