@@ -3,6 +3,7 @@ import UsageCore
 
 struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
+    let onBringPanelFront: () -> Void
     @State private var showingPreferences = false
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
 
@@ -23,6 +24,7 @@ struct MenuContentView: View {
             Divider()
             Button("Refresh now") { Task { await viewModel.refresh() } }
             Toggle("Show desktop panel", isOn: $showDesktopPanel)
+            Button("Bring Panel to Front") { onBringPanelFront() }
             Button("Preferences…") { showingPreferences = true }
             Divider()
             Button("Quit") { NSApplication.shared.terminate(nil) }
