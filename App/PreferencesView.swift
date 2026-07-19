@@ -20,12 +20,12 @@ struct PreferencesView: View {
             Section("Notifications") {
                 HStack {
                     Text("Warning %")
-                    Slider(value: $warningThreshold, in: 50...100, step: 1)
+                    Slider(value: $warningThreshold, in: 15...100, step: 1)
                     Text("\(Int(warningThreshold))")
                 }
                 HStack {
                     Text("Critical %")
-                    Slider(value: $criticalThreshold, in: 50...100, step: 1)
+                    Slider(value: $criticalThreshold, in: 15...100, step: 1)
                     Text("\(Int(criticalThreshold))")
                 }
             }
