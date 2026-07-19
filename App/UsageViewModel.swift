@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Network
 import WidgetKit
 import UsageCore
 
@@ -14,6 +15,8 @@ final class UsageViewModel: ObservableObject {
     private let store: SnapshotStore
     private let notifications: NotificationManager
     private var timer: Timer?
+    private let pathMonitor = NWPathMonitor()
+    private var wasConnected = true
 
     init(refreshInterval: TimeInterval? = nil) {
         let stored = UserDefaults.standard.object(forKey: "refreshInterval") as? Double
@@ -29,6 +32,23 @@ final class UsageViewModel: ObservableObject {
         self.snapshot = store.load()
         notifications.requestAuthorization()
         start()
+        startNetworkMonitoring()
+    }
+
+    /// Refresh immediately when the network comes back (like Gmail reconnecting),
+    /// instead of waiting for the next scheduled tick.
+    private func startNetworkMonitoring() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let connected = path.status == .satisfied
+            Task { @MainActor in
+                guard let self else { return }
+                if connected && !self.wasConnected {
+                    await self.refresh()
+                }
+                self.wasConnected = connected
+            }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "com.gilad.agentusage.network"))
     }
 
     func start() {
