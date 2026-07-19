@@ -22,6 +22,13 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(snap.provider, .claude)
     }
 
+    func testNetworkErrorReturnsStale() async throws {
+        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
+                         client: ThrowingHTTPClient(error: URLError(.notConnectedToInternet)))
+        let snap = try await p.fetch()
+        guard case .stale = snap.status else { return XCTFail("expected .stale for network error") }
+    }
+
     func testExpiredTokenReturnsStale() async throws {
         let p = provider(token: .success(ClaudeToken(accessToken: "t",
                                                       expiresAt: Date().addingTimeInterval(-10))),

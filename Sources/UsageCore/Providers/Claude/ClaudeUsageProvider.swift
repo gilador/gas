@@ -29,7 +29,7 @@ public struct ClaudeUsageProvider: UsageProvider {
         } catch TokenReaderError.accessDenied {
             return snapshot(now, .keychainDenied)
         } catch {
-            return snapshot(now, .error(message: "Keychain: \(error)"))
+            return snapshot(now, .error(message: "Keychain access error"))
         }
 
         if let expiry = token.expiresAt, expiry <= now {
@@ -59,8 +59,12 @@ public struct ClaudeUsageProvider: UsageProvider {
                                                warning: warningThreshold,
                                                critical: criticalThreshold)
             return UsageSnapshot(provider: .claude, fetchedAt: now, limits: limits, status: .ok)
+        } catch is URLError {
+            return snapshot(now, .stale(reason: "Network unavailable — retrying"))
+        } catch is DecodingError {
+            return snapshot(now, .error(message: "Couldn't read usage data"))
         } catch {
-            return snapshot(now, .error(message: "\(error)"))
+            return snapshot(now, .error(message: "Unexpected error"))
         }
     }
 

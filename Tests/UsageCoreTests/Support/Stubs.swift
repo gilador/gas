@@ -19,3 +19,11 @@ final class StubHTTPClient: UsageHTTPClient, @unchecked Sendable {
         return (data, resp)
     }
 }
+
+/// An HTTP client that always throws the given error (e.g. a URLError for offline).
+struct ThrowingHTTPClient: UsageHTTPClient, @unchecked Sendable {
+    let error: Error
+    func get(_ url: URL, headers: [String: String]) async throws -> (Data, HTTPURLResponse) {
+        throw error
+    }
+}
