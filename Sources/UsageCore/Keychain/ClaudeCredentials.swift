@@ -8,7 +8,8 @@ struct ClaudeCredentials: Codable, Sendable {
     let claudeAiOauth: OAuth
 
     var token: ClaudeToken {
-        let expiry = claudeAiOauth.expiresAt.map { Date(timeIntervalSince1970: $0 / 1000) }
+        let expiry = claudeAiOauth.expiresAt
+            .flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0 / 1000) : nil }
         return ClaudeToken(accessToken: claudeAiOauth.accessToken, expiresAt: expiry)
     }
 

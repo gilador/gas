@@ -62,8 +62,8 @@ final class CodexCredentialsTests: XCTestCase {
     }
 
     func testJWTPayloadNeedingPaddingDecodes() {
-        // payload length chosen so base64url output is not a multiple of 4
-        let token = jwt(payload: #"{"exp":1}"#)
-        XCTAssertEqual(JWTClaims.expiry(of: token), Date(timeIntervalSince1970: 1))
+        // payload length chosen so base64url output needs stripped "==" padding restored
+        let token = jwt(payload: #"{"exp":12}"#)
+        XCTAssertEqual(JWTClaims.expiry(of: token), Date(timeIntervalSince1970: 12))
     }
 }

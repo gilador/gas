@@ -22,6 +22,20 @@ final class ClaudeCredentialsTests: XCTestCase {
         XCTAssertNil(token.expiresAt)
     }
 
+    func testZeroExpiryYieldsNilDate() throws {
+        let json = """
+        {"claudeAiOauth":{"accessToken":"abc123","expiresAt":0,"refreshTokenExpiresAt":1790000000000}}
+        """.data(using: .utf8)!
+        let token = try ClaudeCredentials.parse(json)
+        XCTAssertEqual(token.accessToken, "abc123")
+        XCTAssertNil(token.expiresAt)
+    }
+
+    func testNegativeExpiryYieldsNilDate() throws {
+        let json = #"{"claudeAiOauth":{"accessToken":"abc123","expiresAt":-5}}"#.data(using: .utf8)!
+        XCTAssertNil(try ClaudeCredentials.parse(json).expiresAt)
+    }
+
     func testParseMalformedThrows() {
         let json = "{}".data(using: .utf8)!
         XCTAssertThrowsError(try ClaudeCredentials.parse(json)) {

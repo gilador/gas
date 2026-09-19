@@ -23,8 +23,10 @@ public struct FileCodexAuthReader: CodexAuthReader {
         self.fileURL = fileURL
     }
 
-    public static var defaultURL: URL {
-        let home = ProcessInfo.processInfo.environment["CODEX_HOME"]
+    public static var defaultURL: URL { defaultURL(environment: ProcessInfo.processInfo.environment) }
+
+    public static func defaultURL(environment: [String: String]) -> URL {
+        let home = environment["CODEX_HOME"]
             .map { URL(fileURLWithPath: $0, isDirectory: true) }
             ?? FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent(".codex", isDirectory: true)

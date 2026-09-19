@@ -32,8 +32,15 @@ final class FileCodexAuthReaderTests: XCTestCase {
         }
     }
 
-    func testDefaultURLEndsWithCodexAuthJSON() {
-        XCTAssertEqual(FileCodexAuthReader.defaultURL.lastPathComponent, "auth.json")
-        XCTAssertEqual(FileCodexAuthReader.defaultURL.deletingLastPathComponent().lastPathComponent, ".codex")
+    func testDefaultURLWithoutCodexHomeIsDotCodexInHome() {
+        let url = FileCodexAuthReader.defaultURL(environment: [:])
+        XCTAssertEqual(url.lastPathComponent, "auth.json")
+        XCTAssertEqual(url.deletingLastPathComponent().lastPathComponent, ".codex")
+        XCTAssertTrue(url.path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path))
+    }
+
+    func testDefaultURLHonorsCodexHome() {
+        let url = FileCodexAuthReader.defaultURL(environment: ["CODEX_HOME": "/tmp/codex-home"])
+        XCTAssertEqual(url.path, "/tmp/codex-home/auth.json")
     }
 }

@@ -12,8 +12,8 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 
 | Component | State | Verified |
 |---|---|---|
-| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **127 passed / 3 skipped / 0 failed** |
-| OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **127 passed / 3 skipped / 0 failed** |
+| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **124 passed / 3 skipped / 0 failed (127 executed)** |
+| OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **124 passed / 3 skipped / 0 failed (127 executed)** |
 | Menu bar app (`MenuBarExtra`, live 60s refresh, dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
 | WidgetKit widget (`AgentUsageWidget`) | **Built (code)** | Builds; **does not register** unsigned (see §4) |
 | Desktop panel (pinned NSPanel, draggable, toggle) | **Done** | Builds; runs unsigned; toggle in menu |
@@ -63,7 +63,7 @@ refresh the token; expired/401 → stale state. Response fields used: `rate_limi
 
 ```bash
 # Unit tests (fast, no Xcode):
-swift test                          # 127 passed / 3 skipped / 0 failed
+swift test                          # 124 passed / 3 skipped / 0 failed (127 executed)
 #   opt-in integration tests (need a real keychain / entitlement / Codex auth file; hang or prompt otherwise):
 #   RUN_KEYCHAIN_INTEGRATION_TESTS=1   RUN_APP_GROUP_INTEGRATION_TESTS=1   RUN_CODEX_INTEGRATION_TESTS=1
 
@@ -74,7 +74,7 @@ xcodebuild -project AgentUsage.xcodeproj -scheme AgentUsageApp -destination 'pla
 
 # Run it (menu bar + desktop panel work unsigned):
 open build/Build/Products/Debug/AgentUsageApp.app
-#   → approve the one-time Keychain prompt; menu bar shows "◐ NN% · …";
+#   → approve the one-time Keychain prompt; menu bar shows "◐NN%·⬡NN%";
 #     toggle "Show desktop panel" for the desktop card.
 ```
 **Process hygiene:** run ONE `xcodebuild`/`swift test` at a time. If a build/app hangs, `pkill -9 -f xcodebuild` / `pkill -x AgentUsageApp`. (A concurrent-build pileup and a wedged `SWBBuildService` daemon each caused silent hangs during development — see §6.)

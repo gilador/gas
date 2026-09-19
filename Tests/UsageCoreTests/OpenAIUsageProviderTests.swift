@@ -30,6 +30,12 @@ final class OpenAIUsageProviderTests: XCTestCase {
         XCTAssertNil(spy.calls[0].headers["ChatGPT-Account-Id"])
     }
 
+    func testAccountHeaderOmittedWhenEmpty() async throws {
+        let spy = SpyHTTPClient(data: try Fixtures.data("openai_usage_response"), statusCode: 200)
+        _ = try await provider(auth: .success(validAuth(accountID: "")), client: spy).fetch()
+        XCTAssertNil(spy.calls[0].headers["ChatGPT-Account-Id"])
+    }
+
     func testAccessDeniedBecomesError() async throws {
         let snap = try await provider(auth: .failure(TokenReaderError.accessDenied),
                                       client: SpyHTTPClient()).fetch()

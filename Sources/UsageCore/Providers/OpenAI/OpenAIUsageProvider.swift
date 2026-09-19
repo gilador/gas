@@ -39,7 +39,7 @@ public struct OpenAIUsageProvider: UsageProvider {
             "Authorization": "Bearer \(auth.accessToken)",
             "Accept": "application/json"
         ]
-        if let accountID = auth.accountID {
+        if let accountID = auth.accountID, !accountID.isEmpty {
             headers["ChatGPT-Account-Id"] = accountID
         }
 

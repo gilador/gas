@@ -17,6 +17,7 @@ final class UsageViewModel: ObservableObject {
     private var timer: Timer?
     private let pathMonitor = NWPathMonitor()
     private var wasConnected = true
+    private var inFlight: Task<Void, Never>?
 
     init(refreshInterval: TimeInterval? = nil) {
         let stored = UserDefaults.standard.object(forKey: "refreshInterval") as? Double
@@ -65,10 +66,16 @@ final class UsageViewModel: ObservableObject {
     }
 
     func refresh() async {
-        let updated = await UsageRefresher.refresh(board, providers: registry.providers)
-        board = updated
-        try? store.save(updated)
-        notifications.process(updated)
-        WidgetCenter.shared.reloadAllTimelines()
+        if let inFlight { return await inFlight.value }
+        let task = Task { @MainActor in
+            let updated = await UsageRefresher.refresh(board, providers: registry.providers)
+            board = updated
+            try? store.save(updated)
+            notifications.process(updated)
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        inFlight = task
+        await task.value
+        inFlight = nil
     }
 }
