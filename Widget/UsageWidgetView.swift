@@ -4,28 +4,53 @@ import UsageCore
 
 struct UsageWidgetView: View {
     let entry: UsageEntry
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        if let snapshot = entry.snapshot {
+        if let board = entry.board, !board.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text("Claude Usage").font(.caption.bold())
+                    Text("Agent Usage").font(.caption.bold())
                     Spacer()
-                    if isStale(snapshot.fetchedAt) {
+                    if let fetched = board.latestFetchedAt, isStale(fetched) {
                         Image(systemName: "clock.badge.exclamationmark")
                             .foregroundStyle(.orange)
                     }
                 }
-                if displayLimits(snapshot).isEmpty {
-                    Text("No data").font(.caption2).foregroundStyle(.secondary)
+                if family == .systemSmall {
+                    smallRows(board)
                 } else {
-                    ForEach(displayLimits(snapshot)) { bar(for: $0) }
+                    mediumRows(board)
                 }
             }
             .padding(12)
         } else {
             Text("Open the app to sign in.")
                 .font(.caption).padding(12)
+        }
+    }
+
+    @ViewBuilder
+    private func smallRows(_ board: UsageBoard) -> some View {
+        if board.tightestLimits.isEmpty {
+            Text("No data").font(.caption2).foregroundStyle(.secondary)
+        } else {
+            ForEach(board.tightestLimits, id: \.provider) { item in
+                bar(for: item.limit, title: "\(item.provider.glyph) \(item.provider.displayName)")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func mediumRows(_ board: UsageBoard) -> some View {
+        ForEach(board.snapshots, id: \.provider) { snapshot in
+            Text(snapshot.provider.displayName).font(.caption2.bold()).foregroundStyle(.secondary)
+            let limits = displayLimits(snapshot)
+            if limits.isEmpty {
+                Text("No data").font(.caption2).foregroundStyle(.secondary)
+            } else {
+                ForEach(limits) { bar(for: $0, title: $0.label) }
+            }
         }
     }
 
@@ -40,10 +65,10 @@ struct UsageWidgetView: View {
     }
 
     @ViewBuilder
-    private func bar(for limit: UsageLimit) -> some View {
+    private func bar(for limit: UsageLimit, title: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(limit.label).font(.caption2)
+                Text(title).font(.caption2)
                 Spacer()
                 Text("\(Int(limit.percentUsed.rounded()))%").font(.caption2.monospacedDigit())
             }

@@ -10,7 +10,7 @@ struct AgentUsageApp: App {
         MenuBarExtra {
             MenuContentView(viewModel: viewModel, onSettings: { panelController.openSettings() })
         } label: {
-            MenuBarLabelView(snapshot: viewModel.snapshot)
+            MenuBarLabelView(board: viewModel.board)
                 .onAppear {
                     panelController.viewModel = viewModel
                     applyPanelVisibility()

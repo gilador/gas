@@ -8,7 +8,7 @@ import UsageCore
 final class UsageViewModel: ObservableObject {
     static let appGroupID = "group.com.gilad.agentusage"
 
-    @Published var snapshot: UsageSnapshot?
+    @Published var board: UsageBoard
     var refreshInterval: TimeInterval
 
     private let registry: ProviderRegistry
@@ -21,15 +21,20 @@ final class UsageViewModel: ObservableObject {
     init(refreshInterval: TimeInterval? = nil) {
         let stored = UserDefaults.standard.object(forKey: "refreshInterval") as? Double
         self.refreshInterval = refreshInterval ?? stored ?? 780   // default 13 min
-        let base = ProcessInfo.processInfo.environment["ANTHROPIC_BASE_URL"]
-            .flatMap { URL(string: $0) } ?? URL(string: "https://api.anthropic.com")!
+        let env = ProcessInfo.processInfo.environment
+        let claudeBase = env["ANTHROPIC_BASE_URL"].flatMap { URL(string: $0) }
+            ?? URL(string: "https://api.anthropic.com")!
+        let openAIBase = env["CHATGPT_BASE_URL"].flatMap { URL(string: $0) }
+            ?? URL(string: "https://chatgpt.com")!
         self.registry = ProviderRegistry.makeDefault(
             tokenReader: KeychainTokenReader(),
+            codexAuthReader: FileCodexAuthReader(),
             httpClient: URLSessionHTTPClient(),
-            baseURL: base)
+            claudeBaseURL: claudeBase,
+            openAIBaseURL: openAIBase)
         self.store = SnapshotStore(appGroupID: Self.appGroupID)
         self.notifications = NotificationManager()
-        self.snapshot = store.load()
+        self.board = store.load() ?? UsageBoard()
         notifications.requestAuthorization()
         start()
         startNetworkMonitoring()
@@ -60,29 +65,10 @@ final class UsageViewModel: ObservableObject {
     }
 
     func refresh() async {
-        guard let provider = registry.providers.first else { return }
-        let fetched = (try? await provider.fetch())
-            ?? UsageSnapshot(provider: .claude, fetchedAt: Date(), limits: [], status: .error(message: "Fetch failed"))
-
-        let snap: UsageSnapshot
-        switch fetched.status {
-        case .stale, .error:
-            if fetched.limits.isEmpty, let previous = self.snapshot, !previous.limits.isEmpty {
-                // Preserve last-good limits + their timestamp; surface the transient status.
-                snap = UsageSnapshot(provider: fetched.provider,
-                                     fetchedAt: previous.fetchedAt,
-                                     limits: previous.limits,
-                                     status: fetched.status)
-            } else {
-                snap = fetched
-            }
-        case .ok, .needsSignIn, .keychainDenied:
-            snap = fetched
-        }
-
-        self.snapshot = snap
-        try? store.save(snap)
-        notifications.process(snap)
+        let updated = await UsageRefresher.refresh(board, providers: registry.providers)
+        board = updated
+        try? store.save(updated)
+        notifications.process(updated)
         WidgetCenter.shared.reloadAllTimelines()
     }
 }

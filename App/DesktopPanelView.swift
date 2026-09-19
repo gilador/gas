@@ -8,7 +8,7 @@ struct DesktopPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text("Claude Usage").font(.caption.bold())
+                Text("Agent Usage").font(.caption.bold())
                 Spacer()
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
@@ -35,24 +35,13 @@ struct DesktopPanelView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let snapshot = viewModel.snapshot {
-            if snapshot.limits.isEmpty {
-                Text(statusText(snapshot.status)).font(.caption).foregroundStyle(.secondary)
-            } else {
-                ForEach(snapshot.limits) { LimitRow(limit: $0) }
-            }
-        } else {
+        if viewModel.board.isEmpty {
             Text("Loading…").font(.caption).foregroundStyle(.secondary)
-        }
-    }
-
-    private func statusText(_ status: FetchStatus) -> String {
-        switch status {
-        case .ok: return "No data"
-        case .stale(let reason): return reason
-        case .needsSignIn: return "Sign in to Claude Code"
-        case .keychainDenied: return "Keychain access denied"
-        case .error(let message): return message
+        } else {
+            ForEach(Array(viewModel.board.snapshots.enumerated()), id: \.element.provider) { index, snapshot in
+                if index > 0 { Divider() }
+                ProviderSection(snapshot: snapshot)
+            }
         }
     }
 }
