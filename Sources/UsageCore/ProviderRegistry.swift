@@ -8,12 +8,17 @@ public struct ProviderRegistry {
     }
 
     public static func makeDefault(tokenReader: TokenReader,
+                                   codexAuthReader: CodexAuthReader,
                                    httpClient: UsageHTTPClient,
-                                   baseURL: URL) -> ProviderRegistry {
+                                   claudeBaseURL: URL,
+                                   openAIBaseURL: URL) -> ProviderRegistry {
         ProviderRegistry(providers: [
             ClaudeUsageProvider(tokenReader: tokenReader,
                                 httpClient: httpClient,
-                                baseURL: baseURL)
+                                baseURL: claudeBaseURL),
+            OpenAIUsageProvider(authReader: codexAuthReader,
+                                httpClient: httpClient,
+                                baseURL: openAIBaseURL)
         ])
     }
 }

@@ -3,12 +3,29 @@ import Foundation
 @testable import UsageCore
 
 final class ProviderRegistryTests: XCTestCase {
-    func testDefaultRegistryHoldsClaudeOnly() {
-        let registry = ProviderRegistry.makeDefault(
+    private func registry() -> ProviderRegistry {
+        ProviderRegistry.makeDefault(
             tokenReader: StubTokenReader(result: .failure(TokenReaderError.notFound)),
-            httpClient: StubHTTPClient(data: Data(), statusCode: 200),
-            baseURL: URL(string: "https://api.anthropic.com")!)
-        XCTAssertEqual(registry.providers.count, 1)
-        XCTAssertEqual(registry.providers.first?.id, .claude)
+            codexAuthReader: StubCodexAuthReader(result: .failure(TokenReaderError.notFound)),
+            httpClient: SpyHTTPClient(),
+            claudeBaseURL: URL(string: "https://api.anthropic.com")!,
+            openAIBaseURL: URL(string: "https://chatgpt.com")!)
+    }
+
+    func testDefaultRegistryMatchesDisplayOrder() {
+        XCTAssertEqual(registry().providers.map(\.id), ProviderID.displayOrder)
+    }
+
+    func testNoDuplicateProviders() {
+        let ids = registry().providers.map(\.id)
+        XCTAssertEqual(Set(ids).count, ids.count)
+    }
+
+    func testEachProviderIsWiredToItsOwnCredentialReader() async throws {
+        for provider in registry().providers {
+            let snap = try await provider.fetch()
+            XCTAssertEqual(snap.provider, provider.id)
+            XCTAssertEqual(snap.status, .needsSignIn, "\(provider.id)")
+        }
     }
 }

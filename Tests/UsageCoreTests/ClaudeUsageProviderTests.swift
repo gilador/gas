@@ -2,6 +2,7 @@ import XCTest
 import Foundation
 @testable import UsageCore
 
+/// Claude-only behavior. Generic provider guarantees live in ClaudeUsageProviderContractTests.
 final class ClaudeUsageProviderTests: XCTestCase {
     private let base = URL(string: "https://api.anthropic.com")!
 
@@ -11,71 +12,32 @@ final class ClaudeUsageProviderTests: XCTestCase {
                             httpClient: client, baseURL: base)
     }
 
-    func testOkDecodesAndMaps() async throws {
-        let json = try Fixtures.data("usage_response")
-        let p = provider(token: .success(ClaudeToken(accessToken: "t",
-                                                      expiresAt: Date().addingTimeInterval(3600))),
-                         client: StubHTTPClient(data: json, statusCode: 200))
-        let snap = try await p.fetch()
+    func testRequestsOAuthUsagePathWithBetaHeader() async throws {
+        let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
+        let token = ClaudeToken(accessToken: "t", expiresAt: Date().addingTimeInterval(3600))
+        let snap = try await provider(token: .success(token), client: spy).fetch()
         XCTAssertEqual(snap.status, .ok)
         XCTAssertEqual(snap.limits.count, 3)
-        XCTAssertEqual(snap.provider, .claude)
-    }
-
-    func testNetworkErrorReturnsStale() async throws {
-        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
-                         client: ThrowingHTTPClient(error: URLError(.notConnectedToInternet)))
-        let snap = try await p.fetch()
-        guard case .stale = snap.status else { return XCTFail("expected .stale for network error") }
-    }
-
-    func testExpiredTokenReturnsStale() async throws {
-        let p = provider(token: .success(ClaudeToken(accessToken: "t",
-                                                      expiresAt: Date().addingTimeInterval(-10))),
-                         client: StubHTTPClient(data: Data(), statusCode: 200))
-        let snap = try await p.fetch()
-        guard case .stale = snap.status else { return XCTFail("expected .stale") }
-        XCTAssertTrue(snap.limits.isEmpty)
-    }
-
-    func test401ReturnsStale() async throws {
-        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
-                         client: StubHTTPClient(data: Data(), statusCode: 401))
-        let snap = try await p.fetch()
-        guard case .stale = snap.status else { return XCTFail("expected .stale") }
-    }
-
-    func test429ReturnsStale() async throws {
-        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
-                         client: StubHTTPClient(data: Data(), statusCode: 429))
-        let snap = try await p.fetch()
-        guard case .stale = snap.status else { return XCTFail("expected .stale") }
-    }
-
-    func testNotFoundReturnsNeedsSignIn() async throws {
-        let p = provider(token: .failure(TokenReaderError.notFound),
-                         client: StubHTTPClient(data: Data(), statusCode: 200))
-        let snap = try await p.fetch()
-        XCTAssertEqual(snap.status, .needsSignIn)
+        XCTAssertEqual(spy.calls.count, 1)
+        XCTAssertEqual(spy.calls[0].url.absoluteString, "https://api.anthropic.com/api/oauth/usage")
+        XCTAssertEqual(spy.calls[0].headers["anthropic-beta"], "oauth-2025-04-20")
     }
 
     func testAccessDeniedReturnsKeychainDenied() async throws {
-        let p = provider(token: .failure(TokenReaderError.accessDenied),
-                         client: StubHTTPClient(data: Data(), statusCode: 200))
-        let snap = try await p.fetch()
+        let snap = try await provider(token: .failure(TokenReaderError.accessDenied),
+                                      client: SpyHTTPClient()).fetch()
         XCTAssertEqual(snap.status, .keychainDenied)
     }
 
-    func testServerErrorReturnsError() async throws {
-        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
-                         client: StubHTTPClient(data: Data(), statusCode: 500))
-        let snap = try await p.fetch()
-        guard case .error = snap.status else { return XCTFail("expected .error") }
+    func testExpiredTokenMessageNamesClaudeCode() async throws {
+        let token = ClaudeToken(accessToken: "t", expiresAt: Date().addingTimeInterval(-10))
+        let snap = try await provider(token: .success(token), client: SpyHTTPClient()).fetch()
+        XCTAssertEqual(snap.status, .stale(reason: "Token expired — open Claude Code to refresh"))
     }
 
-    func testProviderIDIsClaude() {
-        let p = provider(token: .failure(TokenReaderError.notFound),
-                         client: StubHTTPClient(data: Data(), statusCode: 200))
-        XCTAssertEqual(p.id, .claude)
+    func test401MessageNamesClaudeCode() async throws {
+        let token = ClaudeToken(accessToken: "t", expiresAt: nil)
+        let snap = try await provider(token: .success(token), client: SpyHTTPClient(statusCode: 401)).fetch()
+        XCTAssertEqual(snap.status, .stale(reason: "Unauthorized — open Claude Code to refresh"))
     }
 }
