@@ -8,7 +8,7 @@ public enum FetchStatus: Codable, Sendable, Equatable {
     case error(message: String)
 }
 
-public struct UsageSnapshot: Codable, Sendable {
+public struct UsageSnapshot: Codable, Sendable, Equatable {
     public let provider: ProviderID
     public let fetchedAt: Date
     public let limits: [UsageLimit]
@@ -25,5 +25,18 @@ public struct UsageSnapshot: Codable, Sendable {
     /// The limit closest to being exhausted (highest `percentUsed`).
     public var tightestLimit: UsageLimit? {
         limits.max(by: { $0.percentUsed < $1.percentUsed })
+    }
+
+    /// Keeps the previous good limits (and their timestamp) when a refresh fails transiently.
+    public func mergingLastGood(previous: UsageSnapshot?) -> UsageSnapshot {
+        guard let previous, previous.provider == provider,
+              !previous.limits.isEmpty, limits.isEmpty else { return self }
+        switch status {
+        case .stale, .error:
+            return UsageSnapshot(provider: provider, fetchedAt: previous.fetchedAt,
+                                 limits: previous.limits, status: status)
+        case .ok, .needsSignIn, .keychainDenied:
+            return self
+        }
     }
 }

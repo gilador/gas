@@ -7,8 +7,8 @@ final class ThresholdEvaluatorTests: XCTestCase {
         UsageLimit(id: "five_hour", label: "Session (5h)", percentUsed: pct,
                    resetsAt: resetsAt.map { Date(timeIntervalSince1970: $0) }, severity: .normal)
     }
-    private func snap(_ limits: [UsageLimit]) -> UsageSnapshot {
-        UsageSnapshot(provider: .claude, fetchedAt: Date(), limits: limits, status: .ok)
+    private func snap(_ limits: [UsageLimit], provider: ProviderID = .claude) -> UsageSnapshot {
+        UsageSnapshot(provider: provider, fetchedAt: Date(), limits: limits, status: .ok)
     }
 
     func testFiresOnCrossing() {
@@ -54,5 +54,33 @@ final class ThresholdEvaluatorTests: XCTestCase {
         let data = try JSONEncoder().encode(state)
         let decoded = try JSONDecoder().decode(NotificationState.self, from: data)
         XCTAssertEqual(decoded, state)
+    }
+
+    func testSameLimitIDOnTwoProvidersFiresTwice() {
+        var state = NotificationState()
+        let claude = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .claude),
+                                                 state: &state, thresholds: [80])
+        let openai = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .openai),
+                                                 state: &state, thresholds: [80])
+        XCTAssertEqual(claude.count, 1)
+        XCTAssertEqual(openai.count, 1)
+        XCTAssertEqual(claude.first?.provider, .claude)
+        XCTAssertEqual(openai.first?.provider, .openai)
+    }
+
+    func testStateKeyIncludesProvider() {
+        var state = NotificationState()
+        _ = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .openai), state: &state, thresholds: [80])
+        XCTAssertEqual(Array(state.fired.keys), ["openai#five_hour#80.0"])
+    }
+
+    func testOneProviderDroppingDoesNotClearTheOther() {
+        var state = NotificationState()
+        _ = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .claude), state: &state, thresholds: [80])
+        _ = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .openai), state: &state, thresholds: [80])
+        _ = ThresholdEvaluator.evaluate(snap([limit(10)], provider: .openai), state: &state, thresholds: [80])
+        let claudeAgain = ThresholdEvaluator.evaluate(snap([limit(85)], provider: .claude),
+                                                      state: &state, thresholds: [80])
+        XCTAssertTrue(claudeAgain.isEmpty)
     }
 }

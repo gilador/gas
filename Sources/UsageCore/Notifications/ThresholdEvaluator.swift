@@ -1,7 +1,7 @@
 import Foundation
 
 public struct NotificationState: Codable, Equatable, Sendable {
-    /// key: "<limitID>#<threshold>" -> resetsAt (epoch seconds, 0 if none) it last fired for.
+    /// key: "<provider>#<limitID>#<threshold>" -> resetsAt (epoch seconds, 0 if none) it last fired for.
     public var fired: [String: Double]
 
     public init(fired: [String: Double] = [:]) {
@@ -10,10 +10,12 @@ public struct NotificationState: Codable, Equatable, Sendable {
 }
 
 public struct ThresholdCrossing: Equatable, Sendable {
+    public let provider: ProviderID
     public let limit: UsageLimit
     public let threshold: Double
 
-    public init(limit: UsageLimit, threshold: Double) {
+    public init(provider: ProviderID, limit: UsageLimit, threshold: Double) {
+        self.provider = provider
         self.limit = limit
         self.threshold = threshold
     }
@@ -27,10 +29,11 @@ public enum ThresholdEvaluator {
         for limit in snapshot.limits {
             let window = limit.resetsAt?.timeIntervalSince1970 ?? 0
             for threshold in thresholds {
-                let key = "\(limit.id)#\(threshold)"
+                let key = "\(snapshot.provider.rawValue)#\(limit.id)#\(threshold)"
                 if limit.percentUsed >= threshold {
                     if state.fired[key] != window {
-                        crossings.append(ThresholdCrossing(limit: limit, threshold: threshold))
+                        crossings.append(ThresholdCrossing(provider: snapshot.provider,
+                                                           limit: limit, threshold: threshold))
                         state.fired[key] = window
                     }
                 } else {

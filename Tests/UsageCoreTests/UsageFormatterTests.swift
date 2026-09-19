@@ -1,0 +1,35 @@
+import XCTest
+@testable import UsageCore
+
+final class UsageFormatterTests: XCTestCase {
+    private func snap(_ provider: ProviderID, _ pcts: [Double], status: FetchStatus = .ok) -> UsageSnapshot {
+        let limits = pcts.enumerated().map { i, p in
+            UsageLimit(id: "l\(i)", label: "l\(i)", percentUsed: p, resetsAt: nil, severity: .normal)
+        }
+        return UsageSnapshot(provider: provider, fetchedAt: Date(), limits: limits, status: status)
+    }
+
+    func testTwoProvidersCompactNoSpaces() {
+        let board = UsageBoard(snapshots: [snap(.claude, [12, 42]), snap(.openai, [52, 7])])
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%·⬡52%")
+    }
+
+    func testOneProvider() {
+        let board = UsageBoard(snapshots: [snap(.claude, [42])])
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%")
+    }
+
+    func testProviderWithoutLimitsIsOmitted() {
+        let board = UsageBoard(snapshots: [snap(.claude, [42]), snap(.openai, [], status: .needsSignIn)])
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%")
+    }
+
+    func testEmptyBoardShowsDash() {
+        XCTAssertEqual(UsageFormatter.compactLabel(for: UsageBoard()), "◐—")
+    }
+
+    func testPercentIsRoundedNotTruncated() {
+        let board = UsageBoard(snapshots: [snap(.claude, [41.6])])
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%")
+    }
+}

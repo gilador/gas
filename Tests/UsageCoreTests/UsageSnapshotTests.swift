@@ -24,4 +24,62 @@ final class UsageSnapshotTests: XCTestCase {
         XCTAssertNotEqual(FetchStatus.stale(reason: "x"), .stale(reason: "y"))
         XCTAssertNotEqual(FetchStatus.ok, .needsSignIn)
     }
+
+    private func snap(_ provider: ProviderID = .claude, limits: [UsageLimit],
+                      fetchedAt: TimeInterval, status: FetchStatus) -> UsageSnapshot {
+        UsageSnapshot(provider: provider, fetchedAt: Date(timeIntervalSince1970: fetchedAt),
+                      limits: limits, status: status)
+    }
+
+    func testMergeStaleEmptyKeepsPreviousLimitsAndTimestamp() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        let fetched = snap(limits: [], fetchedAt: 200, status: .stale(reason: "offline"))
+        let merged = fetched.mergingLastGood(previous: previous)
+        XCTAssertEqual(merged.limits, previous.limits)
+        XCTAssertEqual(merged.fetchedAt, Date(timeIntervalSince1970: 100))
+        XCTAssertEqual(merged.status, .stale(reason: "offline"))
+    }
+
+    func testMergeErrorEmptyKeepsPreviousLimits() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        let fetched = snap(limits: [], fetchedAt: 200, status: .error(message: "HTTP 500"))
+        XCTAssertEqual(fetched.mergingLastGood(previous: previous).limits, previous.limits)
+    }
+
+    func testMergeStaleWithPreviousEmptyReturnsSelf() {
+        let previous = snap(limits: [], fetchedAt: 100, status: .needsSignIn)
+        let fetched = snap(limits: [], fetchedAt: 200, status: .stale(reason: "x"))
+        XCTAssertEqual(fetched.mergingLastGood(previous: previous), fetched)
+    }
+
+    func testMergeStaleWithNewLimitsReturnsSelf() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        let fetched = snap(limits: [limit("session", 50)], fetchedAt: 200, status: .stale(reason: "x"))
+        XCTAssertEqual(fetched.mergingLastGood(previous: previous), fetched)
+    }
+
+    func testMergeOkReturnsSelf() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        let fetched = snap(limits: [], fetchedAt: 200, status: .ok)
+        XCTAssertEqual(fetched.mergingLastGood(previous: previous), fetched)
+    }
+
+    func testMergeNeedsSignInAndKeychainDeniedReturnSelf() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        for status in [FetchStatus.needsSignIn, .keychainDenied] {
+            let fetched = snap(limits: [], fetchedAt: 200, status: status)
+            XCTAssertEqual(fetched.mergingLastGood(previous: previous), fetched)
+        }
+    }
+
+    func testMergeIgnoresPreviousOfOtherProvider() {
+        let previous = snap(.openai, limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        let fetched = snap(.claude, limits: [], fetchedAt: 200, status: .stale(reason: "x"))
+        XCTAssertEqual(fetched.mergingLastGood(previous: previous), fetched)
+    }
+
+    func testMergeWithNilPreviousReturnsSelf() {
+        let fetched = snap(limits: [], fetchedAt: 200, status: .stale(reason: "x"))
+        XCTAssertEqual(fetched.mergingLastGood(previous: nil), fetched)
+    }
 }

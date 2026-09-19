@@ -4,7 +4,7 @@ public struct SnapshotStore {
     private let fileURL: URL
 
     public init(containerURL: URL) {
-        self.fileURL = containerURL.appendingPathComponent("usage_snapshot.json")
+        self.fileURL = containerURL.appendingPathComponent("usage_board.json")
     }
 
     public init(appGroupID: String) {
@@ -15,17 +15,17 @@ public struct SnapshotStore {
         self.init(containerURL: container)
     }
 
-    public func save(_ snapshot: UsageSnapshot) throws {
+    public func save(_ board: UsageBoard) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(snapshot)
+        let data = try encoder.encode(board)
         try data.write(to: fileURL, options: .atomic)
     }
 
-    public func load() -> UsageSnapshot? {
+    public func load() -> UsageBoard? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try? decoder.decode(UsageSnapshot.self, from: data)
+        return try? decoder.decode(UsageBoard.self, from: data)
     }
 }
