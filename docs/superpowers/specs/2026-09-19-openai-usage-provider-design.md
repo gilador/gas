@@ -122,8 +122,7 @@ Runs every provider concurrently (`withTaskGroup`); a thrown `fetch()` becomes
 slow or failing provider never blocks or blanks another.
 
 **`UsageFormatter.compactLabel(for board: UsageBoard) -> String`** (moved from the app):
-joins `"<glyph><percent>%"` per provider in `tightestLimits` with `"·"`, no spaces, e.g.
-`◐42%·⬡52%`. Providers with no limits are omitted. Empty → `◐—`.
+Every provider in `displayOrder` is always shown; a provider with no data renders as `<glyph>—`, e.g. `◐—·⬡100%`; an empty board renders `◐—·⬡—`.
 
 ### App
 
