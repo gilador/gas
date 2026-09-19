@@ -13,8 +13,7 @@ struct ProviderContractSubject {
     let make: (_ credential: CredentialOutcome, _ client: UsageHTTPClient) -> any UsageProvider
 }
 
-/// What every `UsageProvider` must guarantee. Each check is called from a per-provider
-/// test class so a failure names the provider.
+/// Guarantees every UsageProvider must honor; each check is called from a per-provider test class.
 enum UsageProviderContract {
     static let token = "contract-token"
     static let warning = 80.0

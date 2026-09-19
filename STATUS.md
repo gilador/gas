@@ -1,10 +1,10 @@
-# Project Status & Handoff — Claude Usage (macOS)
+# Project Status & Handoff — Claude & OpenAI Usage (macOS)
 
-_Last updated: 2026-07-18. Branch: `main`._
+_Last updated: 2026-09-19. Branch: `claude/openai-subscription-usage-ebfef2`._
 
-A macOS app that shows Claude subscription **plan-quota** usage (5-hour rolling window +
-weekly limits) — as a menu bar item, a WidgetKit widget, and a desktop-pinned panel — with
-threshold notifications. Provider-abstracted for future xAI/OpenAI.
+A macOS app that shows Claude **and** OpenAI (ChatGPT/Codex) subscription **plan-quota** usage
+(5-hour rolling window + weekly limits) — as a menu bar item, a WidgetKit widget, and a
+desktop-pinned panel — with threshold notifications. Provider-abstracted for future xAI.
 
 ---
 
@@ -12,14 +12,15 @@ threshold notifications. Provider-abstracted for future xAI/OpenAI.
 
 | Component | State | Verified |
 |---|---|---|
-| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **41 passed / 2 skipped / 0 failed** |
+| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **127 passed / 3 skipped / 0 failed** |
+| OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **127 passed / 3 skipped / 0 failed** |
 | Menu bar app (`MenuBarExtra`, live 60s refresh, dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
 | WidgetKit widget (`AgentUsageWidget`) | **Built (code)** | Builds; **does not register** unsigned (see §4) |
 | Desktop panel (pinned NSPanel, draggable, toggle) | **Done** | Builds; runs unsigned; toggle in menu |
 | Threshold notifications (80% / 95%, de-duped) | **Built** | Gated off unless team-signed (see §4) |
 | Clean build (app + embedded widget) | **Done** | `xcodebuild … BUILD SUCCEEDED`, 0 warnings |
 
-**Everything above is merged to `main`.** The app currently runs from a local unsigned build
+**Everything above is on this branch, pending merge to `main`.** The app currently runs from a local unsigned build
 (installed at `~/Applications/AgentUsageApp.app`).
 
 ### Data source (verified, undocumented)
@@ -29,17 +30,28 @@ threshold notifications. Provider-abstracted for future xAI/OpenAI.
 `limits` array is the source of truth (kinds `session` / `weekly_all` / `weekly_scoped`;
 `resets_at` is an ISO-8601 string). We never write/refresh the token; expired/401 → stale state.
 
+**OpenAI (ChatGPT/Codex):** `GET https://chatgpt.com/backend-api/wham/usage`, headers
+`Authorization: Bearer <access_token>` + `ChatGPT-Account-Id: <account_id>`. Credentials read
+**read-only** from `~/.codex/auth.json` (or `$CODEX_HOME/auth.json`), fields
+`tokens.access_token` / `tokens.account_id`; token expiry from the JWT `exp` claim. We never
+refresh the token; expired/401 → stale state. Response fields used: `rate_limit.primary_window`
+(5h) and `secondary_window` (weekly) — `used_percent`, `limit_window_seconds`, `reset_at`.
+
 ---
 
 ## 2. Architecture
 
 - **`UsageCore/`** (local SwiftPM package) — all business logic + unit tests. `UsageProvider`
-  protocol → `ClaudeUsageProvider`; `UsageSnapshot`/`UsageLimit`/`FetchStatus`; `ThresholdEvaluator`
-  (+ `NotificationState` dedupe); `SnapshotStore` (App Group JSON); `KeychainTokenReader`;
-  `ProviderRegistry`.
+  protocol → `ClaudeUsageProvider`, `OpenAIUsageProvider`; `UsageSnapshot`/`UsageLimit`/`FetchStatus`;
+  `UsageBoard` (one snapshot per provider); `UsageRefresher` (concurrent fetch + last-good merge);
+  `UsageFormatter` (menu bar label); `ThresholdEvaluator` (+ `NotificationState` dedupe);
+  `SnapshotStore` (App Group JSON, now `usage_board.json`); `KeychainTokenReader`;
+  `FileCodexAuthReader` (read-only `~/.codex/auth.json`); `ProviderRegistry`.
 - **`App/`** — menu bar app (`AgentUsageApp`, `UsageViewModel`, `MenuContentView`+`LimitRow`,
-  `MenuBarLabelView`+`UsageFormatter`, `NotificationManager`, `PreferencesView`,
-  `DesktopPanelController`+`DesktopPanelView`). Thin wiring over `UsageCore`.
+  `ProviderSection`, `MenuBarLabelView`+`UsageFormatter`, `NotificationManager`, `PreferencesView`,
+  `DesktopPanelController`+`DesktopPanelView`). The menu and desktop panel render stacked Claude and
+  OpenAI sections via `ProviderSection`; menu bar label is compact multi-provider, e.g. `◐42%·⬡52%`.
+  Thin wiring over `UsageCore`.
 - **`Widget/`** — `AgentUsageWidget` extension (TimelineProvider reads the App Group snapshot).
 - **`project.yml`** — XcodeGen source of truth → generates `AgentUsage.xcodeproj` (git-ignored).
   Bundle IDs `com.gilad.agentusage` / `.widget`; App Group `group.com.gilad.agentusage`;
@@ -51,9 +63,9 @@ threshold notifications. Provider-abstracted for future xAI/OpenAI.
 
 ```bash
 # Unit tests (fast, no Xcode):
-swift test                          # 41 passed / 2 skipped / 0 failed
-#   opt-in integration tests (need a real keychain / entitlement; hang or prompt otherwise):
-#   RUN_KEYCHAIN_INTEGRATION_TESTS=1   RUN_APP_GROUP_INTEGRATION_TESTS=1
+swift test                          # 127 passed / 3 skipped / 0 failed
+#   opt-in integration tests (need a real keychain / entitlement / Codex auth file; hang or prompt otherwise):
+#   RUN_KEYCHAIN_INTEGRATION_TESTS=1   RUN_APP_GROUP_INTEGRATION_TESTS=1   RUN_CODEX_INTEGRATION_TESTS=1
 
 # App build (unsigned, local):
 xcodegen generate
@@ -136,7 +148,9 @@ Tabbed Settings window (General / Providers enable-disable / Notifications toggl
 
 ## 7. Doc index
 - Specs: `docs/superpowers/specs/2026-07-17-claude-usage-widget-design.md`,
-  `…/2026-07-18-desktop-usage-panel-design.md`, `…/2026-07-18-rich-settings-design.md`
+  `…/2026-07-18-desktop-usage-panel-design.md`, `…/2026-07-18-rich-settings-design.md`,
+  `…/2026-09-19-openai-usage-provider-design.md`
 - Plans: `docs/superpowers/plans/2026-07-17-claude-usage-widget.md`,
-  `…/2026-07-18-desktop-usage-panel.md`, `…/2026-07-18-rich-settings.md`
+  `…/2026-07-18-desktop-usage-panel.md`, `…/2026-07-18-rich-settings.md`,
+  `…/2026-09-19-openai-usage-provider.md`
 - SDD progress ledger (git-ignored scratch): `.superpowers/sdd/progress.md`

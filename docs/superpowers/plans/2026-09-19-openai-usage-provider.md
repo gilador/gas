@@ -248,7 +248,7 @@ final class UsageBoardTests: XCTestCase {
     func testCodableRoundTrip() throws {
         let board = UsageBoard(snapshots: [
             snap(.claude, limits: [limit("session", 40)], fetchedAt: 5),
-            snap(.openai, status: .stale(reason: "x"), fetchedAt: 6)
+            snap(.openai, fetchedAt: 6, status: .stale(reason: "x"))
         ])
         let data = try JSONEncoder().encode(board)
         let decoded = try JSONDecoder().decode(UsageBoard.self, from: data)
@@ -1707,8 +1707,7 @@ struct ProviderContractSubject {
     let make: (_ credential: CredentialOutcome, _ client: UsageHTTPClient) -> any UsageProvider
 }
 
-/// What every `UsageProvider` must guarantee. Each check is called from a per-provider
-/// test class so a failure names the provider.
+/// Guarantees every UsageProvider must honor; each check is called from a per-provider test class.
 enum UsageProviderContract {
     static let token = "contract-token"
     static let warning = 80.0
@@ -1741,7 +1740,8 @@ enum UsageProviderContract {
                                     file: StaticString = #filePath, line: UInt = #line) async throws {
         let p = s.make(.valid, SpyHTTPClient(data: try fixture(s), statusCode: 200))
         XCTAssertEqual(p.id, s.expectedID, file: file, line: line)
-        XCTAssertEqual(try await p.fetch().provider, s.expectedID, file: file, line: line)
+        let snap = try await p.fetch()
+        XCTAssertEqual(snap.provider, s.expectedID, file: file, line: line)
     }
 
     /// C3: any non-.ok status ⇒ no limits.
@@ -1800,11 +1800,16 @@ enum UsageProviderContract {
         func isStale(_ st: FetchStatus) -> Bool { if case .stale = st { return true }; return false }
         func isError(_ st: FetchStatus) -> Bool { if case .error = st { return true }; return false }
 
-        XCTAssertTrue(isStale(try await s.make(.valid, SpyHTTPClient(statusCode: 401)).fetch().status), "401", file: file, line: line)
-        XCTAssertTrue(isStale(try await s.make(.valid, SpyHTTPClient(statusCode: 429)).fetch().status), "429", file: file, line: line)
-        XCTAssertTrue(isError(try await s.make(.valid, SpyHTTPClient(statusCode: 500)).fetch().status), "500", file: file, line: line)
-        XCTAssertTrue(isStale(try await s.make(.valid, ThrowingHTTPClient(error: URLError(.notConnectedToInternet))).fetch().status), "URLError", file: file, line: line)
-        XCTAssertTrue(isError(try await s.make(.valid, SpyHTTPClient(data: "{".data(using: .utf8)!, statusCode: 200)).fetch().status), "bad JSON", file: file, line: line)
+        let status401 = try await s.make(.valid, SpyHTTPClient(statusCode: 401)).fetch().status
+        XCTAssertTrue(isStale(status401), "401", file: file, line: line)
+        let status429 = try await s.make(.valid, SpyHTTPClient(statusCode: 429)).fetch().status
+        XCTAssertTrue(isStale(status429), "429", file: file, line: line)
+        let status500 = try await s.make(.valid, SpyHTTPClient(statusCode: 500)).fetch().status
+        XCTAssertTrue(isError(status500), "500", file: file, line: line)
+        let statusURLError = try await s.make(.valid, ThrowingHTTPClient(error: URLError(.notConnectedToInternet))).fetch().status
+        XCTAssertTrue(isStale(statusURLError), "URLError", file: file, line: line)
+        let statusBadJSON = try await s.make(.valid, SpyHTTPClient(data: "{".data(using: .utf8)!, statusCode: 200)).fetch().status
+        XCTAssertTrue(isError(statusBadJSON), "bad JSON", file: file, line: line)
     }
 
     /// C8: exactly one GET carrying the bearer token.
