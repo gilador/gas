@@ -108,6 +108,19 @@ return `self`. Moved out of the view model.
 **`ProviderRegistry.makeDefault(tokenReader:, codexAuthReader:, httpClient:,
 claudeBaseURL:, openAIBaseURL:)`** → `[ClaudeUsageProvider, OpenAIUsageProvider]`.
 
+**`UsageRefresher`** (`UsageRefresher.swift`) — the refresh pipeline, in core so it is
+unit-testable without the app:
+```swift
+public enum UsageRefresher {
+    public static func refresh(_ board: UsageBoard,
+                               providers: [any UsageProvider]) async -> UsageBoard
+}
+```
+Runs every provider concurrently (`withTaskGroup`); a thrown `fetch()` becomes
+`.error("Fetch failed")` for that provider; each result is passed through
+`mergingLastGood(previous:)` against the board's current entry and then `replace`d. One
+slow or failing provider never blocks or blanks another.
+
 **`UsageFormatter.compactLabel(for board: UsageBoard) -> String`** (moved from the app):
 joins `"<glyph><percent>%"` per provider in `tightestLimits` with `"·"`, no spaces, e.g.
 `◐42%·⬡52%`. Providers with no limits are omitted. Empty → `◐—`.
@@ -115,11 +128,10 @@ joins `"<glyph><percent>%"` per provider in `tightestLimits` with `"·"`, no spa
 ### App
 
 - **`UsageViewModel`**: `@Published var board = UsageBoard()`; loads the stored board at
-  init. `refresh()` runs every provider concurrently (`withTaskGroup`), a thrown fetch
-  becomes `.error("Fetch failed")` for that provider, applies `mergingLastGood` against the
-  current board entry, replaces it in the board, saves, calls `notifications.process(board)`,
-  reloads widget timelines. Registry gets `FileCodexAuthReader()` and the `CHATGPT_BASE_URL`
-  override.
+  init. `refresh()` is `board = await UsageRefresher.refresh(board, providers:
+  registry.providers)`, then save, `notifications.process(board)`, reload widget timelines.
+  Registry gets `FileCodexAuthReader()` and the `CHATGPT_BASE_URL` override. No fetch or
+  merge logic lives in the app target.
 - **`MenuContentView`** and **`DesktopPanelView`**: `ForEach(board.snapshots)` renders a
   `ProviderSection` (shared view, `App/ProviderSection.swift`): header
   `Text(provider.displayName).font(.caption.bold())`, status row, then `LimitRow`s, or
@@ -148,21 +160,142 @@ credits, `additional_rate_limits`, model availability, xAI.
 
 ## Testing
 
-`UsageCore` (TDD, `swift test`):
-- `UsageBoardTests`: order, replace, tightest per provider, latest fetched, Codable round-trip.
-- `CodexCredentialsTests`: parse valid file, `tokens` null → notFound, bad JSON → malformed,
-  `exp` decoding with a synthetic JWT, bad JWT → nil expiry.
-- `FileCodexAuthReaderTests`: missing file → notFound (temp dir).
-- `OpenAIUsageDTOTests`: decode fixture `Tests/UsageCoreTests/Fixtures/openai_usage_response.json`
-  (sanitized synthetic, real structure); `rate_limit: null`.
-- `OpenAIUsageMapperTests`: IDs, labels for 18000/604800/other/nil, resets, severity, nil → [].
-- `OpenAIUsageProviderTests`: each status path with stub reader + stub HTTP client;
-  headers include bearer + account id; account id omitted when nil.
-- `UsageSnapshotTests`: `mergingLastGood` cases.
-- `ThresholdEvaluatorTests`: same limit ID on two providers fires twice; key format.
-- `UsageFormatterTests`: two providers, one provider, none.
-- `ProviderRegistryTests`: two providers, order.
-- `SnapshotStoreTests`: board round-trip.
+All automated tests live in `UsageCore` and run with `swift test` (no Xcode, no signing).
+They are organized in three layers. TDD applies to every layer: the test is written and
+fails before the code is written.
 
-App/widget: `xcodegen generate` + `xcodebuild … build` with 0 warnings; run the app and
-confirm both sections and the two-number label. Widget: build only (unsigned cannot register).
+### Layer 1 — Abstraction: the `UsageProvider` contract
+
+One shared contract, run against **every** provider. It states what the rest of the system
+may assume about any provider, present or future (xAI later plugs in here).
+
+`Tests/UsageCoreTests/Contract/UsageProviderContract.swift` — a test helper, not a test
+class. It takes a `ProviderContractSubject`:
+
+```swift
+struct ProviderContractSubject {
+    let expectedID: ProviderID
+    let validFixture: String          // fixture that must map to ≥ 1 limit
+    let expectedLimitCount: Int
+    /// Builds the provider for one scenario. `credential` says how the credential read
+    /// ends; `client` is the HTTP double to inject.
+    let make: (_ credential: CredentialOutcome, _ client: UsageHTTPClient) -> any UsageProvider
+}
+enum CredentialOutcome { case valid, expired, notFound, accessDenied, malformed }
+```
+
+Contract assertions (each a `static func` on the helper, called from per-provider test
+classes so failures name the provider):
+
+| # | Assertion | Why it matters |
+|---|---|---|
+| C1 | `fetch()` never throws; every failure is a `FetchStatus` | the refresher can treat providers uniformly |
+| C2 | `snapshot.provider == provider.id` | board placement |
+| C3 | any non-`.ok` status ⇒ `limits.isEmpty` | UI/notification code may trust this |
+| C4 | `.ok` with `validFixture` ⇒ `limits.count == expectedLimitCount`, every `severity` matches `Severity.from` for the configured thresholds | mapper wired with thresholds |
+| C5 | `.notFound` ⇒ `.needsSignIn` | "sign in to <client>" UX |
+| C6 | `.expired` ⇒ `.stale`, and **zero** HTTP calls (spy) | no wasted/unauthorized calls |
+| C7 | HTTP 401 ⇒ `.stale`; 429 ⇒ `.stale`; 500 ⇒ `.error`; `URLError` ⇒ `.stale`; bad JSON body ⇒ `.error` | last-good merge relies on `.stale`/`.error` split |
+| C8 | request carries `Authorization: Bearer <token>` and exactly one GET | auth plumbing |
+| C9 | `fetchedAt` is within the test's time window | "Updated …" line |
+
+`ClaudeUsageProviderContractTests` and `OpenAIUsageProviderContractTests` each build a
+subject and call every contract assertion. Adding a provider means adding one subject.
+
+Support doubles added to `Support/Stubs.swift`: `SpyHTTPClient` (records URL + headers per
+call, returns configured data/status), `StubCodexAuthReader`.
+
+**Registry wiring** (`ProviderRegistryTests`): `makeDefault` returns exactly
+`ProviderID.displayOrder` IDs in order, no duplicates; each provider built with a
+`notFound` credential double fetches to `.needsSignIn` (proves each reader is wired to the
+right provider).
+
+### Layer 2 — Core: models, pipeline, persistence, notifications, formatting
+
+Provider-agnostic. Uses `StubUsageProvider` (returns a fixed snapshot, or throws, or waits
+`delay` before returning) so no real provider is involved.
+
+- `UsageBoardTests` — empty board; `replace` inserts in `displayOrder` regardless of call
+  order; `replace` overwrites the same provider; `snapshot(for:)`; `tightestLimits` skips
+  providers with no limits; `latestFetchedAt`; Codable round-trip; `Equatable`.
+- `UsageRefresherTests` — two providers both `.ok` ⇒ both in board; one throws ⇒ that entry
+  is `.error("Fetch failed")`, the other is `.ok`; one `.stale` with empty limits and a
+  previous good entry ⇒ previous limits and `fetchedAt` kept, new status shown; one slow
+  (delay) provider ⇒ the fast one's result is present and total time < sum of delays
+  (concurrency); providers not in the input list keep their existing board entry.
+- `UsageSnapshotTests` — existing `tightestLimit` tests plus `mergingLastGood`: stale+empty
+  with previous good ⇒ merged; stale+empty with previous empty ⇒ self; stale with new
+  limits ⇒ self; `.ok` ⇒ self; `.needsSignIn`/`.keychainDenied` ⇒ self (blank on purpose);
+  previous of a different provider is ignored.
+- `SnapshotStoreTests` — board round-trip with two providers; missing file ⇒ `nil`;
+  corrupt file ⇒ `nil`; a legacy `usage_snapshot.json` is ignored; App Group path stays
+  opt-in.
+- `ThresholdEvaluatorTests` — existing single-provider cases unchanged; new: same limit ID
+  on two providers ⇒ two crossings with distinct `provider`; state key format
+  `"<provider>#<id>#<threshold>"`; a crossing on one provider does not suppress the other.
+- `UsageFormatterTests` — two providers ⇒ `◐42%·⬡52%` (no spaces, `·` separator, display
+  order); one provider ⇒ `◐42%`; second provider without limits ⇒ omitted; none ⇒ `◐—`;
+  percent is rounded, not truncated (`41.6` ⇒ `42%`).
+- `ProviderIDTests` — `displayOrder` is `[.claude, .openai]`; `displayName`, `glyph`,
+  `clientName` non-empty for every case; `rawValue` round-trip.
+- `UsageLimitTests` / `Severity` — existing, unchanged.
+
+### Layer 3 — Provider-specific
+
+What differs per provider: where credentials live, wire format, and any deliberate
+divergence from the other provider. Each provider has the same four files.
+
+**Claude** (existing; kept, small additions)
+- `ClaudeCredentialsTests` — Keychain JSON parse, epoch-ms expiry, malformed.
+- `ClaudeUsageDTOTests` — fixture `usage_response.json`; `resets_at` fractional seconds.
+- `ClaudeUsageMapperTests` — `session`, `weekly_all`, `weekly_scoped` (with/without model
+  display name), unknown kind fallback.
+- `ClaudeUsageProviderTests` — Claude-only behavior: URL path `api/oauth/usage`; header
+  `anthropic-beta: oauth-2025-04-20`; `.accessDenied` ⇒ `.keychainDenied`. (Generic status
+  paths move to the contract; duplicates are removed from this file.)
+- `KeychainTokenReaderIntegrationTests` — opt-in via `RUN_KEYCHAIN_INTEGRATION_TESTS=1`.
+
+**OpenAI** (new)
+- `CodexCredentialsTests` — parse a valid `auth.json` (access token, account id); `tokens`
+  null ⇒ `.notFound`; empty `access_token` ⇒ `.notFound`; bad JSON ⇒ `.malformed`; `exp`
+  from a synthetic JWT (base64url, no padding) ⇒ correct `Date`; JWT with no `exp` or not a
+  JWT ⇒ `expiresAt == nil` and no error.
+- `FileCodexAuthReaderTests` — temp dir: missing file ⇒ `.notFound`; valid file ⇒ token;
+  `CODEX_HOME` resolution is exercised via the explicit `fileURL` initializer (no env
+  mutation in tests).
+- `OpenAIUsageDTOTests` — fixture `openai_usage_response.json` (sanitized synthetic, real
+  structure); `used_percent` integer decodes to `Double`; `rate_limit: null` decodes;
+  unknown extra fields are ignored.
+- `OpenAIUsageMapperTests` — primary ⇒ `id "session"`, secondary ⇒ `id "weekly_all"`;
+  labels for `18000` ⇒ "Session (5h)", `604800` ⇒ "Weekly", `259200` ⇒ "3-day", `nil` ⇒
+  positional fallback; `reset_at` ⇒ `Date`; `nil` window omitted; `nil` rate limit ⇒ `[]`;
+  severity from thresholds.
+- `OpenAIUsageProviderTests` — OpenAI-only behavior: URL path `backend-api/wham/usage`;
+  `ChatGPT-Account-Id` header present when account id known and **absent** when `nil`;
+  `.accessDenied`/`.malformed` ⇒ `.error` (deliberate divergence from Claude's
+  `.keychainDenied`, because there is no Keychain prompt to grant).
+- `CodexAuthIntegrationTests` — opt-in via `RUN_CODEX_INTEGRATION_TESTS=1`: real
+  `FileCodexAuthReader` + real `URLSessionHTTPClient` ⇒ status is `.ok` or `.needsSignIn`
+  (never `.error`). Skipped by default like the Keychain test.
+
+### Fixtures
+- `Tests/UsageCoreTests/Fixtures/usage_response.json` (Claude, existing).
+- `Tests/UsageCoreTests/Fixtures/openai_usage_response.json` (new, synthetic numbers, ids
+  and email replaced with placeholders).
+- `Tests/UsageCoreTests/Fixtures/codex_auth.json` (new, fake tokens; the JWT is built in
+  the test from a known payload, not copied from a real file).
+
+### App and widget verification (manual, not unit-tested)
+The app target stays thin wiring, so it is verified by build + run:
+1. `xcodegen generate && xcodebuild … build` ⇒ `BUILD SUCCEEDED`, 0 warnings.
+2. Run the app: menu bar shows `◐NN%·⬡NN%`; dropdown and floating panel show a "Claude"
+   section and an "OpenAI" section with status/limit rows; "Updated …" line present.
+3. Rename `~/.codex/auth.json` temporarily ⇒ OpenAI section shows "Sign in to Codex CLI
+   first." and the label drops to `◐NN%`; restore the file ⇒ next refresh recovers.
+4. Widget: build only (unsigned widgets do not register; see STATUS.md §4).
+
+### Exit criteria
+- `swift test`: all tests pass, 0 failures; the three opt-in integration tests are skipped
+  by default.
+- Every contract assertion C1–C9 runs for both providers.
+- No fetch, merge, or formatting logic exists outside `UsageCore`.
