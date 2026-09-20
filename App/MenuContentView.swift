@@ -16,7 +16,7 @@ struct MenuContentView: View {
                     ProviderSection(snapshot: snapshot)
                 }
                 if let updated = viewModel.board.latestFetchedAt {
-                    Text("Updated \(updated.formatted(.relative(presentation: .named)))")
+                    (Text("Updated ") + Text(updated, style: .relative) + Text(" ago"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

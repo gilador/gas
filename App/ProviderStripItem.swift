@@ -13,8 +13,9 @@ struct ProviderStripItem: View {
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
             bar
             ProviderIcon(provider: snapshot.provider, size: 14)
-            Text(snapshot.fetchedAt.formatted(.relative(presentation: .numeric, unitsStyle: .narrow)))
+            Text(snapshot.fetchedAt, style: .relative)
                 .font(.system(size: 9)).foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
