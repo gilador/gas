@@ -142,9 +142,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   Sections separated by a thin `Divider`. One "Updated …" line at the bottom from
   `board.latestFetchedAt`. Panel title "Tokens"; quit alert "Quit Tokens?".
   Loading state ("Loading…") when the board is empty. When a provider's status is not `.ok`
-  and it still has limits, the rows dim to `.opacity(0.35)` under a frosted
-  `.ultraThinMaterial` panel showing the status text and a "Data from <date>" line, instead of
-  replacing the rows.
+  and it still has limits, rows dimmed to 40 % with the status text centered on top, no background.
 - **`MenuBarLabelView`**: `Text(UsageFormatter.compactLabel(for: board))`.
 - **`NotificationManager.process(_ board:)`**: for each snapshot with `.ok`, run the
   evaluator with the shared `NotificationState`; title

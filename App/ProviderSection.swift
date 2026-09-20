@@ -23,12 +23,13 @@ struct ProviderSection: View {
             }
         } else if snapshot.limits.isEmpty {
             statusLabel
+                .font(.caption)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         } else {
             ZStack {
-                rows.opacity(0.35)
-                statusPanel
+                rows.opacity(0.4)
+                statusOverlay
             }
         }
     }
@@ -37,24 +38,24 @@ struct ProviderSection: View {
         ForEach(snapshot.limits) { LimitRow(limit: $0) }
     }
 
-    private var statusPanel: some View {
+    private var statusOverlay: some View {
         VStack(spacing: 2) {
             statusLabel
+                .font(.caption.bold())
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             Text("Data from \(snapshot.fetchedAt.formatted(date: .abbreviated, time: .shortened))")
                 .font(.caption2).foregroundStyle(.secondary)
         }
-        .padding(8)
         .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: 8).fill(.ultraThinMaterial))
+        .shadow(color: .black.opacity(0.9), radius: 3)
         .allowsHitTesting(false)
     }
 
     private var statusLabel: some View {
         Label(statusText ?? "", systemImage: statusIcon)
-            .font(.caption).foregroundStyle(statusColor)
+            .foregroundStyle(statusColor)
     }
 
     private var statusText: String? {
@@ -70,7 +71,7 @@ struct ProviderSection: View {
         case .error(let message):
             return message
         case .rateLimited(let until, _):
-            return "Rate limited by \(snapshot.provider.displayName) API. Next try \(until.formatted(.relative(presentation: .named)))"
+            return "Rate limited — next try \(until.formatted(.relative(presentation: .named)))"
         }
     }
 
