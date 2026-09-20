@@ -55,8 +55,9 @@ Response fields used (everything else ignored):
 "xAI").
 
 **`SnapshotStore`** — `save(_ board: UsageBoard)` / `load() -> UsageBoard?` on
-`usage_board.json`. The single-snapshot API and `usage_snapshot.json` are removed. No
-migration: the first refresh runs at launch.
+`usage_board.json`. The single-snapshot API is removed, but `load()` imports the legacy
+`usage_snapshot.json` (previous app version's one `UsageSnapshot`, Claude) once per provider
+missing from the board; the legacy file is read-only and never deleted.
 
 **`CodexAuthReader`** (`Keychain/CodexAuthReader.swift`, folder kept for cohesion with the
 Claude reader):
@@ -138,7 +139,10 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   `.needsSignIn` → "Sign in to \(clientName) first."; `.keychainDenied` text unchanged.
   Sections separated by a thin `Divider`. One "Updated …" line at the bottom from
   `board.latestFetchedAt`. Panel title "Agent Usage"; quit alert "Quit Agent Usage?".
-  Loading state ("Loading…") when the board is empty.
+  Loading state ("Loading…") when the board is empty. When a provider's status is not `.ok`
+  and it still has limits, the rows dim to `.opacity(0.35)` under a frosted
+  `.ultraThinMaterial` panel showing the status text and a "Data from <date>" line, instead of
+  replacing the rows.
 - **`MenuBarLabelView`**: `Text(UsageFormatter.compactLabel(for: board))`.
 - **`NotificationManager.process(_ board:)`**: for each snapshot with `.ok`, run the
   evaluator with the shared `NotificationState`; title

@@ -54,6 +54,7 @@ refresh the token; expired/401 → stale state. Response fields used: `rate_limi
   `ProviderSection`, `MenuBarLabelView`+`UsageFormatter`, `NotificationManager`, `PreferencesView`,
   `DesktopPanelController`+`DesktopPanelView`). The menu and desktop panel render stacked Claude and
   OpenAI sections via `ProviderSection`; menu bar label is compact multi-provider, e.g. `◐42%|⬡52%` (a provider with no data shows `◐—`).
+  A provider with a non-`.ok` status keeps its dimmed rows visible under a frosted `.ultraThinMaterial` status panel instead of hiding them.
   Thin wiring over `UsageCore`.
 - **`Widget/`** — `AgentUsageWidget` extension (TimelineProvider reads the App Group snapshot).
 - **`project.yml`** — XcodeGen source of truth → generates `AgentUsage.xcodeproj` (git-ignored).

@@ -9,39 +9,96 @@ struct ProviderSection: View {
             Text(snapshot.provider.displayName)
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
-            statusRow
-            if snapshot.limits.isEmpty {
-                if snapshot.status == .ok {
-                    Text("No usage data.").font(.caption).foregroundStyle(.secondary)
-                }
-            } else {
-                ForEach(snapshot.limits) { LimitRow(limit: $0) }
-            }
+            content
         }
     }
 
     @ViewBuilder
-    private var statusRow: some View {
+    private var content: some View {
+        if snapshot.status == .ok {
+            if snapshot.limits.isEmpty {
+                Text("No usage data.").font(.caption).foregroundStyle(.secondary)
+            } else {
+                rows
+            }
+        } else if snapshot.limits.isEmpty {
+            statusLabel
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            ZStack {
+                rows.opacity(0.35)
+                statusPanel
+            }
+        }
+    }
+
+    private var rows: some View {
+        ForEach(snapshot.limits) { LimitRow(limit: $0) }
+    }
+
+    private var statusPanel: some View {
+        VStack(spacing: 2) {
+            statusLabel
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Data from \(snapshot.fetchedAt.formatted(date: .abbreviated, time: .shortened))")
+                .font(.caption2).foregroundStyle(.secondary)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 8).fill(.ultraThinMaterial))
+        .allowsHitTesting(false)
+    }
+
+    private var statusLabel: some View {
+        Label(statusText ?? "", systemImage: statusIcon)
+            .font(.caption).foregroundStyle(statusColor)
+    }
+
+    private var statusText: String? {
         switch snapshot.status {
         case .ok:
-            EmptyView()
+            return nil
         case .stale(let reason):
-            Label(reason, systemImage: "clock.badge.exclamationmark")
-                .font(.caption).foregroundStyle(.orange)
+            return reason
         case .needsSignIn:
-            Label("Sign in to \(snapshot.provider.clientName) first.",
-                  systemImage: "person.crop.circle.badge.questionmark")
-                .font(.caption).foregroundStyle(.orange)
+            return "Sign in to \(snapshot.provider.clientName) first."
         case .keychainDenied:
-            Label("Keychain access denied — grant access.", systemImage: "lock.slash")
-                .font(.caption).foregroundStyle(.red)
+            return "Keychain access denied — grant access."
         case .error(let message):
-            Label(message, systemImage: "exclamationmark.triangle")
-                .font(.caption).foregroundStyle(.red)
+            return message
         case .rateLimited(let until, _):
-            Label("Rate limited by \(snapshot.provider.displayName) API. Next try \(until.formatted(.relative(presentation: .named)))",
-                  systemImage: "hourglass")
-                .font(.caption).foregroundStyle(.orange)
+            return "Rate limited by \(snapshot.provider.displayName) API. Next try \(until.formatted(.relative(presentation: .named)))"
+        }
+    }
+
+    private var statusIcon: String {
+        switch snapshot.status {
+        case .ok:
+            return ""
+        case .stale:
+            return "clock.badge.exclamationmark"
+        case .needsSignIn:
+            return "person.crop.circle.badge.questionmark"
+        case .keychainDenied:
+            return "lock.slash"
+        case .error:
+            return "exclamationmark.triangle"
+        case .rateLimited:
+            return "hourglass"
+        }
+    }
+
+    private var statusColor: Color {
+        switch snapshot.status {
+        case .ok:
+            return .primary
+        case .stale, .needsSignIn, .rateLimited:
+            return .orange
+        case .keychainDenied, .error:
+            return .red
         }
     }
 }
