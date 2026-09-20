@@ -178,6 +178,26 @@ off while OpenAI keeps polling on its own schedule. A fresh `.rateLimited` resul
 before the usual `mergingLastGood` merge, so limits and `fetchedAt` from the last good fetch
 are preserved.
 
+## Claude local usage via the status line bridge
+
+Claude Code's status line command receives a JSON object with
+`rate_limits.five_hour.{used_percentage,resets_at}` and `rate_limits.seven_day.{used_percentage,resets_at}`
+(`resets_at` is Unix epoch seconds; either window, or `rate_limits` itself, may be absent). A bridge
+script (App layer) saves that JSON verbatim to `<container>/claude_statusline.json` on every status
+line invocation.
+
+`ClaudeStatuslineReader` (`Providers/Claude/ClaudeStatuslineReader.swift`) reads that file and parses it
+into a `ClaudeLocalUsage` (`fiveHour`/`sevenDay` windows plus `updatedAt`, the file's modification date).
+`ClaudeLocalUsageMapper` maps it to the same `UsageLimit` shape as the network path (`session` / "Session
+(5h)", `weekly_all` / "Weekly").
+
+`ClaudeUsageProvider` checks the local file first: when it exists and is no older than `localMaxAge`
+(one hour by default), the snapshot is built from it (`fetchedAt` = the file's modification date) and the
+Anthropic `/usage` endpoint is never called. The endpoint is only a fallback for a missing or stale local
+file. `UsageProvider.servesLocally` reports whether the local file is currently fresh; `UsageRefresher`
+skips its normal `.rateLimited(until:)` backoff for a provider that `servesLocally`, since it can answer
+from disk without touching the rate-limited endpoint.
+
 ## Out of scope
 
 Per-provider enable/disable in Settings (parked in the rich-settings spec), token refresh,

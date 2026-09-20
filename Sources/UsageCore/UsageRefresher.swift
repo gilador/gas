@@ -4,6 +4,7 @@ public enum UsageRefresher {
     public static func refresh(_ board: UsageBoard, providers: [any UsageProvider],
                                now: Date = Date()) async -> UsageBoard {
         let dueProviders = providers.filter { provider in
+            guard !provider.servesLocally else { return true }
             guard case .rateLimited(let until, _)? = board.snapshot(for: provider.id)?.status else { return true }
             return until <= now
         }

@@ -70,9 +70,15 @@ struct StubCodexAuthReader: CodexAuthReader, @unchecked Sendable {
     func readCodexAuth() throws -> CodexAuth { try result.get() }
 }
 
+struct StubClaudeLocalUsageReader: ClaudeLocalUsageReader {
+    let result: ClaudeLocalUsage?
+    func readLocalUsage() -> ClaudeLocalUsage? { result }
+}
+
 final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
     let id: ProviderID
     let result: Result<UsageSnapshot, Error>
+    var servesLocally = false
     private let lock = NSLock()
     private var _calls = 0
     var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }

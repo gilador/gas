@@ -83,6 +83,18 @@ final class UsageRefresherTests: XCTestCase {
         XCTAssertEqual(openai.calls, 1)
     }
 
+    func testRateLimitedProviderThatServesLocallyIsFetchedAnyway() async {
+        let previous = UsageBoard(snapshots: [
+            snap(.claude, limits: [limit(40)], fetchedAt: 100,
+                status: .rateLimited(until: now.addingTimeInterval(60), wait: 900))
+        ])
+        let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude, limits: [limit(99)])))
+        claude.servesLocally = true
+        let board = await UsageRefresher.refresh(previous, providers: [claude], now: now)
+        XCTAssertEqual(claude.calls, 1)
+        XCTAssertEqual(board.snapshot(for: .claude)?.limits, [limit(99)])
+    }
+
     func testRateLimitedProviderIsFetchedAfterDeadline() async {
         let previous = UsageBoard(snapshots: [
             snap(.claude, limits: [limit(40)], fetchedAt: 100,

@@ -28,4 +28,20 @@ final class ProviderRegistryTests: XCTestCase {
             XCTAssertEqual(snap.status, .needsSignIn, "\(provider.id)")
         }
     }
+
+    func testClaudeLocalReaderIsWiredToTheClaudeProvider() async throws {
+        let local = ClaudeLocalUsage(fiveHour: .init(usedPercentage: 20, resetsAt: nil),
+                                     sevenDay: nil, updatedAt: Date())
+        let registry = ProviderRegistry.makeDefault(
+            tokenReader: StubTokenReader(result: .failure(TokenReaderError.notFound)),
+            codexAuthReader: StubCodexAuthReader(result: .failure(TokenReaderError.notFound)),
+            httpClient: SpyHTTPClient(),
+            claudeBaseURL: URL(string: "https://api.anthropic.com")!,
+            openAIBaseURL: URL(string: "https://chatgpt.com")!,
+            claudeLocalReader: StubClaudeLocalUsageReader(result: local))
+        let claude = registry.providers.first { $0.id == .claude }!
+        let snap = try await claude.fetch()
+        XCTAssertEqual(snap.status, .ok)
+        XCTAssertEqual(snap.limits.map(\.id), ["session"])
+    }
 }
