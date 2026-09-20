@@ -74,20 +74,11 @@ struct LimitRow: View {
                 Spacer()
                 Text("\(Int(limit.percentUsed.rounded()))%").font(.callout.monospacedDigit())
             }
-            ProgressView(value: min(limit.percentUsed, 100), total: 100)
-                .tint(color(for: limit.severity))
+            LimitBar(fraction: limit.percentUsed / 100, color: LimitPalette.color(for: limit))
             if let reset = limit.resetsAt {
                 Text("Resets \(reset.formatted(.relative(presentation: .named)))")
                     .font(.caption2).foregroundStyle(.secondary)
             }
-        }
-    }
-
-    private func color(for severity: Severity) -> Color {
-        switch severity {
-        case .normal: return .green
-        case .warning: return .orange
-        case .critical: return .red
         }
     }
 }

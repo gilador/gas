@@ -38,12 +38,12 @@ struct ProviderStripItem: View {
             Capsule().fill(.white.opacity(0.15))
             if let tightest {
                 Capsule()
-                    .fill(color(for: tightest.severity))
+                    .fill(LimitPalette.color(for: tightest))
                     .frame(height: Self.barSize.height * min(tightest.percentUsed, 100) / 100)
             }
             if let other {
                 Rectangle()
-                    .fill(.white)
+                    .fill(LimitPalette.color(for: other))
                     .frame(width: Self.barSize.width + 6, height: 2)
                     .offset(y: -(Self.barSize.height * min(other.percentUsed, 100) / 100))
             }
@@ -104,14 +104,6 @@ struct ProviderStripItem: View {
         case .ok: return .primary
         case .stale, .needsSignIn, .rateLimited: return .orange
         case .keychainDenied, .error: return .red
-        }
-    }
-
-    private func color(for severity: Severity) -> Color {
-        switch severity {
-        case .normal: return .green
-        case .warning: return .orange
-        case .critical: return .red
         }
     }
 }
