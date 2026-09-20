@@ -136,6 +136,7 @@ Tabbed Settings window (General / Providers enable-disable / Notifications toggl
 
 ## 6. Gotchas / lessons (so the next session doesn't relearn them)
 
+- **Unsigned builds must not touch the App Group container.** On this macOS, opening a file in `~/Library/Group Containers/group.com.gilad.agentusage/` from an unsigned process blocks on a privacy prompt (it hung the app at launch with a locked screen). The app stores its board in `~/Library/Application Support/Tokens/` unless team-signed (`StorageLocation`). The widget still reads the group container, which only works signed.
 - **`swift test` can hang** on integration tests that touch real system services: the Keychain
   reader test and the App Group container test are **env-gated** (opt-in via
   `RUN_KEYCHAIN_INTEGRATION_TESTS` / `RUN_APP_GROUP_INTEGRATION_TESTS`) precisely because

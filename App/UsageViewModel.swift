@@ -33,7 +33,7 @@ final class UsageViewModel: ObservableObject {
             httpClient: URLSessionHTTPClient(),
             claudeBaseURL: claudeBase,
             openAIBaseURL: openAIBase)
-        self.store = SnapshotStore(appGroupID: Self.appGroupID)
+        self.store = SnapshotStore(containerURL: StorageLocation.containerURL(appGroupID: Self.appGroupID))
         self.notifications = NotificationManager()
         self.board = store.load() ?? UsageBoard()
         notifications.requestAuthorization()

@@ -1,7 +1,6 @@
 import Foundation
 import UserNotifications
 import UsageCore
-import Security
 
 final class NotificationManager {
     /// The notification center is optional and only obtained when the app is
@@ -15,7 +14,7 @@ final class NotificationManager {
     private let stateKey = "notificationState"
 
     init() {
-        center = Self.isTeamSigned ? UNUserNotificationCenter.current() : nil
+        center = CodeSignature.isTeamSigned ? UNUserNotificationCenter.current() : nil
     }
 
     func requestAuthorization() {
@@ -61,19 +60,5 @@ final class NotificationManager {
         if let data = try? JSONEncoder().encode(state) {
             defaults.set(data, forKey: stateKey)
         }
-    }
-
-    /// Whether the running binary carries a real team identifier in its code
-    /// signature. Ad-hoc / unsigned builds have a nil team identifier, in which
-    /// case we must avoid UNUserNotificationCenter entirely (it aborts async).
-    private static var isTeamSigned: Bool {
-        var codeRef: SecCode?
-        guard SecCodeCopySelf(SecCSFlags(), &codeRef) == errSecSuccess, let codeRef else { return false }
-        var staticRef: SecStaticCode?
-        guard SecCodeCopyStaticCode(codeRef, SecCSFlags(), &staticRef) == errSecSuccess, let staticRef else { return false }
-        var infoRef: CFDictionary?
-        guard SecCodeCopySigningInformation(staticRef, SecCSFlags(rawValue: kSecCSSigningInformation), &infoRef) == errSecSuccess,
-              let info = infoRef as? [String: Any] else { return false }
-        return info[kSecCodeInfoTeamIdentifier as String] != nil
     }
 }
