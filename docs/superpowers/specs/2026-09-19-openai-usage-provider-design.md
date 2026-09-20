@@ -134,7 +134,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   registry.providers)`, then save, `notifications.process(board)`, reload widget timelines.
   Registry gets `FileCodexAuthReader()` and the `CHATGPT_BASE_URL` override. No fetch or
   merge logic lives in the app target.
-- **`MenuContentView`** and **`DesktopPanelView`**: `ForEach(board.snapshots)` renders a
+- **`MenuContentView`**: `ForEach(board.snapshots)` renders a
   `ProviderSection` (shared view, `App/ProviderSection.swift`): header
   `Text(provider.displayName).font(.caption.bold())`, status row, then `LimitRow`s, or
   "No usage data." when `.ok` with no limits. Status text is provider-aware:
@@ -143,6 +143,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   `board.latestFetchedAt`. Panel title "Tokens"; quit alert "Quit Tokens?".
   Loading state ("Loading…") when the board is empty. When a provider's status is not `.ok`
   and it still has limits, rows dimmed to 40 % with the status text centered on top, no background.
+  The floating panel (`DesktopPanelView`) is a 72-pt-wide vertical strip, one thin bar per provider (tightest limit, tick for the other window), percent above, glyph and data age below, hover for the full breakdown; stale/rate-limited providers get a frosted glass with a status icon.
 - **`MenuBarLabelView`**: `Text(UsageFormatter.compactLabel(for: board))`.
 - **`NotificationManager.process(_ board:)`**: for each snapshot with `.ok`, run the
   evaluator with the shared `NotificationState`; title

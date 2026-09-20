@@ -52,9 +52,10 @@ refresh the token; expired/401 → stale state. Response fields used: `rate_limi
   `FileCodexAuthReader` (read-only `~/.codex/auth.json`); `ProviderRegistry`.
 - **`App/`** — menu bar app (`AgentUsageApp`, `UsageViewModel`, `MenuContentView`+`LimitRow`,
   `ProviderSection`, `MenuBarLabelView`+`UsageFormatter`, `NotificationManager`, `PreferencesView`,
-  `DesktopPanelController`+`DesktopPanelView`). The menu and desktop panel render stacked Claude and
+  `DesktopPanelController`+`DesktopPanelView`). The menu renders stacked Claude and
   OpenAI sections via `ProviderSection`; menu bar label is compact multi-provider, e.g. `◐42%|⬡52%` (a provider with no data shows `◐—`).
   A provider with a non-`.ok` status keeps its rows dimmed to 40 % with the status text centered on top, no background.
+  The floating panel is a 72-pt-wide vertical strip, one thin bar per provider (tightest limit, tick for the other window), percent above, glyph and data age below, hover for the full breakdown; stale/rate-limited providers get a frosted glass with a status icon.
   Thin wiring over `UsageCore`.
 - **`Widget/`** — `AgentUsageWidget` extension (TimelineProvider reads the App Group snapshot).
 - **`project.yml`** — XcodeGen source of truth → generates `AgentUsage.xcodeproj` (git-ignored).

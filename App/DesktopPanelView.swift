@@ -6,13 +6,12 @@ struct DesktopPanelView: View {
     let onSettings: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text("Tokens").font(.caption.bold())
+        VStack(spacing: 6) {
+            HStack {
                 Spacer()
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
-                        .font(.caption)
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -20,8 +19,9 @@ struct DesktopPanelView: View {
             }
             content
         }
-        .padding(14)
-        .frame(width: 240, alignment: .topLeading)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 10)
+        .frame(width: 72, alignment: .top)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(red: 0.12, green: 0.22, blue: 0.34))
@@ -36,11 +36,13 @@ struct DesktopPanelView: View {
     @ViewBuilder
     private var content: some View {
         if viewModel.board.isEmpty {
-            Text("Loading…").font(.caption).foregroundStyle(.secondary)
+            Text("…").font(.caption).foregroundStyle(.secondary)
         } else {
             ForEach(Array(viewModel.board.snapshots.enumerated()), id: \.element.provider) { index, snapshot in
-                if index > 0 { Divider() }
-                ProviderSection(snapshot: snapshot)
+                if index > 0 {
+                    Rectangle().fill(.white.opacity(0.15)).frame(width: 40, height: 1)
+                }
+                ProviderStripItem(snapshot: snapshot)
             }
         }
     }
