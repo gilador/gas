@@ -26,9 +26,12 @@ public struct SnapshotStore {
 
     public func load() -> UsageBoard? {
         var board = decode(UsageBoard.self, from: fileURL) ?? UsageBoard()
-        if let legacy = decode(UsageSnapshot.self, from: legacyURL),
-           board.snapshot(for: legacy.provider) == nil {
-            board.replace(legacy)
+        if let legacy = decode(UsageSnapshot.self, from: legacyURL) {
+            if let current = board.snapshot(for: legacy.provider) {
+                board.replace(current.mergingLastGood(previous: legacy))
+            } else {
+                board.replace(legacy)
+            }
         }
         return board.isEmpty ? nil : board
     }

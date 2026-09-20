@@ -104,4 +104,29 @@ final class SnapshotStoreTests: XCTestCase {
         let store = SnapshotStore(appGroupID: "group.com.gilad.agentusage")
         XCTAssertNil(store.load())
     }
+
+    func testLegacyLimitsFillAnEmptyRateLimitedEntry() throws {
+        let dir = try tempDir()
+        let store = SnapshotStore(containerURL: dir)
+        let current = UsageSnapshot(provider: .claude, fetchedAt: Date(timeIntervalSince1970: 900), limits: [],
+                                    status: .rateLimited(until: Date(timeIntervalSince1970: 4500), wait: 3600))
+        try store.save(UsageBoard(snapshots: [current]))
+        let legacy = UsageSnapshot(provider: .claude, fetchedAt: Date(timeIntervalSince1970: 500),
+                                   limits: [limit("session", 61), limit("weekly_all", 16)], status: .stale(reason: "old"))
+        try writeLegacy(legacy, in: dir)
+        let loaded = store.load()?.snapshot(for: .claude)
+        XCTAssertEqual(loaded?.limits, legacy.limits)
+        XCTAssertEqual(loaded?.fetchedAt, Date(timeIntervalSince1970: 500))
+        XCTAssertEqual(loaded?.status, current.status)
+    }
+
+    func testLegacyDoesNotOverrideAnOkEntryWithoutLimits() throws {
+        let dir = try tempDir()
+        let store = SnapshotStore(containerURL: dir)
+        let current = UsageSnapshot(provider: .claude, fetchedAt: Date(timeIntervalSince1970: 900), limits: [], status: .ok)
+        try store.save(UsageBoard(snapshots: [current]))
+        try writeLegacy(UsageSnapshot(provider: .claude, fetchedAt: Date(timeIntervalSince1970: 500),
+                                      limits: [limit("session", 61)], status: .ok), in: dir)
+        XCTAssertEqual(store.load()?.snapshot(for: .claude), current)
+    }
 }

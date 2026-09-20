@@ -57,7 +57,9 @@ Response fields used (everything else ignored):
 **`SnapshotStore`** — `save(_ board: UsageBoard)` / `load() -> UsageBoard?` on
 `usage_board.json`. The single-snapshot API is removed, but `load()` imports the legacy
 `usage_snapshot.json` (previous app version's one `UsageSnapshot`, Claude) once per provider
-missing from the board; the legacy file is read-only and never deleted.
+missing from the board; if the board already has an entry for that provider, the entry is
+replaced by `current.mergingLastGood(previous: legacy)` so an empty stale/rate-limited entry
+gains the legacy limits and their timestamp; the legacy file is read-only and never deleted.
 
 **`CodexAuthReader`** (`Keychain/CodexAuthReader.swift`, folder kept for cohesion with the
 Claude reader):
@@ -138,7 +140,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   "No usage data." when `.ok` with no limits. Status text is provider-aware:
   `.needsSignIn` → "Sign in to \(clientName) first."; `.keychainDenied` text unchanged.
   Sections separated by a thin `Divider`. One "Updated …" line at the bottom from
-  `board.latestFetchedAt`. Panel title "Agent Usage"; quit alert "Quit Agent Usage?".
+  `board.latestFetchedAt`. Panel title "Tokens"; quit alert "Quit Tokens?".
   Loading state ("Loading…") when the board is empty. When a provider's status is not `.ok`
   and it still has limits, the rows dim to `.opacity(0.35)` under a frosted
   `.ultraThinMaterial` panel showing the status text and a "Data from <date>" line, instead of
@@ -153,7 +155,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
 - `UsageEntry.board: UsageBoard?`; provider reads `store.load()`.
 - `.systemMedium`: for each provider in the board, a header line and the `session` /
   `weekly_all` rows. `.systemSmall`: one row per provider showing the tightest limit.
-- Display name and description: "Agent Usage" / "Plan-quota usage for Claude and OpenAI."
+- Display name and description: "Tokens" / "Plan-quota usage for Claude and OpenAI."
 - Stale marker: `latestFetchedAt` older than 30 min.
 
 ## Rate-limit backoff

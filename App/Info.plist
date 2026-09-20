@@ -3,7 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>AgentUsage</string>
+    <string>Tokens</string>
+    <key>CFBundleDisplayName</key>
+    <string>Tokens</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSUIElement</key>

@@ -8,7 +8,7 @@ struct DesktopPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text("Agent Usage").font(.caption.bold())
+                Text("Tokens").font(.caption.bold())
                 Spacer()
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
