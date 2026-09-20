@@ -49,7 +49,8 @@ public struct OpenAIUsageProvider: UsageProvider {
                 return snapshot(now, .stale(reason: "Unauthorized — open Codex to refresh"))
             }
             if response.statusCode == 429 {
-                return snapshot(now, .stale(reason: "Rate limited — retrying"))
+                let retryAfter = RetryAfter.seconds(from: response)
+                return snapshot(now, .rateLimited(until: now.addingTimeInterval(retryAfter), wait: retryAfter))
             }
             guard (200..<300).contains(response.statusCode) else {
                 return snapshot(now, .error(message: "HTTP \(response.statusCode)"))

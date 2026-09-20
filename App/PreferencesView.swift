@@ -9,11 +9,8 @@ struct PreferencesView: View {
 
     @AppStorage("warningThreshold") private var warningThreshold = 80.0
     @AppStorage("criticalThreshold") private var criticalThreshold = 95.0
-    @AppStorage("refreshInterval") private var refreshInterval = 780.0   // default 13 min
+    @AppStorage("refreshInterval") private var refreshInterval = RefreshIntervals.defaultSeconds
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
-
-    /// Fibonacci-minute refresh stops, stored/used as seconds.
-    private static let fibSeconds = [1, 2, 3, 5, 8, 13, 21, 34, 55].map { $0 * 60 }
 
     var body: some View {
         Form {
@@ -32,7 +29,7 @@ struct PreferencesView: View {
             Section {
                 HStack {
                     Text("Refresh")
-                    FibonacciIntervalSlider(seconds: $refreshInterval, fibSeconds: Self.fibSeconds)
+                    TickIntervalSlider(seconds: $refreshInterval, stopsSeconds: RefreshIntervals.stopsSeconds)
                     Text("\(Int((refreshInterval / 60).rounded())) min")
                         .monospacedDigit()
                         .frame(width: 52, alignment: .trailing)
@@ -56,20 +53,20 @@ struct PreferencesView: View {
     }
 }
 
-/// An NSSlider with tick marks at each Fibonacci-minute stop; snaps to ticks only.
-struct FibonacciIntervalSlider: NSViewRepresentable {
+/// An NSSlider with a tick mark per stop; snaps to ticks only.
+struct TickIntervalSlider: NSViewRepresentable {
     @Binding var seconds: Double
-    let fibSeconds: [Int]
+    let stopsSeconds: [Double]
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeNSView(context: Context) -> NSSlider {
         let slider = NSSlider(value: 0,
                               minValue: 0,
-                              maxValue: Double(max(fibSeconds.count - 1, 1)),
+                              maxValue: Double(max(stopsSeconds.count - 1, 1)),
                               target: context.coordinator,
                               action: #selector(Coordinator.valueChanged(_:)))
-        slider.numberOfTickMarks = fibSeconds.count
+        slider.numberOfTickMarks = stopsSeconds.count
         slider.allowsTickMarkValuesOnly = true
         slider.tickMarkPosition = .below
         slider.doubleValue = Double(index(for: seconds))
@@ -84,20 +81,20 @@ struct FibonacciIntervalSlider: NSViewRepresentable {
     private func index(for seconds: Double) -> Int {
         var best = 0
         var bestDiff = Double.greatestFiniteMagnitude
-        for (i, value) in fibSeconds.enumerated() {
-            let diff = abs(Double(value) - seconds)
+        for (i, value) in stopsSeconds.enumerated() {
+            let diff = abs(value - seconds)
             if diff < bestDiff { bestDiff = diff; best = i }
         }
         return best
     }
 
     final class Coordinator: NSObject {
-        var parent: FibonacciIntervalSlider
-        init(_ parent: FibonacciIntervalSlider) { self.parent = parent }
+        var parent: TickIntervalSlider
+        init(_ parent: TickIntervalSlider) { self.parent = parent }
 
         @objc func valueChanged(_ sender: NSSlider) {
-            let idx = min(max(Int(sender.doubleValue.rounded()), 0), parent.fibSeconds.count - 1)
-            parent.seconds = Double(parent.fibSeconds[idx])
+            let idx = min(max(Int(sender.doubleValue.rounded()), 0), parent.stopsSeconds.count - 1)
+            parent.seconds = parent.stopsSeconds[idx]
         }
     }
 }

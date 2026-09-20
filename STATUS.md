@@ -12,9 +12,9 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 
 | Component | State | Verified |
 |---|---|---|
-| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **128 passed / 3 skipped / 0 failed (131 executed)** |
-| OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **128 passed / 3 skipped / 0 failed (131 executed)** |
-| Menu bar app (`MenuBarExtra`, live 60s refresh, dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
+| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **152 passed / 3 skipped / 0 failed (155 executed)** |
+| OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **152 passed / 3 skipped / 0 failed (155 executed)** |
+| Menu bar app (`MenuBarExtra`, 15-minute refresh (slider 15–60 min), dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
 | WidgetKit widget (`AgentUsageWidget`) | **Built (code)** | Builds; **does not register** unsigned (see §4) |
 | Desktop panel (pinned NSPanel, draggable, toggle) | **Done** | Builds; runs unsigned; toggle in menu |
 | Threshold notifications (80% / 95%, de-duped) | **Built** | Gated off unless team-signed (see §4) |
@@ -29,6 +29,9 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 `Claude Code-credentials` → `claudeAiOauth.accessToken`. Response is a top-level object whose
 `limits` array is the source of truth (kinds `session` / `weekly_all` / `weekly_scoped`;
 `resets_at` is an ISO-8601 string). We never write/refresh the token; expired/401 → stale state.
+The usage endpoint rate-limits at a few calls per hour and every rejected call counts; the app
+honors `Retry-After` per provider and backs off (see the "Rate-limit backoff" section of
+`docs/superpowers/specs/2026-09-19-openai-usage-provider-design.md`).
 
 **OpenAI (ChatGPT/Codex):** `GET https://chatgpt.com/backend-api/wham/usage`, headers
 `Authorization: Bearer <access_token>` + `ChatGPT-Account-Id: <account_id>`. Credentials read
@@ -63,7 +66,7 @@ refresh the token; expired/401 → stale state. Response fields used: `rate_limi
 
 ```bash
 # Unit tests (fast, no Xcode):
-swift test                          # 128 passed / 3 skipped / 0 failed (131 executed)
+swift test                          # 152 passed / 3 skipped / 0 failed (155 executed)
 #   opt-in integration tests (need a real keychain / entitlement / Codex auth file; hang or prompt otherwise):
 #   RUN_KEYCHAIN_INTEGRATION_TESTS=1   RUN_APP_GROUP_INTEGRATION_TESTS=1   RUN_CODEX_INTEGRATION_TESTS=1
 

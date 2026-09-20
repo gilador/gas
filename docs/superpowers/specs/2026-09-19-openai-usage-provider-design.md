@@ -152,6 +152,26 @@ Every provider in `displayOrder` is always shown; a provider with no data render
 - Display name and description: "Agent Usage" / "Plan-quota usage for Claude and OpenAI."
 - Stale marker: `latestFetchedAt` older than 30 min.
 
+## Rate-limit backoff
+
+Anthropic's usage endpoint allows only a few calls per hour per token, and every rejected
+call counts against that budget. `FetchStatus.rateLimited(until: Date, wait: TimeInterval)`
+replaces the old `.stale` mapping for HTTP 429 on both providers: the provider parses
+`Retry-After` (`Network/RetryAfter.swift`, integer-seconds form only; a missing header or an
+HTTP-date form yields `0` and lets the policy decide).
+
+`RateLimitBackoff.wait(retryAfter:previous:)` picks the wait: the server's `Retry-After`
+wins when present (capped at 2 h); otherwise it starts at 15 min and doubles on each
+consecutive rate limit for that provider, capped at 2 h.
+
+`UsageRefresher.refresh` takes a `now: Date = Date()` parameter. For each provider, if the
+board's current entry is `.rateLimited(until:, _)` and `until > now`, the provider is
+**skipped** entirely (no `fetch()` call, entry untouched) — this is what keeps Claude backing
+off while OpenAI keeps polling on its own schedule. A fresh `.rateLimited` result has its
+`wait`/`until` normalized through `RateLimitBackoff` (using the board's previous status)
+before the usual `mergingLastGood` merge, so limits and `fetchedAt` from the last good fetch
+are preserved.
+
 ## Out of scope
 
 Per-provider enable/disable in Settings (parked in the rich-settings spec), token refresh,
@@ -194,7 +214,7 @@ classes so failures name the provider):
 | C4 | `.ok` with `validFixture` ⇒ `limits.count == expectedLimitCount`, every `severity` matches `Severity.from` for the configured thresholds | mapper wired with thresholds |
 | C5 | `.notFound` ⇒ `.needsSignIn` | "sign in to <client>" UX |
 | C6 | `.expired` ⇒ `.stale`, and **zero** HTTP calls (spy) | no wasted/unauthorized calls |
-| C7 | HTTP 401 ⇒ `.stale`; 429 ⇒ `.stale`; 500 ⇒ `.error`; `URLError` ⇒ `.stale`; bad JSON body ⇒ `.error` | last-good merge relies on `.stale`/`.error` split |
+| C7 | HTTP 401 ⇒ `.stale`; 429 ⇒ `.rateLimited`; 500 ⇒ `.error`; `URLError` ⇒ `.stale`; bad JSON body ⇒ `.error` | last-good merge relies on the `.stale`/`.error`/`.rateLimited` split |
 | C8 | request carries `Authorization: Bearer <token>` and exactly one GET | auth plumbing |
 | C9 | `fetchedAt` is within the test's time window | "Updated …" line |
 

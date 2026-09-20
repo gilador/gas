@@ -40,4 +40,21 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let snap = try await provider(token: .success(token), client: SpyHTTPClient(statusCode: 401)).fetch()
         XCTAssertEqual(snap.status, .stale(reason: "Unauthorized — open Claude Code to refresh"))
     }
+
+    func test429WithRetryAfterIsRateLimited() async throws {
+        let token = ClaudeToken(accessToken: "t", expiresAt: nil)
+        let client = SpyHTTPClient(statusCode: 429, responseHeaders: ["Retry-After": "850"])
+        let snap = try await provider(token: .success(token), client: client).fetch()
+        guard case .rateLimited(let until, let wait) = snap.status else { return XCTFail("expected .rateLimited, got \(snap.status)") }
+        XCTAssertEqual(wait, 850)
+        XCTAssertEqual(until.timeIntervalSince(snap.fetchedAt), 850, accuracy: 0.001)
+        XCTAssertTrue(snap.limits.isEmpty)
+    }
+
+    func test429WithoutRetryAfterHasZeroWait() async throws {
+        let token = ClaudeToken(accessToken: "t", expiresAt: nil)
+        let snap = try await provider(token: .success(token), client: SpyHTTPClient(statusCode: 429)).fetch()
+        guard case .rateLimited(_, let wait) = snap.status else { return XCTFail("expected .rateLimited") }
+        XCTAssertEqual(wait, 0)
+    }
 }

@@ -69,4 +69,19 @@ final class OpenAIUsageProviderTests: XCTestCase {
     func testProviderIDIsOpenAI() {
         XCTAssertEqual(provider(auth: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).id, .openai)
     }
+
+    func test429WithRetryAfterIsRateLimited() async throws {
+        let client = SpyHTTPClient(statusCode: 429, responseHeaders: ["Retry-After": "850"])
+        let snap = try await provider(auth: .success(validAuth()), client: client).fetch()
+        guard case .rateLimited(let until, let wait) = snap.status else { return XCTFail("expected .rateLimited, got \(snap.status)") }
+        XCTAssertEqual(wait, 850)
+        XCTAssertEqual(until.timeIntervalSince(snap.fetchedAt), 850, accuracy: 0.001)
+        XCTAssertTrue(snap.limits.isEmpty)
+    }
+
+    func test429WithoutRetryAfterHasZeroWait() async throws {
+        let snap = try await provider(auth: .success(validAuth()), client: SpyHTTPClient(statusCode: 429)).fetch()
+        guard case .rateLimited(_, let wait) = snap.status else { return XCTFail("expected .rateLimited") }
+        XCTAssertEqual(wait, 0)
+    }
 }

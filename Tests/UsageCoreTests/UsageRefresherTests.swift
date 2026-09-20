@@ -65,4 +65,70 @@ final class UsageRefresherTests: XCTestCase {
         _ = await UsageRefresher.refresh(UsageBoard(), providers: providers)
         XCTAssertLessThan(Date().timeIntervalSince(start), 0.7)
     }
+
+    private let now = Date(timeIntervalSince1970: 10_000)
+
+    func testRateLimitedProviderIsSkippedUntilDeadline() async {
+        let previous = UsageBoard(snapshots: [
+            snap(.claude, limits: [limit(40)], fetchedAt: 100,
+                status: .rateLimited(until: now.addingTimeInterval(60), wait: 900))
+        ])
+        let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude, limits: [limit(99)])))
+        let openai = CountingUsageProvider(id: .openai, result: .success(snap(.openai, limits: [limit(50)])))
+        let board = await UsageRefresher.refresh(previous, providers: [claude, openai], now: now)
+        XCTAssertEqual(claude.calls, 0)
+        XCTAssertEqual(board.snapshot(for: .claude)?.status,
+                       .rateLimited(until: now.addingTimeInterval(60), wait: 900))
+        XCTAssertEqual(board.snapshot(for: .claude)?.limits, [limit(40)])
+        XCTAssertEqual(openai.calls, 1)
+    }
+
+    func testRateLimitedProviderIsFetchedAfterDeadline() async {
+        let previous = UsageBoard(snapshots: [
+            snap(.claude, limits: [limit(40)], fetchedAt: 100,
+                status: .rateLimited(until: now.addingTimeInterval(-1), wait: 900))
+        ])
+        let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude, limits: [limit(99)])))
+        _ = await UsageRefresher.refresh(previous, providers: [claude], now: now)
+        XCTAssertEqual(claude.calls, 1)
+    }
+
+    func testRateLimitedFetchAppliesPolicyAndKeepsLimits() async {
+        let previous = UsageBoard(snapshots: [snap(.claude, limits: [limit(40)], fetchedAt: 100, status: .ok)])
+        let claude = CountingUsageProvider(id: .claude, result: .success(
+            snap(.claude, fetchedAt: 10_000, status: .rateLimited(until: now, wait: 0))))
+        let board = await UsageRefresher.refresh(previous, providers: [claude], now: now)
+        XCTAssertEqual(board.snapshot(for: .claude)?.status,
+                       .rateLimited(until: Date(timeIntervalSince1970: 10_000).addingTimeInterval(900), wait: 900))
+        XCTAssertEqual(board.snapshot(for: .claude)?.limits, [limit(40)])
+        XCTAssertEqual(board.snapshot(for: .claude)?.fetchedAt, Date(timeIntervalSince1970: 100))
+    }
+
+    func testRepeatedRateLimitDoubles() async {
+        let previous = UsageBoard(snapshots: [
+            snap(.claude, limits: [limit(40)], fetchedAt: 100,
+                status: .rateLimited(until: now.addingTimeInterval(-1), wait: 900))
+        ])
+        let claude = CountingUsageProvider(id: .claude, result: .success(
+            snap(.claude, fetchedAt: 10_000, status: .rateLimited(until: now, wait: 0))))
+        let board = await UsageRefresher.refresh(previous, providers: [claude], now: now)
+        guard case .rateLimited(_, let wait) = board.snapshot(for: .claude)?.status else {
+            return XCTFail("expected .rateLimited")
+        }
+        XCTAssertEqual(wait, 1800)
+    }
+
+    func testServerRetryAfterWinsInRefresher() async {
+        let previous = UsageBoard(snapshots: [
+            snap(.claude, limits: [limit(40)], fetchedAt: 100,
+                status: .rateLimited(until: now.addingTimeInterval(-1), wait: 3600))
+        ])
+        let claude = CountingUsageProvider(id: .claude, result: .success(
+            snap(.claude, fetchedAt: 10_000, status: .rateLimited(until: now, wait: 850))))
+        let board = await UsageRefresher.refresh(previous, providers: [claude], now: now)
+        guard case .rateLimited(_, let wait) = board.snapshot(for: .claude)?.status else {
+            return XCTFail("expected .rateLimited")
+        }
+        XCTAssertEqual(wait, 850)
+    }
 }

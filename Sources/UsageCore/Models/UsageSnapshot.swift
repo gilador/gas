@@ -6,6 +6,7 @@ public enum FetchStatus: Codable, Sendable, Equatable {
     case needsSignIn
     case keychainDenied
     case error(message: String)
+    case rateLimited(until: Date, wait: TimeInterval)
 }
 
 public struct UsageSnapshot: Codable, Sendable, Equatable {
@@ -32,7 +33,7 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
         guard let previous, previous.provider == provider,
               !previous.limits.isEmpty, limits.isEmpty else { return self }
         switch status {
-        case .stale, .error:
+        case .stale, .error, .rateLimited:
             return UsageSnapshot(provider: provider, fetchedAt: previous.fetchedAt,
                                  limits: previous.limits, status: status)
         case .ok, .needsSignIn, .keychainDenied:

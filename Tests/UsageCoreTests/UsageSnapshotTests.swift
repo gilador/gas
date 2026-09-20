@@ -82,4 +82,21 @@ final class UsageSnapshotTests: XCTestCase {
         let fetched = snap(limits: [], fetchedAt: 200, status: .stale(reason: "x"))
         XCTAssertEqual(fetched.mergingLastGood(previous: nil), fetched)
     }
+
+    func testRateLimitedStatusCodableRoundTrip() throws {
+        let snap = UsageSnapshot(provider: .claude, fetchedAt: Date(timeIntervalSince1970: 1),
+                                 limits: [], status: .rateLimited(until: Date(timeIntervalSince1970: 900), wait: 900))
+        let data = try JSONEncoder().encode(snap)
+        XCTAssertEqual(try JSONDecoder().decode(UsageSnapshot.self, from: data), snap)
+    }
+
+    func testMergeRateLimitedEmptyKeepsPreviousLimits() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        let fetched = snap(limits: [], fetchedAt: 200,
+                           status: .rateLimited(until: Date(timeIntervalSince1970: 1100), wait: 900))
+        let merged = fetched.mergingLastGood(previous: previous)
+        XCTAssertEqual(merged.limits, previous.limits)
+        XCTAssertEqual(merged.fetchedAt, Date(timeIntervalSince1970: 100))
+        XCTAssertEqual(merged.status, .rateLimited(until: Date(timeIntervalSince1970: 1100), wait: 900))
+    }
 }

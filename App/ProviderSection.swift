@@ -38,6 +38,10 @@ struct ProviderSection: View {
         case .error(let message):
             Label(message, systemImage: "exclamationmark.triangle")
                 .font(.caption).foregroundStyle(.red)
+        case .rateLimited(let until, _):
+            Label("Rate limited by \(snapshot.provider.displayName) API. Next try \(until.formatted(.relative(presentation: .named)))",
+                  systemImage: "hourglass")
+                .font(.caption).foregroundStyle(.orange)
         }
     }
 }

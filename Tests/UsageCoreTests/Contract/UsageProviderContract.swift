@@ -105,11 +105,12 @@ enum UsageProviderContract {
                                     file: StaticString = #filePath, line: UInt = #line) async throws {
         func isStale(_ st: FetchStatus) -> Bool { if case .stale = st { return true }; return false }
         func isError(_ st: FetchStatus) -> Bool { if case .error = st { return true }; return false }
+        func isRateLimited(_ st: FetchStatus) -> Bool { if case .rateLimited = st { return true }; return false }
 
         let status401 = try await s.make(.valid, SpyHTTPClient(statusCode: 401)).fetch().status
         XCTAssertTrue(isStale(status401), "401", file: file, line: line)
         let status429 = try await s.make(.valid, SpyHTTPClient(statusCode: 429)).fetch().status
-        XCTAssertTrue(isStale(status429), "429", file: file, line: line)
+        XCTAssertTrue(isRateLimited(status429), "429", file: file, line: line)
         let status500 = try await s.make(.valid, SpyHTTPClient(statusCode: 500)).fetch().status
         XCTAssertTrue(isError(status500), "500", file: file, line: line)
         let statusURLError = try await s.make(.valid, ThrowingHTTPClient(error: URLError(.notConnectedToInternet))).fetch().status

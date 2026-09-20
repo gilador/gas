@@ -38,13 +38,15 @@ final class SpyHTTPClient: UsageHTTPClient, @unchecked Sendable {
     var calls: [Call] { lock.lock(); defer { lock.unlock() }; return _calls }
     let data: Data
     let statusCode: Int
-    init(data: Data = Data(), statusCode: Int = 200) {
+    let responseHeaders: [String: String]
+    init(data: Data = Data(), statusCode: Int = 200, responseHeaders: [String: String] = [:]) {
         self.data = data
         self.statusCode = statusCode
+        self.responseHeaders = responseHeaders
     }
     func get(_ url: URL, headers: [String: String]) async throws -> (Data, HTTPURLResponse) {
         lock.lock(); _calls.append(Call(url: url, headers: headers)); lock.unlock()
-        let resp = HTTPURLResponse(url: url, statusCode: statusCode, httpVersion: nil, headerFields: nil)!
+        let resp = HTTPURLResponse(url: url, statusCode: statusCode, httpVersion: nil, headerFields: responseHeaders)!
         return (data, resp)
     }
 }
@@ -62,4 +64,14 @@ struct StubUsageProvider: UsageProvider, @unchecked Sendable {
 struct StubCodexAuthReader: CodexAuthReader, @unchecked Sendable {
     let result: Result<CodexAuth, Error>
     func readCodexAuth() throws -> CodexAuth { try result.get() }
+}
+
+final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
+    let id: ProviderID
+    let result: Result<UsageSnapshot, Error>
+    private let lock = NSLock()
+    private var _calls = 0
+    var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }
+    init(id: ProviderID, result: Result<UsageSnapshot, Error>) { self.id = id; self.result = result }
+    func fetch() async throws -> UsageSnapshot { lock.lock(); _calls += 1; lock.unlock(); return try result.get() }
 }

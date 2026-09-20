@@ -12,7 +12,7 @@ final class CodexAuthIntegrationTests: XCTestCase {
                                            baseURL: URL(string: "https://chatgpt.com")!)
         let snap = try await provider.fetch()
         switch snap.status {
-        case .ok, .needsSignIn, .stale: break
+        case .ok, .needsSignIn, .stale, .rateLimited: break
         case .error(let message): XCTFail("unexpected error: \(message)")
         case .keychainDenied: XCTFail("keychainDenied is not a Codex status")
         }
