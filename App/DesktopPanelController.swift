@@ -8,7 +8,7 @@ final class DesktopPanelController {
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
     private var settingsWindow: NSWindow?
-    private static let size = NSSize(width: 72, height: 280)
+    private static let size = NSSize(width: 44, height: 280)
     // nonisolated: immutable Sendable constants referenced from the @Sendable didMove observer closure.
     nonisolated private static let originXKey = "desktopPanelOriginX"
     nonisolated private static let originYKey = "desktopPanelOriginY"

@@ -11,7 +11,7 @@ struct DesktopPanelView: View {
                 Spacer()
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
-                        .font(.system(size: 11))
+                        .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -19,15 +19,15 @@ struct DesktopPanelView: View {
             }
             content
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 4)
         .padding(.vertical, 10)
-        .frame(width: 72, alignment: .top)
+        .frame(width: 44, alignment: .top)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(Color(red: 0.12, green: 0.22, blue: 0.34))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(.white.opacity(0.18), lineWidth: 1)
         )
         .environment(\.colorScheme, .dark)
@@ -40,7 +40,7 @@ struct DesktopPanelView: View {
         } else {
             ForEach(Array(viewModel.board.snapshots.enumerated()), id: \.element.provider) { index, snapshot in
                 if index > 0 {
-                    Rectangle().fill(.white.opacity(0.15)).frame(width: 40, height: 1)
+                    Rectangle().fill(.white.opacity(0.15)).frame(width: 26, height: 1)
                 }
                 ProviderStripItem(snapshot: snapshot)
             }

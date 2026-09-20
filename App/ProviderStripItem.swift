@@ -5,16 +5,16 @@ import UsageCore
 struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
 
-    private static let barSize = CGSize(width: 10, height: 84)
+    private static let barSize = CGSize(width: 8, height: 84)
 
     var body: some View {
         VStack(spacing: 4) {
             Text(percentText)
-                .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                .font(.system(size: 11, weight: .semibold).monospacedDigit())
             bar
-            Text(snapshot.provider.glyph).font(.system(size: 13))
+            Text(snapshot.provider.glyph).font(.system(size: 12))
             Text(snapshot.fetchedAt.formatted(.relative(presentation: .numeric, unitsStyle: .narrow)))
-                .font(.system(size: 10)).foregroundStyle(.secondary)
+                .font(.system(size: 9)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
@@ -44,7 +44,7 @@ struct ProviderStripItem: View {
             if let other {
                 Rectangle()
                     .fill(.white)
-                    .frame(width: Self.barSize.width + 8, height: 2)
+                    .frame(width: Self.barSize.width + 6, height: 2)
                     .offset(y: -(Self.barSize.height * min(other.percentUsed, 100) / 100))
             }
         }
@@ -55,7 +55,7 @@ struct ProviderStripItem: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8).fill(.ultraThinMaterial).opacity(0.85)
             Image(systemName: statusIcon)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(statusColor)
                 .padding(5)
                 .background(RoundedRectangle(cornerRadius: 6).fill(.black.opacity(0.6)))
