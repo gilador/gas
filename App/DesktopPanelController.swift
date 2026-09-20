@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class DesktopPanelController {
     var viewModel: UsageViewModel?
+    var integration: ClaudeCodeIntegration?
 
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
@@ -48,7 +49,7 @@ final class DesktopPanelController {
         guard let viewModel else { return }
         NSApp.activate(ignoringOtherApps: true)
         if settingsWindow == nil {
-            let hosting = NSHostingController(rootView: PreferencesView(viewModel: viewModel))
+            let hosting = NSHostingController(rootView: PreferencesView(viewModel: viewModel, integration: integration ?? ClaudeCodeIntegration()))
             let window = NSWindow(contentViewController: hosting)
             window.title = "Settings"
             window.styleMask = [.titled, .closable]

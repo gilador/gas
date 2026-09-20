@@ -12,7 +12,11 @@ targets:
     type: application
     platform: macOS
     sources:
-      - App
+      - path: App
+        excludes:
+          - "Resources/**"
+      - path: App/Resources
+        buildPhase: resources
     dependencies:
       - package: UsageCore
         product: UsageCore

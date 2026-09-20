@@ -5,6 +5,7 @@ import UsageCore
 
 struct PreferencesView: View {
     @ObservedObject var viewModel: UsageViewModel
+    @ObservedObject var integration: ClaudeCodeIntegration
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("warningThreshold") private var warningThreshold = 80.0
@@ -14,6 +15,19 @@ struct PreferencesView: View {
 
     var body: some View {
         Form {
+            Section("Claude Code") {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(integrationTitle)
+                        Text("Claude Code hands your usage to its status line. Connect lets Tokens read it, so no rate-limited network calls are needed. Reversible.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(isConnected ? "Disconnect" : "Connect") {
+                        if isConnected { integration.disconnect() } else { integration.connect() }
+                    }
+                }
+            }
             Section("Notifications") {
                 HStack {
                     Text("Warning %")
@@ -48,8 +62,20 @@ struct PreferencesView: View {
                 dismiss()
             }
         }
+        .onAppear { integration.refresh() }
         .padding(20)
         .frame(width: 360)
+    }
+
+    private var isConnected: Bool { if case .connected = integration.state { return true }; return false }
+
+    private var integrationTitle: String {
+        switch integration.state {
+        case .notConnected: return "Not connected"
+        case .connected(let lastUpdate?): return "Connected · updated \(lastUpdate.formatted(.relative(presentation: .named)))"
+        case .connected(nil): return "Connected · waiting for the first update"
+        case .failed(let message): return "Failed: \(message)"
+        }
     }
 }
 

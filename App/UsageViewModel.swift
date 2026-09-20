@@ -32,7 +32,8 @@ final class UsageViewModel: ObservableObject {
             codexAuthReader: FileCodexAuthReader(),
             httpClient: URLSessionHTTPClient(),
             claudeBaseURL: claudeBase,
-            openAIBaseURL: openAIBase)
+            openAIBaseURL: openAIBase,
+            claudeLocalReader: ClaudeStatuslineReader(fileURL: StorageLocation.bridgeDirectory.appendingPathComponent("claude_statusline.json")))
         self.store = SnapshotStore(containerURL: StorageLocation.containerURL(appGroupID: Self.appGroupID))
         self.notifications = NotificationManager()
         self.board = store.load() ?? UsageBoard()

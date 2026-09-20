@@ -31,7 +31,10 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 `resets_at` is an ISO-8601 string). We never write/refresh the token; expired/401 → stale state.
 The usage endpoint rate-limits at a few calls per hour and every rejected call counts; the app
 honors `Retry-After` per provider and backs off (see the "Rate-limit backoff" section of
-`docs/superpowers/specs/2026-09-19-openai-usage-provider-design.md`).
+`docs/superpowers/specs/2026-09-19-openai-usage-provider-design.md`). Preferred source: the
+Claude Code status line bridge (Settings → Claude Code → Connect) writes
+`~/Library/Application Support/Tokens/claude_statusline.json`; data younger than 1 h is used
+without any network call. The endpoint is the fallback.
 
 **OpenAI (ChatGPT/Codex):** `GET https://chatgpt.com/backend-api/wham/usage`, headers
 `Authorization: Bearer <access_token>` + `ChatGPT-Account-Id: <account_id>`. Credentials read
@@ -84,6 +87,8 @@ open build/Build/Products/Debug/AgentUsageApp.app
 #     toggle "Show desktop panel" for the desktop card.
 ```
 **Process hygiene:** run ONE `xcodebuild`/`swift test` at a time. If a build/app hangs, `pkill -9 -f xcodebuild` / `pkill -x AgentUsageApp`. (A concurrent-build pileup and a wedged `SWBBuildService` daemon each caused silent hangs during development — see §6.)
+
+**Setup:** Settings → Claude Code → Connect; Disconnect restores the previous status line; backup at `~/.claude/settings.json.tokens-backup`.
 
 ---
 
