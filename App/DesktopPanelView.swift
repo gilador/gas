@@ -3,22 +3,14 @@ import UsageCore
 
 struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
-    let onSettings: () -> Void
+    let onTap: () -> Void
 
     var body: some View {
         VStack(spacing: 6) {
-            HStack {
-                Spacer()
-                Button(action: onSettings) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Settings")
-            }
             content
         }
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
         .padding(.horizontal, 4)
         .padding(.vertical, 10)
         .frame(width: 44, alignment: .top)

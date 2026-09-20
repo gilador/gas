@@ -8,6 +8,7 @@ final class DesktopPanelController {
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
     private var settingsWindow: NSWindow?
+    private var menuPopover: NSPopover?
     private static let size = NSSize(width: 44, height: 280)
     // nonisolated: immutable Sendable constants referenced from the @Sendable didMove observer closure.
     nonisolated private static let originXKey = "desktopPanelOriginX"
@@ -25,6 +26,18 @@ final class DesktopPanelController {
 
     func hide() {
         panel?.orderOut(nil)
+    }
+
+    /// The same dropdown as the menu bar item, anchored to the strip.
+    func toggleMenu() {
+        guard let viewModel, let panel, let anchor = panel.contentView else { return }
+        if let menuPopover, menuPopover.isShown { menuPopover.close(); return }
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(
+            rootView: MenuContentView(viewModel: viewModel, onSettings: { [weak self] in self?.openSettings() }))
+        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minX)
+        menuPopover = popover
     }
 
     func openSettings() {
@@ -58,7 +71,7 @@ final class DesktopPanelController {
         panel.hidesOnDeactivate = false
         panel.isFloatingPanel = false
 
-        let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel, onSettings: { [weak self] in self?.openSettings() }))
+        let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel, onTap: { [weak self] in self?.toggleMenu() }))
         host.sizingOptions = [.preferredContentSize]
         panel.contentView = host
 
