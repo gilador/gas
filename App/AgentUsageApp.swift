@@ -1,10 +1,20 @@
 import SwiftUI
+import AppKit
 
 @main
 struct AgentUsageApp: App {
     @StateObject private var viewModel = UsageViewModel()
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
     @State private var panelController = DesktopPanelController()
+
+    init() {
+        let me = ProcessInfo.processInfo.processIdentifier
+        guard let bundleID = Bundle.main.bundleIdentifier else { return }
+        for other in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+        where other.processIdentifier != me {
+            other.terminate()
+        }
+    }
 
     var body: some Scene {
         MenuBarExtra {

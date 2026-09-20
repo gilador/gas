@@ -44,8 +44,12 @@ final class SpyHTTPClient: UsageHTTPClient, @unchecked Sendable {
         self.statusCode = statusCode
         self.responseHeaders = responseHeaders
     }
+    private func record(_ call: Call) {
+        lock.lock(); defer { lock.unlock() }
+        _calls.append(call)
+    }
     func get(_ url: URL, headers: [String: String]) async throws -> (Data, HTTPURLResponse) {
-        lock.lock(); _calls.append(Call(url: url, headers: headers)); lock.unlock()
+        record(Call(url: url, headers: headers))
         let resp = HTTPURLResponse(url: url, statusCode: statusCode, httpVersion: nil, headerFields: responseHeaders)!
         return (data, resp)
     }
@@ -73,5 +77,9 @@ final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
     private var _calls = 0
     var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }
     init(id: ProviderID, result: Result<UsageSnapshot, Error>) { self.id = id; self.result = result }
-    func fetch() async throws -> UsageSnapshot { lock.lock(); _calls += 1; lock.unlock(); return try result.get() }
+    private func recordCall() {
+        lock.lock(); defer { lock.unlock() }
+        _calls += 1
+    }
+    func fetch() async throws -> UsageSnapshot { recordCall(); return try result.get() }
 }
