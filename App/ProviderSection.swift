@@ -6,9 +6,12 @@ struct ProviderSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(snapshot.provider.displayName)
-                .font(.caption.bold())
-                .foregroundStyle(.secondary)
+            HStack(spacing: 5) {
+                ProviderIcon(provider: snapshot.provider, size: 12)
+                Text(snapshot.provider.displayName)
+            }
+            .font(.caption.bold())
+            .foregroundStyle(.secondary)
             content
         }
     }

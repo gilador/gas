@@ -12,7 +12,7 @@ struct ProviderStripItem: View {
             Text(percentText)
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
             bar
-            Text(snapshot.provider.glyph).font(.system(size: 12))
+            ProviderIcon(provider: snapshot.provider, size: 14)
             Text(snapshot.fetchedAt.formatted(.relative(presentation: .numeric, unitsStyle: .narrow)))
                 .font(.system(size: 9)).foregroundStyle(.secondary)
         }
