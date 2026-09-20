@@ -9,6 +9,10 @@ final class ClaudeCodeIntegration: ObservableObject {
         case failed(String)
     }
 
+    static let enabledKey = "claudeCodeBridgeEnabled"
+
+    var isEnabled: Bool { UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true }
+
     @Published private(set) var state: State = .notConnected
 
     private let settingsURL: URL
@@ -60,6 +64,22 @@ final class ClaudeCodeIntegration: ObservableObject {
         } catch {
             state = .failed(error.localizedDescription)
         }
+    }
+
+    /// Installs the bridge on launch when the user has Claude Code and has not turned the integration off.
+    func applyEnabledState() {
+        let hasClaudeCode = FileManager.default.fileExists(atPath: settingsURL.deletingLastPathComponent().path)
+        refresh()
+        switch (isEnabled && hasClaudeCode, state) {
+        case (true, .notConnected): connect()
+        case (false, .connected): disconnect()
+        default: break
+        }
+    }
+
+    func setEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: Self.enabledKey)
+        applyEnabledState()
     }
 
     func disconnect() {

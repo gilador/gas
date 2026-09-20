@@ -133,9 +133,11 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   init. `refresh()` is `board = await UsageRefresher.refresh(board, providers:
   registry.providers)`, then save, `notifications.process(board)`, reload widget timelines.
   Registry gets `FileCodexAuthReader()` and the `CHATGPT_BASE_URL` override. No fetch or
-  merge logic lives in the app target. Preferred source: the Claude Code status line bridge
-  (Settings → Claude Code → Connect) writes `~/Library/Application Support/Tokens/claude_statusline.json`;
-  data younger than 1 h is used without any network call. The endpoint is the fallback.
+  merge logic lives in the app target. No setup: on first launch the app installs the Claude
+  Code status line bridge (toggle in Settings → Claude Code; off restores the previous status
+  line; backup at `~/.claude/settings.json.tokens-backup`); it writes
+  `~/Library/Application Support/Tokens/claude_statusline.json`; data younger than 1 h is used
+  without any network call. The endpoint is the fallback.
 - **`MenuContentView`**: `ForEach(board.snapshots)` renders a
   `ProviderSection` (shared view, `App/ProviderSection.swift`): header
   `Text(provider.displayName).font(.caption.bold())`, status row, then `LimitRow`s, or

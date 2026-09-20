@@ -16,17 +16,11 @@ struct PreferencesView: View {
     var body: some View {
         Form {
             Section("Claude Code") {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(integrationTitle)
-                        Text("Claude Code hands your usage to its status line. Connect lets Tokens read it, so no rate-limited network calls are needed. Reversible.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button(isConnected ? "Disconnect" : "Connect") {
-                        if isConnected { integration.disconnect() } else { integration.connect() }
-                    }
-                }
+                Toggle("Read usage from Claude Code", isOn: Binding(
+                    get: { integration.isEnabled },
+                    set: { integration.setEnabled($0) }))
+                Text(integrationStatus)
+                    .font(.caption).foregroundStyle(integrationIsFailed ? .red : .secondary)
             }
             Section("Notifications") {
                 HStack {
@@ -67,16 +61,15 @@ struct PreferencesView: View {
         .frame(width: 360)
     }
 
-    private var isConnected: Bool { if case .connected = integration.state { return true }; return false }
-
-    private var integrationTitle: String {
+    private var integrationStatus: String {
         switch integration.state {
-        case .notConnected: return "Not connected"
-        case .connected(let lastUpdate?): return "Connected · updated \(lastUpdate.formatted(.relative(presentation: .named)))"
-        case .connected(nil): return "Connected · waiting for the first update"
+        case .notConnected: return integration.isEnabled ? "Claude Code not found." : "Off. Claude usage comes from the Anthropic endpoint, which allows about one call per hour."
+        case .connected(let lastUpdate?): return "Live. Updated \(lastUpdate.formatted(.relative(presentation: .named)))."
+        case .connected(nil): return "Live after your next Claude Code session in a terminal."
         case .failed(let message): return "Failed: \(message)"
         }
     }
+    private var integrationIsFailed: Bool { if case .failed = integration.state { return true }; return false }
 }
 
 /// An NSSlider with a tick mark per stop; snaps to ticks only.

@@ -18,17 +18,10 @@ struct ProviderSection: View {
 
     @ViewBuilder
     private var content: some View {
-        if snapshot.status == .ok {
-            if snapshot.limits.isEmpty {
-                Text("No usage data.").font(.caption).foregroundStyle(.secondary)
-            } else {
-                rows
-            }
-        } else if snapshot.limits.isEmpty {
-            statusLabel
-                .font(.caption)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+        if snapshot.limits.isEmpty {
+            skeleton
+        } else if snapshot.status == .ok {
+            rows
         } else {
             ZStack {
                 VStack(alignment: .leading, spacing: 4) { rows }.opacity(0.7)
@@ -43,6 +36,28 @@ struct ProviderSection: View {
 
     private var rows: some View {
         ForEach(snapshot.limits) { LimitRow(limit: $0) }
+    }
+
+    private static let skeletonLabels = ["Session (5h)", "Weekly"]
+
+    private var skeleton: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(Self.skeletonLabels, id: \.self) { label in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text(label).font(.callout).foregroundStyle(.secondary)
+                        Spacer()
+                        Text("—").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                    LimitBar(fraction: 0, color: .clear)
+                }
+            }
+            if statusText != nil {
+                statusLabel.font(.caption).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Waiting for first data…").font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var statusOverlay: some View {

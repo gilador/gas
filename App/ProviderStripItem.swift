@@ -19,7 +19,7 @@ struct ProviderStripItem: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
-        .overlay { if snapshot.status != .ok { glass } }
+        .overlay { if snapshot.status != .ok && !snapshot.limits.isEmpty { glass } }
         .help(helpText)
     }
 

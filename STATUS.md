@@ -88,7 +88,7 @@ open build/Build/Products/Debug/AgentUsageApp.app
 ```
 **Process hygiene:** run ONE `xcodebuild`/`swift test` at a time. If a build/app hangs, `pkill -9 -f xcodebuild` / `pkill -x AgentUsageApp`. (A concurrent-build pileup and a wedged `SWBBuildService` daemon each caused silent hangs during development — see §6.)
 
-**Setup:** Settings → Claude Code → Connect; Disconnect restores the previous status line; backup at `~/.claude/settings.json.tokens-backup`.
+**Setup:** No setup: on first launch the app installs the Claude Code status line bridge (toggle in Settings → Claude Code; off restores the previous status line; backup at `~/.claude/settings.json.tokens-backup`).
 
 ---
 
