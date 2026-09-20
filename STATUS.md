@@ -50,7 +50,7 @@ refresh the token; expired/401 → stale state. Response fields used: `rate_limi
 - **`App/`** — menu bar app (`AgentUsageApp`, `UsageViewModel`, `MenuContentView`+`LimitRow`,
   `ProviderSection`, `MenuBarLabelView`+`UsageFormatter`, `NotificationManager`, `PreferencesView`,
   `DesktopPanelController`+`DesktopPanelView`). The menu and desktop panel render stacked Claude and
-  OpenAI sections via `ProviderSection`; menu bar label is compact multi-provider, e.g. `◐42%·⬡52%` (a provider with no data shows `◐—`).
+  OpenAI sections via `ProviderSection`; menu bar label is compact multi-provider, e.g. `◐42%|⬡52%` (a provider with no data shows `◐—`).
   Thin wiring over `UsageCore`.
 - **`Widget/`** — `AgentUsageWidget` extension (TimelineProvider reads the App Group snapshot).
 - **`project.yml`** — XcodeGen source of truth → generates `AgentUsage.xcodeproj` (git-ignored).
@@ -74,7 +74,7 @@ xcodebuild -project AgentUsage.xcodeproj -scheme AgentUsageApp -destination 'pla
 
 # Run it (menu bar + desktop panel work unsigned):
 open build/Build/Products/Debug/AgentUsageApp.app
-#   → approve the one-time Keychain prompt; menu bar shows "◐NN%·⬡NN%";
+#   → approve the one-time Keychain prompt; menu bar shows "◐NN%|⬡NN%";
 #     toggle "Show desktop panel" for the desktop card.
 ```
 **Process hygiene:** run ONE `xcodebuild`/`swift test` at a time. If a build/app hangs, `pkill -9 -f xcodebuild` / `pkill -x AgentUsageApp`. (A concurrent-build pileup and a wedged `SWBBuildService` daemon each caused silent hangs during development — see §6.)

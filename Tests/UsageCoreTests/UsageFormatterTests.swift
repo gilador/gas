@@ -11,30 +11,30 @@ final class UsageFormatterTests: XCTestCase {
 
     func testTwoProvidersCompactNoSpaces() {
         let board = UsageBoard(snapshots: [snap(.claude, [12, 42]), snap(.openai, [52, 7])])
-        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%·⬡52%")
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%|⬡52%")
     }
 
     func testOnlyClaudeShowsDashForOpenAI() {
         let board = UsageBoard(snapshots: [snap(.claude, [42])])
-        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%·⬡—")
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%|⬡—")
     }
 
     func testOnlyOpenAIShowsDashForClaude() {
         let board = UsageBoard(snapshots: [snap(.openai, [100])])
-        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐—·⬡100%")
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐—|⬡100%")
     }
 
     func testProviderWithoutLimitsShowsDash() {
         let board = UsageBoard(snapshots: [snap(.claude, [], status: .stale(reason: "x")), snap(.openai, [52])])
-        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐—·⬡52%")
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐—|⬡52%")
     }
 
     func testEmptyBoardShowsDashForEveryProvider() {
-        XCTAssertEqual(UsageFormatter.compactLabel(for: UsageBoard()), "◐—·⬡—")
+        XCTAssertEqual(UsageFormatter.compactLabel(for: UsageBoard()), "◐—|⬡—")
     }
 
     func testPercentIsRoundedNotTruncated() {
         let board = UsageBoard(snapshots: [snap(.claude, [41.6])])
-        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%·⬡—")
+        XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%|⬡—")
     }
 }

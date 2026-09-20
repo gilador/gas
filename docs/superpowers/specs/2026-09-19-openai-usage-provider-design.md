@@ -122,7 +122,7 @@ Runs every provider concurrently (`withTaskGroup`); a thrown `fetch()` becomes
 slow or failing provider never blocks or blanks another.
 
 **`UsageFormatter.compactLabel(for board: UsageBoard) -> String`** (moved from the app):
-Every provider in `displayOrder` is always shown; a provider with no data renders as `<glyph>—`, e.g. `◐—·⬡100%`; an empty board renders `◐—·⬡—`.
+Every provider in `displayOrder` is always shown; a provider with no data renders as `<glyph>—`, e.g. `◐—|⬡100%`; an empty board renders `◐—|⬡—`.
 
 ### App
 
@@ -232,7 +232,7 @@ Provider-agnostic. Uses `StubUsageProvider` (returns a fixed snapshot, or throws
 - `ThresholdEvaluatorTests` — existing single-provider cases unchanged; new: same limit ID
   on two providers ⇒ two crossings with distinct `provider`; state key format
   `"<provider>#<id>#<threshold>"`; a crossing on one provider does not suppress the other.
-- `UsageFormatterTests` — two providers ⇒ `◐42%·⬡52%` (no spaces, `·` separator, display
+- `UsageFormatterTests` — two providers ⇒ `◐42%|⬡52%` (no spaces, `|` separator, display
   order); one provider ⇒ `◐42%`; second provider without limits ⇒ omitted; none ⇒ `◐—`;
   percent is rounded, not truncated (`41.6` ⇒ `42%`).
 - `ProviderIDTests` — `displayOrder` is `[.claude, .openai]`; `displayName`, `glyph`,
@@ -287,7 +287,7 @@ divergence from the other provider. Each provider has the same four files.
 ### App and widget verification (manual, not unit-tested)
 The app target stays thin wiring, so it is verified by build + run:
 1. `xcodegen generate && xcodebuild … build` ⇒ `BUILD SUCCEEDED`, 0 warnings.
-2. Run the app: menu bar shows `◐NN%·⬡NN%`; dropdown and floating panel show a "Claude"
+2. Run the app: menu bar shows `◐NN%|⬡NN%`; dropdown and floating panel show a "Claude"
    section and an "OpenAI" section with status/limit rows; "Updated …" line present.
 3. Rename `~/.codex/auth.json` temporarily ⇒ OpenAI section shows "Sign in to Codex CLI
    first." and the label drops to `◐NN%`; restore the file ⇒ next refresh recovers.

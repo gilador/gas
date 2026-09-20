@@ -4,6 +4,6 @@ public enum UsageFormatter {
             let percent = board.snapshot(for: provider)?.tightestLimit
                 .map { "\(Int($0.percentUsed.rounded()))%" } ?? "—"
             return "\(provider.glyph)\(percent)"
-        }.joined(separator: "·")
+        }.joined(separator: "|")
     }
 }
