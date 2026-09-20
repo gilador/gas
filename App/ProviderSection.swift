@@ -28,7 +28,7 @@ struct ProviderSection: View {
                 .fixedSize(horizontal: false, vertical: true)
         } else {
             ZStack {
-                rows.opacity(0.4)
+                VStack(alignment: .leading, spacing: 4) { rows }.opacity(0.4)
                 statusOverlay
             }
         }
@@ -48,8 +48,10 @@ struct ProviderSection: View {
             Text("Data from \(snapshot.fetchedAt.formatted(date: .abbreviated, time: .shortened))")
                 .font(.caption2).foregroundStyle(.secondary)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 8))
         .frame(maxWidth: .infinity)
-        .shadow(color: .black.opacity(0.9), radius: 3)
         .allowsHitTesting(false)
     }
 
