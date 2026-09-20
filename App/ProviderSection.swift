@@ -28,7 +28,11 @@ struct ProviderSection: View {
                 .fixedSize(horizontal: false, vertical: true)
         } else {
             ZStack {
-                VStack(alignment: .leading, spacing: 4) { rows }.opacity(0.4)
+                VStack(alignment: .leading, spacing: 4) { rows }.opacity(0.7)
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.85)
+                    .padding(-4)
                 statusOverlay
             }
         }
@@ -50,7 +54,6 @@ struct ProviderSection: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 8))
         .frame(maxWidth: .infinity)
         .allowsHitTesting(false)
     }
