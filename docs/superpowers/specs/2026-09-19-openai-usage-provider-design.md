@@ -144,7 +144,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   Loading state ("Loading…") when the board is empty. When a provider's status is not `.ok`
   and it still has limits, rows dimmed to 40 % with the status text centered on top, no background.
   The floating panel (`DesktopPanelView`) is a 72-pt-wide vertical strip, one thin bar per provider (tightest limit, tick for the other window), percent above, glyph and data age below, hover for the full breakdown; stale/rate-limited providers get a frosted glass with a status icon.
-- **`MenuBarLabelView`**: `Text(UsageFormatter.compactLabel(for: board))`.
+- **`MenuBarLabelView`**: AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `Tokens`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover.
 - **`NotificationManager.process(_ board:)`**: for each snapshot with `.ok`, run the
   evaluator with the shared `NotificationState`; title
   `"\(provider.displayName) \(limit.label) at NN%"`. Team-signed gate unchanged.

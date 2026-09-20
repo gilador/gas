@@ -14,7 +14,7 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 |---|---|---|
 | `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **152 passed / 3 skipped / 0 failed (155 executed)** |
 | OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **152 passed / 3 skipped / 0 failed (155 executed)** |
-| Menu bar app (`MenuBarExtra`, 15-minute refresh (slider 15–60 min), dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
+| Menu bar app (AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `Tokens`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover; 15-minute refresh (slider 15–60 min), dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
 | WidgetKit widget (`AgentUsageWidget`) | **Built (code)** | Builds; **does not register** unsigned (see §4) |
 | Desktop panel (pinned NSPanel, draggable, toggle) | **Done** | Builds; runs unsigned; toggle in menu |
 | Threshold notifications (80% / 95%, de-duped) | **Built** | Gated off unless team-signed (see §4) |

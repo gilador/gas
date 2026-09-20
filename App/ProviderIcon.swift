@@ -8,13 +8,18 @@ struct ProviderIcon: View {
     var body: some View {
         if let name = assetName {
             Image(name)
+                .renderingMode(.template)
                 .resizable()
                 .interpolation(.high)
                 .frame(width: size, height: size)
-                .clipShape(RoundedRectangle(cornerRadius: size * 0.22))
+                .foregroundStyle(tint)
         } else {
             Text(provider.glyph).font(.system(size: size))
         }
+    }
+
+    private var tint: Color {
+        provider == .claude ? Color(red: 0.85, green: 0.47, blue: 0.34) : .primary
     }
 
     private var assetName: String? {

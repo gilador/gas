@@ -15,6 +15,10 @@ final class DesktopPanelController {
     nonisolated private static let originYKey = "desktopPanelOriginY"
 
     func show() {
+        if panel?.isVisible == true {
+            panel?.orderFrontRegardless()
+            return
+        }
         guard let viewModel else { return }
         if panel == nil { panel = makePanel(viewModel: viewModel) }
         guard let panel else { return }

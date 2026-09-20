@@ -2,20 +2,25 @@ import SwiftUI
 import UsageCore
 
 struct MenuBarLabelView: View {
-    let board: UsageBoard
+    @ObservedObject var viewModel: UsageViewModel
 
     var body: some View {
-        HStack(spacing: 1) {
+        HStack(spacing: 2) {
             ForEach(Array(ProviderID.displayOrder.enumerated()), id: \.element) { index, provider in
-                if index > 0 { Text("|").foregroundStyle(.secondary) }
+                if index > 0 {
+                    Text("|").foregroundStyle(.secondary).padding(.horizontal, 1)
+                }
                 ProviderIcon(provider: provider, size: 14)
-                Text(percentText(for: provider)).monospacedDigit()
+                Text(percentText(for: provider))
+                    .font(.system(size: 12, weight: .medium).monospacedDigit())
             }
         }
+        .padding(.horizontal, 4)
+        .fixedSize()
     }
 
     private func percentText(for provider: ProviderID) -> String {
-        board.snapshot(for: provider)?.tightestLimit
+        viewModel.board.snapshot(for: provider)?.tightestLimit
             .map { "\(Int($0.percentUsed.rounded()))%" } ?? "—"
     }
 }
