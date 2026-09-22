@@ -4,7 +4,7 @@ import UsageCore
 struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var alerts: AlertCenter
-    @AppStorage("panelTransparency") private var panelTransparency = 0.5
+    @AppStorage("panelTransparency") private var panelTransparency = 0.05
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     let onTap: () -> Void

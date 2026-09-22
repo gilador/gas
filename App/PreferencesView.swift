@@ -9,7 +9,7 @@ struct PreferencesView: View {
 
     @AppStorage("warningThreshold") private var warningThreshold = 65.0
     @AppStorage("criticalThreshold") private var criticalThreshold = 85.0
-    @AppStorage("panelTransparency") private var panelTransparency = 0.5
+    @AppStorage("panelTransparency") private var panelTransparency = 0.05
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
