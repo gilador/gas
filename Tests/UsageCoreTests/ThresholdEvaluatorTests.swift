@@ -53,11 +53,30 @@ final class ThresholdEvaluatorTests: XCTestCase {
         XCTAssertTrue(eval(snap([limit(83)]), &state).isEmpty)
     }
 
-    func testChangingThresholdValueDoesNotRefire() {
+    func testChangingThresholdRearmsThatLevel() {
         var state = NotificationState()
         _ = eval(snap([limit(82)]), &state, warning: 80)
+        XCTAssertEqual(eval(snap([limit(82)]), &state, warning: 75).map(\.level), [.warning])
         XCTAssertTrue(eval(snap([limit(82)]), &state, warning: 75).isEmpty)
-        XCTAssertTrue(eval(snap([limit(82)]), &state, warning: 81).isEmpty)
+    }
+
+    func testChangingWarningDoesNotRearmCritical() {
+        var state = NotificationState()
+        _ = eval(snap([limit(96)]), &state, warning: 80, critical: 95)
+        XCTAssertEqual(eval(snap([limit(96)]), &state, warning: 70, critical: 95).map(\.level), [.warning])
+    }
+
+    func testRaisedThresholdAlertsWhenUsageReachesIt() {
+        var state = NotificationState()
+        _ = eval(snap([limit(82)]), &state, warning: 80)
+        XCTAssertTrue(eval(snap([limit(84)]), &state, warning: 90).isEmpty)
+        XCTAssertEqual(eval(snap([limit(91)]), &state, warning: 90).map(\.level), [.warning])
+    }
+
+    func testFlagWithoutRecordedThresholdStaysQuiet() throws {
+        let legacy = #"{"fired":{"claude#five_hour#warning":1000}}"#.data(using: .utf8)!
+        var state = try JSONDecoder().decode(NotificationState.self, from: legacy)
+        XCTAssertTrue(eval(snap([limit(82)]), &state, warning: 75).isEmpty)
     }
 
     func testEachLimitHasItsOwnFlag() {
