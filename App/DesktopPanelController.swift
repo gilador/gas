@@ -32,6 +32,14 @@ final class DesktopPanelController {
         panel?.orderOut(nil)
     }
 
+    func showForAlert() {
+        show()
+    }
+
+    func hideAfterAlertIfUnpinned() {
+        if !UserDefaults.standard.bool(forKey: "showDesktopPanel") { hide() }
+    }
+
     /// The same dropdown as the menu bar item, anchored to the strip.
     func toggleMenu() {
         guard let viewModel, let panel, let anchor = panel.contentView else { return }
@@ -78,7 +86,7 @@ final class DesktopPanelController {
         panel.hidesOnDeactivate = false
         panel.isFloatingPanel = false
 
-        let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel, onTap: { [weak self] in self?.toggleMenu() }))
+        let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel, alerts: viewModel.alerts, onTap: { [weak self] in self?.toggleMenu() }))
         host.sizingOptions = [.preferredContentSize]
         panel.contentView = host
 

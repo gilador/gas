@@ -4,6 +4,7 @@ import UsageCore
 /// One provider in the floating strip: session percent, a thin bar for the session limit, a tick for the weekly one.
 struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
+    var alertStart: Date? = nil
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
@@ -12,6 +13,17 @@ struct ProviderStripItem: View {
     var body: some View {
         VStack(spacing: 4) {
             ProviderIcon(provider: snapshot.provider, size: 14)
+                .overlay(alignment: .topTrailing) {
+                    if let alertStart {
+                        TimelineView(.periodic(from: alertStart, by: AlertBlink.period)) { context in
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.yellow)
+                                .opacity(AlertBlink.isOn(elapsed: context.date.timeIntervalSince(alertStart)) ? 1 : 0)
+                        }
+                        .offset(x: 8, y: -6)
+                    }
+                }
             Text(percentText)
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
             bar

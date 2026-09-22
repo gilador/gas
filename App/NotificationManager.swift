@@ -10,8 +10,6 @@ final class NotificationManager {
     /// process (SIGABRT) at launch. Requiring a real team signature avoids
     /// touching UNUserNotificationCenter in those builds.
     private let center: UNUserNotificationCenter?
-    private let defaults = UserDefaults.standard
-    private let stateKey = "notificationState"
 
     init() {
         center = CodeSignature.isTeamSigned ? UNUserNotificationCenter.current() : nil
@@ -21,18 +19,8 @@ final class NotificationManager {
         center?.requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
-    func process(_ board: UsageBoard) {
+    func post(_ crossings: [ThresholdCrossing]) {
         guard let center else { return }
-        let thresholds = [
-            defaults.object(forKey: "warningThreshold") as? Double ?? 80,
-            defaults.object(forKey: "criticalThreshold") as? Double ?? 95
-        ]
-        var state = loadState()
-        var crossings: [ThresholdCrossing] = []
-        for snapshot in board.snapshots where snapshot.status == .ok {
-            crossings += ThresholdEvaluator.evaluate(snapshot, state: &state, thresholds: thresholds)
-        }
-        saveState(state)
         for crossing in crossings {
             post(crossing, to: center)
         }
@@ -46,19 +34,5 @@ final class NotificationManager {
         let request = UNNotificationRequest(identifier: UUID().uuidString,
                                              content: content, trigger: nil)
         center.add(request)
-    }
-
-    private func loadState() -> NotificationState {
-        guard let data = defaults.data(forKey: stateKey),
-              let state = try? JSONDecoder().decode(NotificationState.self, from: data) else {
-            return NotificationState()
-        }
-        return state
-    }
-
-    private func saveState(_ state: NotificationState) {
-        if let data = try? JSONEncoder().encode(state) {
-            defaults.set(data, forKey: stateKey)
-        }
     }
 }

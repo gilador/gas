@@ -11,9 +11,12 @@ final class UsageViewModel: ObservableObject {
     @Published var board: UsageBoard
     @Published private(set) var nextTick: Date = Date()
 
+    let alerts = AlertCenter()
+
     private let registry: ProviderRegistry
     private let store: SnapshotStore
     private let notifications: NotificationManager
+    private let thresholds = ThresholdMonitor()
     private var timer: Timer?
     private let pathMonitor = NWPathMonitor()
     private var wasConnected = true
@@ -90,7 +93,9 @@ final class UsageViewModel: ObservableObject {
             let updated = await UsageRefresher.refresh(board, providers: registry.providers, manual: manual)
             board = updated
             try? store.save(updated)
-            notifications.process(updated)
+            let crossings = thresholds.crossings(in: updated)
+            notifications.post(crossings)
+            alerts.raise(Set(crossings.map(\.provider)))
             WidgetCenter.shared.reloadAllTimelines()
             if manual { scheduleTimer() }
         }

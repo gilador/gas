@@ -3,6 +3,7 @@ import UsageCore
 
 struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
+    @ObservedObject var alerts: AlertCenter
     @AppStorage("panelTransparency") private var panelTransparency = 0.5
     let onTap: () -> Void
 
@@ -32,7 +33,7 @@ struct DesktopPanelView: View {
                 if index > 0 {
                     Rectangle().fill(.white.opacity(0.15)).frame(width: 26, height: 1)
                 }
-                ProviderStripItem(snapshot: snapshot)
+                ProviderStripItem(snapshot: snapshot, alertStart: alerts.alertStart[snapshot.provider])
             }
         }
     }

@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItemController = StatusItemController(viewModel: viewModel) { [weak self] in
             self?.panelController.openSettings()
         }
+        viewModel.alerts.onFirstAlert = { [weak self] in self?.panelController.showForAlert() }
+        viewModel.alerts.onAllAlertsEnded = { [weak self] in self?.panelController.hideAfterAlertIfUnpinned() }
         applyPanelVisibility()
         defaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
