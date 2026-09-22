@@ -22,7 +22,8 @@ final class AlertCenter: ObservableObject {
             active[crossing.provider] = ActiveAlert(start: now, critical: existing?.critical == true || criticalIf(crossing))
         }
         if wasEmpty { onFirstAlert?() }
-        let critical = crossings.filter(criticalIf)
+        var seen = Set<String>()
+        let critical = crossings.filter { criticalIf($0) && seen.insert("\($0.provider.rawValue)#\($0.limit.id)").inserted }
         if !critical.isEmpty { onCritical?(critical) }
         expiry?.cancel()
         expiry = Task { [weak self] in
