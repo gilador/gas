@@ -39,6 +39,7 @@ final class DesktopPanelController {
         if let menuPopover, menuPopover.isShown { menuPopover.close(); return }
         let popover = NSPopover()
         popover.behavior = .transient
+        popover.appearance = NSAppearance(named: .darkAqua)
         popover.contentViewController = NSHostingController(
             rootView: MenuContentView(viewModel: viewModel, onSettings: { [weak self] in self?.openSettings() }))
         popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minX)

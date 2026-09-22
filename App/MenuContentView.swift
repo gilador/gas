@@ -26,8 +26,10 @@ struct MenuContentView: View {
                     ProviderSection(snapshot: snapshot)
                 }
                 if let updated = viewModel.board.latestFetchedAt {
-                    (Text("Updated ") + Text(updated, style: .relative) + Text(" ago"))
-                        .font(.caption).foregroundStyle(.secondary)
+                    TimelineView(.periodic(from: .now, by: 30)) { _ in
+                        Text("Updated \(updated.formatted(.relative(presentation: .numeric, unitsStyle: .abbreviated)))")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             Divider()
