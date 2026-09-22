@@ -1,5 +1,5 @@
 #!/bin/bash
-# One entry point for packaging Tokens.app into a DMG and/or a PKG installer.
+# One entry point for packaging Gas.app into a DMG and/or a PKG installer.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -8,8 +8,8 @@ usage() {
 Usage: scripts/package.sh [dmg|pkg|all] [--identity "<codesign identity or SHA-1>"] [--help]
 
 Targets (default: all):
-  dmg   dist/Tokens-<version>.dmg — drag-to-/Applications disk image
-  pkg   dist/Tokens-<version>.pkg — installer; puts the app in /Applications and launches it
+  dmg   dist/Gas-<version>.dmg — drag-to-/Applications disk image
+  pkg   dist/Gas-<version>.pkg — installer; puts the app in /Applications and launches it
   all   builds both dmg and pkg (the app is built and signed once, then reused for both)
 
 Signing:

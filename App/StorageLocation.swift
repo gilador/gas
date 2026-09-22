@@ -8,8 +8,13 @@ enum StorageLocation {
            let group = fm.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
             return group
         }
-        let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Tokens", isDirectory: true)
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let support = appSupport.appendingPathComponent("Gas", isDirectory: true)
+        let oldSupport = appSupport.appendingPathComponent("Tokens", isDirectory: true)
+        // One-time move from the app's previous name.
+        if !fm.fileExists(atPath: support.path), fm.fileExists(atPath: oldSupport.path) {
+            try? fm.moveItem(at: oldSupport, to: support)
+        }
         try? fm.createDirectory(at: support, withIntermediateDirectories: true)
         return support
     }

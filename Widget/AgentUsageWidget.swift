@@ -32,7 +32,7 @@ struct AgentUsageWidget: Widget {
         StaticConfiguration(kind: "AgentUsageWidget", provider: UsageTimelineProvider()) { entry in
             UsageWidgetView(entry: entry)
         }
-        .configurationDisplayName("Tokens")
+        .configurationDisplayName("Gas")
         .description("Plan-quota usage for Claude and OpenAI.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }

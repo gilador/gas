@@ -1,9 +1,9 @@
-Tokens shows your Claude and OpenAI subscription usage in the menu bar.
+Gas shows your Claude and OpenAI subscription usage in the menu bar.
 
-This installer places Tokens in your Applications folder and starts it.
+This installer places Gas in your Applications folder and starts it.
 
 Two one-time prompts may follow:
-  • macOS Keychain: Tokens reads the sign-in that Claude Code stores. Click "Always Allow".
-  • If macOS says the app is from an unidentified developer, right-click Tokens and choose Open.
+  • macOS Keychain: Gas reads the sign-in that Claude Code stores. Click "Always Allow".
+  • If macOS says the app is from an unidentified developer, right-click Gas and choose Open.
 
-Tokens needs Claude Code signed in for the Claude numbers, and Codex CLI signed in for the OpenAI numbers.
+Gas needs Claude Code signed in for the Claude numbers, and Codex CLI signed in for the OpenAI numbers.

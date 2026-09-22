@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-    <title>Tokens</title>
+    <title>Gas</title>
     <welcome file="welcome.txt" mime-type="text/plain"/>
     <options customize="never" require-scripts="true" hostArchitectures="arm64"/>
     <domains enable_localSystem="true"/>
@@ -13,5 +13,5 @@
     <choice id="com.gilad.agentusage" visible="false">
         <pkg-ref id="com.gilad.agentusage"/>
     </choice>
-    <pkg-ref id="com.gilad.agentusage" version="0.1.0" onConclusion="none">Tokens-component.pkg</pkg-ref>
+    <pkg-ref id="com.gilad.agentusage" version="0.1.0" onConclusion="none">Gas-component.pkg</pkg-ref>
 </installer-gui-script>

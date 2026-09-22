@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 final class StatusItemController: NSObject {
-    private static let autosaveName = "Tokens"
+    private static let autosaveName = "Gas"
     private static let positionKey = "NSStatusItem Preferred Position \(autosaveName)"
     /// Points from the right edge; small values keep the item next to the clock when the bar is crowded.
     private static let defaultPosition = 120

@@ -54,7 +54,7 @@ struct MenuContentView: View {
 
     private func confirmQuit() {
         let alert = NSAlert()
-        alert.messageText = "Quit Tokens?"
+        alert.messageText = "Quit Gas?"
         alert.informativeText = "The menu bar item and desktop panel will stop updating until you reopen the app."
         alert.addButton(withTitle: "Quit")
         let cancel = alert.addButton(withTitle: "Cancel")
