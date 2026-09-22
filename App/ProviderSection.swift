@@ -3,6 +3,7 @@ import UsageCore
 
 struct ProviderSection: View {
     let snapshot: UsageSnapshot
+    var nextRefresh: Date? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -13,6 +14,10 @@ struct ProviderSection: View {
             .font(.caption.bold())
             .foregroundStyle(.secondary)
             content
+            if let nextRefresh {
+                Text("Next refresh \(nextRefresh.formatted(date: .omitted, time: .shortened))")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
         }
     }
 

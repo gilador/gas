@@ -13,7 +13,7 @@ struct MenuContentView: View {
             } else {
                 ForEach(Array(viewModel.board.snapshots.enumerated()), id: \.element.provider) { index, snapshot in
                     if index > 0 { Divider() }
-                    ProviderSection(snapshot: snapshot)
+                    ProviderSection(snapshot: snapshot, nextRefresh: viewModel.nextRefresh(for: snapshot.provider))
                 }
                 if let updated = viewModel.board.latestFetchedAt {
                     TimelineView(.periodic(from: .now, by: 30)) { _ in

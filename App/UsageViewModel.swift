@@ -9,7 +9,7 @@ final class UsageViewModel: ObservableObject {
     static let appGroupID = "group.com.gilad.agentusage"
 
     @Published var board: UsageBoard
-    var refreshInterval: TimeInterval
+    @Published private(set) var nextTick: Date = Date()
 
     private let registry: ProviderRegistry
     private let store: SnapshotStore
@@ -19,9 +19,7 @@ final class UsageViewModel: ObservableObject {
     private var wasConnected = true
     private var inFlight: Task<Void, Never>?
 
-    init(refreshInterval: TimeInterval? = nil) {
-        let stored = UserDefaults.standard.object(forKey: "refreshInterval") as? Double
-        self.refreshInterval = refreshInterval ?? RefreshIntervals.snapped(stored ?? RefreshIntervals.defaultSeconds)
+    init() {
         let env = ProcessInfo.processInfo.environment
         let claudeBase = env["ANTHROPIC_BASE_URL"].flatMap { URL(string: $0) }
             ?? URL(string: "https://api.anthropic.com")!
@@ -60,9 +58,26 @@ final class UsageViewModel: ObservableObject {
     func start() {
         timer?.invalidate()
         Task { await refresh() }
-        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            Task { await self?.refresh() }
+        timer = Timer.scheduledTimer(withTimeInterval: RefreshIntervals.seconds, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.nextTick = Date().addingTimeInterval(RefreshIntervals.seconds)
+                await self?.refresh()
+            }
         }
+        nextTick = Date().addingTimeInterval(RefreshIntervals.seconds)
+    }
+
+    /// When the next request to this provider can happen: the next tick, unless a rate-limit deadline or the provider's minimum interval is later.
+    func nextRefresh(for provider: ProviderID) -> Date {
+        var next = nextTick
+        if let last = board.lastRequest(for: provider),
+           let minimum = registry.providers.first(where: { $0.id == provider })?.minimumInterval {
+            next = max(next, last.addingTimeInterval(minimum))
+        }
+        if case .rateLimited(let until, _)? = board.snapshot(for: provider)?.status {
+            next = max(next, until)
+        }
+        return next
     }
 
     func refresh(manual: Bool = false) async {
