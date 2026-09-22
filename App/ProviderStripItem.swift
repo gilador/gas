@@ -14,7 +14,7 @@ struct ProviderStripItem: View {
             bar
             ProviderIcon(provider: snapshot.provider, size: 14)
             TimelineView(.periodic(from: .now, by: 30)) { _ in
-                Text(snapshot.fetchedAt.formatted(.relative(presentation: .numeric, unitsStyle: .narrow)))
+                Text(snapshot.fetchedAt.formatted(.relative(presentation: .named, unitsStyle: .narrow)))
                     .font(.system(size: 9)).foregroundStyle(.secondary)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
