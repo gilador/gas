@@ -49,8 +49,12 @@ final class DesktopPanelController {
         popover.appearance = NSAppearance(named: .darkAqua)
         popover.contentViewController = NSHostingController(
             rootView: MenuContentView(viewModel: viewModel, onSettings: { [weak self] in self?.openSettings() }))
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minX)
+        DispatchQueue.main.async {
+            NSApp.activate()
+            popover.contentViewController?.view.window?.makeKeyAndOrderFront(nil)
+        }
         menuPopover = popover
     }
 
