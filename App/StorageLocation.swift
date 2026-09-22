@@ -1,10 +1,10 @@
 import Foundation
 
 enum StorageLocation {
-    /// The App Group container is only readable without a privacy prompt when the build is team-signed.
+    /// Without the App Groups entitlement, reading the group container blocks on a privacy prompt.
     static func containerURL(appGroupID: String) -> URL {
         let fm = FileManager.default
-        if CodeSignature.isTeamSigned,
+        if CodeSignature.hasAppGroupEntitlement(appGroupID),
            let group = fm.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
             return group
         }

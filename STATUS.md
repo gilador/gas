@@ -79,6 +79,8 @@ swift test                          # 173 passed / 3 skipped / 0 failed (176 exe
 xcodegen generate
 xcodebuild -project AgentUsage.xcodeproj -scheme AgentUsageApp -destination 'platform=macOS' \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+# Signing happens after the build: scripts/make-dmg.sh signs ad-hoc by default; set SIGN_IDENTITY to a
+# code-signing identity for a stable identity (Keychain "Always Allow" then survives rebuilds).
 
 # Run it (menu bar + desktop panel work unsigned):
 open build/Build/Products/Debug/AgentUsageApp.app
