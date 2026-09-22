@@ -50,10 +50,12 @@ final class DesktopPanelController {
         NSApp.activate(ignoringOtherApps: true)
         if settingsWindow == nil {
             let hosting = NSHostingController(rootView: PreferencesView(viewModel: viewModel, integration: integration ?? ClaudeCodeIntegration()))
+            hosting.sizingOptions = []
             let window = NSWindow(contentViewController: hosting)
             window.title = "Settings"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
+            window.setContentSize(NSSize(width: 380, height: 520))
             window.center()
             settingsWindow = window
         }

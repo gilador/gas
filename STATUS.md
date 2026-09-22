@@ -90,6 +90,10 @@ open build/Build/Products/Debug/AgentUsageApp.app
 
 **Setup:** No setup: on first launch the app installs the Claude Code status line bridge (toggle in Settings → Claude Code; off restores the previous status line; backup at `~/.claude/settings.json.tokens-backup`).
 
+**Install:** `scripts/make-dmg.sh` builds a Release app and writes `dist/Tokens-<version>.dmg`.
+Open the DMG and drag Tokens to Applications. The build is unsigned, so the first launch needs
+right-click → Open (Gatekeeper) until Developer ID signing (§4/§5B) is done.
+
 ---
 
 ## 4. The signing wall (what needs your Apple Developer team)
@@ -155,6 +159,8 @@ Tabbed Settings window (General / Providers enable-disable / Notifications toggl
   `NotificationManager` now no-ops unless `isTeamSigned`.
 - **The committed test fixture** (`Tests/UsageCoreTests/Fixtures/usage_response.json`) is
   **sanitized synthetic** data with the real structure — not real usage numbers.
+- **Settings window must not auto-size to SwiftUI content** (`NSHostingController.sizingOptions =
+  []`, fixed content size) — a caption that re-wraps on resize caused an Auto Layout loop crash.
 
 ---
 

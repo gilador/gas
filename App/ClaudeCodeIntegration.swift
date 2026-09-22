@@ -11,8 +11,7 @@ final class ClaudeCodeIntegration: ObservableObject {
 
     static let enabledKey = "claudeCodeBridgeEnabled"
 
-    var isEnabled: Bool { UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true }
-
+    @Published private(set) var isEnabled: Bool
     @Published private(set) var state: State = .notConnected
 
     private let settingsURL: URL
@@ -23,6 +22,7 @@ final class ClaudeCodeIntegration: ObservableObject {
          directory: URL = StorageLocation.bridgeDirectory) {
         self.settingsURL = settingsURL
         self.directory = directory
+        self.isEnabled = UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true
         refresh()
     }
 
@@ -79,6 +79,7 @@ final class ClaudeCodeIntegration: ObservableObject {
 
     func setEnabled(_ enabled: Bool) {
         UserDefaults.standard.set(enabled, forKey: Self.enabledKey)
+        isEnabled = enabled
         applyEnabledState()
     }
 

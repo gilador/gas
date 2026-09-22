@@ -21,6 +21,7 @@ struct PreferencesView: View {
                     set: { integration.setEnabled($0) }))
                 Text(integrationStatus)
                     .font(.caption).foregroundStyle(integrationIsFailed ? .red : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Section("Notifications") {
                 HStack {
@@ -58,7 +59,7 @@ struct PreferencesView: View {
         }
         .onAppear { integration.refresh() }
         .padding(20)
-        .frame(width: 360)
+        .formStyle(.grouped)
     }
 
     private var integrationStatus: String {
