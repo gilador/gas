@@ -8,6 +8,11 @@ struct MenuContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text("Gas")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+            Divider()
             if viewModel.board.isEmpty {
                 Text("Loading…")
             } else {
