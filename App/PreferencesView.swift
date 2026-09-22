@@ -50,7 +50,7 @@ struct PreferencesView: View {
                         Spacer()
                         Text("\(Int((panelTransparency * 100).rounded()))%").monospacedDigit()
                     }
-                    Slider(value: $panelTransparency, in: 0...0.8, step: 0.05)
+                    Slider(value: $panelTransparency, in: 0...1, step: 0.05)
                 }
             }
             Section {
