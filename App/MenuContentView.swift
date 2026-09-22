@@ -35,10 +35,8 @@ struct MenuContentView: View {
                             Image(systemName: "arrow.clockwise")
                             if let end = viewModel.manualDebounceEnd(now: context.date) {
                                 let remaining = max(0, end.timeIntervalSince(context.date))
-                                Circle()
-                                    .trim(from: 0, to: min(1, remaining / 60))
-                                    .stroke(.secondary.opacity(0.6), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                                    .rotationEffect(.degrees(-90))
+                                PieWedge(fraction: min(1, remaining / 60))
+                                    .fill(.white.opacity(0.3))
                                     .frame(width: 22, height: 22)
                             }
                         }
@@ -102,5 +100,22 @@ struct LimitRow: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+/// A pie slice from 12 o'clock whose leading edge sweeps clockwise as `fraction` shrinks to zero.
+struct PieWedge: Shape {
+    var fraction: Double
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard fraction > 0 else { return path }
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        path.move(to: center)
+        path.addArc(center: center, radius: min(rect.width, rect.height) / 2,
+                    startAngle: .degrees(-90 + 360 * (1 - fraction)), endAngle: .degrees(270),
+                    clockwise: false)
+        path.closeSubpath()
+        return path
     }
 }
