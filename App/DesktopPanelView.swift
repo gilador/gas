@@ -18,10 +18,6 @@ struct DesktopPanelView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(red: 0.12, green: 0.22, blue: 0.34))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(.white.opacity(0.18), lineWidth: 1)
-        )
         .environment(\.colorScheme, .dark)
     }
 
