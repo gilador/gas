@@ -70,7 +70,7 @@ struct UsageWidgetView: View {
             HStack {
                 Text(title).font(.caption2)
                 Spacer()
-                Text("\(Int(limit.percentUsed.rounded()))%").font(.caption2.monospacedDigit())
+                Text("\(limit.displayPercent)%").font(.caption2.monospacedDigit())
             }
             ProgressView(value: min(limit.percentUsed, 100), total: 100)
             if let reset = limit.resetsAt {

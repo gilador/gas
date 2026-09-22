@@ -82,7 +82,7 @@ struct LimitRow: View {
             HStack {
                 Text(limit.label).font(.callout)
                 Spacer()
-                Text("\(Int(limit.percentUsed.rounded()))%").font(.callout.monospacedDigit())
+                Text("\(limit.displayPercent)%").font(.callout.monospacedDigit())
             }
             LimitBar(fraction: limit.percentUsed / 100, color: LimitPalette.color(for: limit))
             if let reset = limit.resetsAt {

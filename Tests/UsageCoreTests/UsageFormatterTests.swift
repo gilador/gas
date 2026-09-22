@@ -33,8 +33,8 @@ final class UsageFormatterTests: XCTestCase {
         XCTAssertEqual(UsageFormatter.compactLabel(for: UsageBoard()), "◐—|⬡—")
     }
 
-    func testPercentIsRoundedNotTruncated() {
-        let board = UsageBoard(snapshots: [snap(.claude, [41.6])])
+    func testPercentIsRoundedUp() {
+        let board = UsageBoard(snapshots: [snap(.claude, [41.2])])
         XCTAssertEqual(UsageFormatter.compactLabel(for: board), "◐42%|⬡—")
     }
 }

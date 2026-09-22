@@ -33,4 +33,12 @@ final class UsageLimitTests: XCTestCase {
         XCTAssertNil(limit.resetsAt)
         XCTAssertEqual(limit.severity, .warning)
     }
+
+    func testDisplayPercentRoundsUp() {
+        func limit(_ p: Double) -> UsageLimit { UsageLimit(id: "x", label: "x", percentUsed: p, resetsAt: nil, severity: .normal) }
+        XCTAssertEqual(limit(22.1).displayPercent, 23)
+        XCTAssertEqual(limit(22.0).displayPercent, 22)
+        XCTAssertEqual(limit(99.01).displayPercent, 100)
+        XCTAssertEqual(limit(0).displayPercent, 0)
+    }
 }

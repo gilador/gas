@@ -31,7 +31,7 @@ struct ProviderStripItem: View {
     }
 
     private var percentText: String {
-        tightest.map { "\(Int($0.percentUsed.rounded()))%" } ?? "—"
+        tightest.map { "\($0.displayPercent)%" } ?? "—"
     }
 
     private var bar: some View {
@@ -66,7 +66,7 @@ struct ProviderStripItem: View {
 
     private var helpText: String {
         var lines = snapshot.limits.map { limit -> String in
-            var line = "\(limit.label) · \(Int(limit.percentUsed.rounded()))%"
+            var line = "\(limit.label) · \(limit.displayPercent)%"
             if let reset = limit.resetsAt {
                 line += " · resets \(reset.formatted(.relative(presentation: .named)))"
             }

@@ -28,4 +28,6 @@ public struct UsageLimit: Codable, Sendable, Identifiable, Equatable {
         self.resetsAt = resetsAt
         self.severity = severity
     }
+
+    public var displayPercent: Int { Int(percentUsed.rounded(.up)) }
 }

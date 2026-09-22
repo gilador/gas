@@ -40,7 +40,7 @@ final class NotificationManager {
 
     private func post(_ crossing: ThresholdCrossing, to center: UNUserNotificationCenter) {
         let content = UNMutableNotificationContent()
-        content.title = "\(crossing.provider.displayName) \(crossing.limit.label) at \(Int(crossing.limit.percentUsed.rounded()))%"
+        content.title = "\(crossing.provider.displayName) \(crossing.limit.label) at \(crossing.limit.displayPercent)%"
         content.body = "You've crossed the \(Int(crossing.threshold))% threshold for this limit."
         content.sound = .default
         let request = UNNotificationRequest(identifier: UUID().uuidString,
