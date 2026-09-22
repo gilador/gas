@@ -15,7 +15,8 @@ APP="$DERIVED/Build/Products/Release/AgentUsageApp.app"
 [ -d "$APP" ] || { echo "build failed: $APP missing" >&2; exit 1; }
 mkdir -p "$STAGE"
 ditto "$APP" "$STAGE/Tokens.app"
-codesign --force --deep --options runtime --sign "${SIGN_IDENTITY:--}" "$STAGE/Tokens.app"
+IDENTITY="${SIGN_IDENTITY:-$(cat scripts/sign-identity.local 2>/dev/null || true)}"
+codesign --force --deep --options runtime --sign "${IDENTITY:--}" "$STAGE/Tokens.app"
 ln -s /Applications "$STAGE/Applications"
 hdiutil create -volname "Tokens $VERSION" -srcfolder "$STAGE" -ov -format UDZO "dist/Tokens-$VERSION.dmg" >/dev/null
 rm -rf "$STAGE"
