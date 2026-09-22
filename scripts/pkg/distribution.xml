@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>Tokens</title>
+    <welcome file="welcome.txt" mime-type="text/plain"/>
+    <options customize="never" require-scripts="true" hostArchitectures="arm64"/>
+    <domains enable_localSystem="true"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.gilad.agentusage"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.gilad.agentusage" visible="false">
+        <pkg-ref id="com.gilad.agentusage"/>
+    </choice>
+    <pkg-ref id="com.gilad.agentusage" version="0.1.0" onConclusion="none">Tokens-component.pkg</pkg-ref>
+</installer-gui-script>

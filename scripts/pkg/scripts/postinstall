@@ -1,0 +1,12 @@
+#!/bin/bash
+# Quits any running Tokens, removes an old per-user copy, launches the installed app as the logged-in user.
+CONSOLE_USER=$(stat -f%Su /dev/console)
+pkill -x AgentUsageApp 2>/dev/null || true
+sleep 1
+USER_HOME=$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
+[ -n "$USER_HOME" ] && rm -rf "$USER_HOME/Applications/Tokens.app"
+xattr -dr com.apple.quarantine /Applications/Tokens.app 2>/dev/null || true
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
+  sudo -u "$CONSOLE_USER" open /Applications/Tokens.app || true
+fi
+exit 0

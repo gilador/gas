@@ -96,6 +96,10 @@ request time is persisted so relaunches do not reset the cadence.
 Open the DMG and drag Tokens to Applications. The build is unsigned, so the first launch needs
 right-click → Open (Gatekeeper) until Developer ID signing (§4/§5B) is done.
 
+`scripts/make-pkg.sh` builds a Release app and writes `dist/Tokens-<version>.pkg`: double-click,
+Continue, Install; installs to /Applications and launches it. Unsigned package, so first run
+needs right-click → Open once (a Developer ID Installer certificate avoids this — paid program).
+
 ---
 
 ## 4. The signing wall (what needs your Apple Developer team)
