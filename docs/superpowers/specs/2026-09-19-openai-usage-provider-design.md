@@ -266,7 +266,7 @@ Provider-agnostic. Uses `StubUsageProvider` (returns a fixed snapshot, or throws
   opt-in.
 - `ThresholdEvaluatorTests` — existing single-provider cases unchanged; new: same limit ID
   on two providers ⇒ two crossings with distinct `provider`; state key format
-  `"<provider>#<id>#<threshold>"`; a crossing on one provider does not suppress the other.
+  `"<provider>#<id>#<level>"`; a crossing on one provider does not suppress the other.
 - `UsageFormatterTests` — two providers ⇒ `◐42%|⬡52%` (no spaces, `|` separator, display
   order); one provider ⇒ `◐42%`; second provider without limits ⇒ omitted; none ⇒ `◐—`;
   percent is rounded, not truncated (`41.6` ⇒ `42%`).
