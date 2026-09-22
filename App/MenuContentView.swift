@@ -30,7 +30,20 @@ struct MenuContentView: View {
             Divider()
             HStack(spacing: 14) {
                 Button { Task { await viewModel.refresh(manual: true) } } label: {
-                    Image(systemName: "arrow.clockwise")
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        ZStack {
+                            Image(systemName: "arrow.clockwise")
+                            if let end = viewModel.manualDebounceEnd(now: context.date) {
+                                let remaining = max(0, end.timeIntervalSince(context.date))
+                                Circle()
+                                    .trim(from: 0, to: min(1, remaining / 60))
+                                    .stroke(.secondary.opacity(0.6), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .rotationEffect(.degrees(-90))
+                                    .frame(width: 22, height: 22)
+                            }
+                        }
+                    }
+                    .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
                 .help("Refresh now")

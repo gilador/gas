@@ -87,6 +87,16 @@ final class UsageViewModel: ObservableObject {
         return next
     }
 
+    /// Latest moment until which a manual refresh is debounced for every provider; nil when a click would fetch now.
+    func manualDebounceEnd(now: Date = Date()) -> Date? {
+        let ends = registry.providers.compactMap { provider -> Date? in
+            guard let last = board.lastRequest(for: provider.id) else { return nil }
+            return last.addingTimeInterval(provider.manualMinimumInterval)
+        }
+        guard let end = ends.max(), end > now else { return nil }
+        return end
+    }
+
     func refresh(manual: Bool = false) async {
         if let inFlight { return await inFlight.value }
         let task = Task { @MainActor in
