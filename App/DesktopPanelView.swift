@@ -17,7 +17,7 @@ struct DesktopPanelView: View {
         .frame(width: 44, alignment: .top)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(red: 0.12, green: 0.22, blue: 0.34).opacity(1 - panelTransparency))
+                .fill(Color.black.opacity(1 - panelTransparency))
         )
         .environment(\.colorScheme, .dark)
     }
