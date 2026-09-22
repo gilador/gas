@@ -12,8 +12,8 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 
 | Component | State | Verified |
 |---|---|---|
-| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **152 passed / 3 skipped / 0 failed (155 executed)** |
-| OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **152 passed / 3 skipped / 0 failed (155 executed)** |
+| `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **173 passed / 3 skipped / 0 failed (176 executed)** |
+| OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **173 passed / 3 skipped / 0 failed (176 executed)** |
 | Menu bar app (AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `Tokens`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover; 15-minute refresh (slider 15–60 min), dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
 | WidgetKit widget (`AgentUsageWidget`) | **Built (code)** | Builds; **does not register** unsigned (see §4) |
 | Desktop panel (pinned NSPanel, draggable, toggle) | **Done** | Builds; runs unsigned; toggle in menu |
@@ -31,10 +31,9 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 `resets_at` is an ISO-8601 string). We never write/refresh the token; expired/401 → stale state.
 The usage endpoint rate-limits at a few calls per hour and every rejected call counts; the app
 honors `Retry-After` per provider and backs off (see the "Rate-limit backoff" section of
-`docs/superpowers/specs/2026-09-19-openai-usage-provider-design.md`). Preferred source: the
-Claude Code status line bridge (Settings → Claude Code → Connect) writes
-`~/Library/Application Support/Tokens/claude_statusline.json`; data younger than 1 h is used
-without any network call. The endpoint is the fallback.
+`docs/superpowers/specs/2026-09-19-openai-usage-provider-design.md`). Claude usage comes only
+from the endpoint, at most once per hour; the last request time is persisted so relaunches do
+not reset the cadence.
 
 **OpenAI (ChatGPT/Codex):** `GET https://chatgpt.com/backend-api/wham/usage`, headers
 `Authorization: Bearer <access_token>` + `ChatGPT-Account-Id: <account_id>`. Credentials read
@@ -72,7 +71,7 @@ refresh the token; expired/401 → stale state. Response fields used: `rate_limi
 
 ```bash
 # Unit tests (fast, no Xcode):
-swift test                          # 152 passed / 3 skipped / 0 failed (155 executed)
+swift test                          # 173 passed / 3 skipped / 0 failed (176 executed)
 #   opt-in integration tests (need a real keychain / entitlement / Codex auth file; hang or prompt otherwise):
 #   RUN_KEYCHAIN_INTEGRATION_TESTS=1   RUN_APP_GROUP_INTEGRATION_TESTS=1   RUN_CODEX_INTEGRATION_TESTS=1
 
@@ -88,7 +87,8 @@ open build/Build/Products/Debug/AgentUsageApp.app
 ```
 **Process hygiene:** run ONE `xcodebuild`/`swift test` at a time. If a build/app hangs, `pkill -9 -f xcodebuild` / `pkill -x AgentUsageApp`. (A concurrent-build pileup and a wedged `SWBBuildService` daemon each caused silent hangs during development — see §6.)
 
-**Setup:** No setup: on first launch the app installs the Claude Code status line bridge (toggle in Settings → Claude Code; off restores the previous status line; backup at `~/.claude/settings.json.tokens-backup`).
+**Setup:** No setup: Claude usage comes only from the endpoint, at most once per hour; the last
+request time is persisted so relaunches do not reset the cadence.
 
 **Install:** `scripts/make-dmg.sh` builds a Release app and writes `dist/Tokens-<version>.dmg`.
 Open the DMG and drag Tokens to Applications. The build is unsigned, so the first launch needs

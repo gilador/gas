@@ -12,9 +12,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let viewModel = UsageViewModel()
         self.viewModel = viewModel
         panelController.viewModel = viewModel
-        let integration = ClaudeCodeIntegration()
-        panelController.integration = integration
-        integration.applyEnabledState()
         statusItemController = StatusItemController(viewModel: viewModel) { [weak self] in
             self?.panelController.openSettings()
         }

@@ -124,6 +124,14 @@ Runs every provider concurrently (`withTaskGroup`); a thrown `fetch()` becomes
 `mergingLastGood(previous:)` against the board's current entry and then `replace`d. One
 slow or failing provider never blocks or blanks another.
 
+A provider is **due** when both hold: its board entry is not `.rateLimited(until:, _)` with
+`until > now`, and either it has no `lastRequest` stamp or `now - lastRequest >=
+provider.minimumInterval`. Providers that are not due are skipped entirely (no `fetch()`
+call, entry untouched). After fetching a due provider, whatever the outcome (including a
+429), the board is stamped `markRequested(provider.id, at: now)`, so the persisted board
+carries the cadence across relaunches. `ClaudeUsageProvider.minimumInterval` is `3600`
+(one endpoint call per hour); `OpenAIUsageProvider` uses the protocol default, `0`.
+
 **`UsageFormatter.compactLabel(for board: UsageBoard) -> String`** (moved from the app):
 Every provider in `displayOrder` is always shown; a provider with no data renders as `<glyph>—`, e.g. `◐—|⬡100%`; an empty board renders `◐—|⬡—`.
 
@@ -133,11 +141,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   init. `refresh()` is `board = await UsageRefresher.refresh(board, providers:
   registry.providers)`, then save, `notifications.process(board)`, reload widget timelines.
   Registry gets `FileCodexAuthReader()` and the `CHATGPT_BASE_URL` override. No fetch or
-  merge logic lives in the app target. No setup: on first launch the app installs the Claude
-  Code status line bridge (toggle in Settings → Claude Code; off restores the previous status
-  line; backup at `~/.claude/settings.json.tokens-backup`); it writes
-  `~/Library/Application Support/Tokens/claude_statusline.json`; data younger than 1 h is used
-  without any network call. The endpoint is the fallback.
+  merge logic lives in the app target.
 - **`MenuContentView`**: `ForEach(board.snapshots)` renders a
   `ProviderSection` (shared view, `App/ProviderSection.swift`): header
   `Text(provider.displayName).font(.caption.bold())`, status row, then `LimitRow`s, or
@@ -181,26 +185,6 @@ off while OpenAI keeps polling on its own schedule. A fresh `.rateLimited` resul
 `wait`/`until` normalized through `RateLimitBackoff` (using the board's previous status)
 before the usual `mergingLastGood` merge, so limits and `fetchedAt` from the last good fetch
 are preserved.
-
-## Claude local usage via the status line bridge
-
-Claude Code's status line command receives a JSON object with
-`rate_limits.five_hour.{used_percentage,resets_at}` and `rate_limits.seven_day.{used_percentage,resets_at}`
-(`resets_at` is Unix epoch seconds; either window, or `rate_limits` itself, may be absent). A bridge
-script (App layer) saves that JSON verbatim to `<container>/claude_statusline.json` on every status
-line invocation.
-
-`ClaudeStatuslineReader` (`Providers/Claude/ClaudeStatuslineReader.swift`) reads that file and parses it
-into a `ClaudeLocalUsage` (`fiveHour`/`sevenDay` windows plus `updatedAt`, the file's modification date).
-`ClaudeLocalUsageMapper` maps it to the same `UsageLimit` shape as the network path (`session` / "Session
-(5h)", `weekly_all` / "Weekly").
-
-`ClaudeUsageProvider` checks the local file first: when it exists and is no older than `localMaxAge`
-(one hour by default), the snapshot is built from it (`fetchedAt` = the file's modification date) and the
-Anthropic `/usage` endpoint is never called. The endpoint is only a fallback for a missing or stale local
-file. `UsageProvider.servesLocally` reports whether the local file is currently fresh; `UsageRefresher`
-skips its normal `.rateLimited(until:)` backoff for a provider that `servesLocally`, since it can answer
-from disk without touching the rate-limited endpoint.
 
 ## Out of scope
 
@@ -247,6 +231,7 @@ classes so failures name the provider):
 | C7 | HTTP 401 ⇒ `.stale`; 429 ⇒ `.rateLimited`; 500 ⇒ `.error`; `URLError` ⇒ `.stale`; bad JSON body ⇒ `.error` | last-good merge relies on the `.stale`/`.error`/`.rateLimited` split |
 | C8 | request carries `Authorization: Bearer <token>` and exactly one GET | auth plumbing |
 | C9 | `fetchedAt` is within the test's time window | "Updated …" line |
+| C10 | `minimumInterval >= 0` | refresher due-check never gets a negative threshold |
 
 `ClaudeUsageProviderContractTests` and `OpenAIUsageProviderContractTests` each build a
 subject and call every contract assertion. Adding a provider means adding one subject.
@@ -346,5 +331,5 @@ The app target stays thin wiring, so it is verified by build + run:
 ### Exit criteria
 - `swift test`: all tests pass, 0 failures; the three opt-in integration tests are skipped
   by default.
-- Every contract assertion C1–C9 runs for both providers.
+- Every contract assertion C1–C10 runs for both providers.
 - No fetch, merge, or formatting logic exists outside `UsageCore`.

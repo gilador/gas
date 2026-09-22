@@ -7,12 +7,9 @@ final class ClaudeUsageProviderTests: XCTestCase {
     private let base = URL(string: "https://api.anthropic.com")!
 
     private func provider(token: Result<ClaudeToken, Error>,
-                          client: UsageHTTPClient,
-                          localReader: ClaudeLocalUsageReader? = nil,
-                          localMaxAge: TimeInterval = 3600) -> ClaudeUsageProvider {
+                          client: UsageHTTPClient) -> ClaudeUsageProvider {
         ClaudeUsageProvider(tokenReader: StubTokenReader(result: token),
-                            httpClient: client, baseURL: base,
-                            localReader: localReader, localMaxAge: localMaxAge)
+                            httpClient: client, baseURL: base)
     }
 
     func testRequestsOAuthUsagePathWithBetaHeader() async throws {
@@ -61,60 +58,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(wait, 0)
     }
 
-    func testFreshLocalUsageIsPreferredOverNetwork() async throws {
-        let token = ClaudeToken(accessToken: "t", expiresAt: nil)
-        let local = ClaudeLocalUsage(fiveHour: .init(usedPercentage: 30, resetsAt: nil),
-                                     sevenDay: nil, updatedAt: Date().addingTimeInterval(-60))
-        let spy = SpyHTTPClient()
-        let snap = try await provider(token: .success(token), client: spy,
-                                      localReader: StubClaudeLocalUsageReader(result: local)).fetch()
-        XCTAssertEqual(snap.status, .ok)
-        XCTAssertEqual(snap.limits.map(\.id), ["session"])
-        XCTAssertEqual(snap.fetchedAt, local.updatedAt)
-        XCTAssertTrue(spy.calls.isEmpty)
-    }
-
-    func testStaleLocalUsageFallsBackToNetwork() async throws {
-        let token = ClaudeToken(accessToken: "t", expiresAt: nil)
-        let local = ClaudeLocalUsage(fiveHour: .init(usedPercentage: 30, resetsAt: nil),
-                                     sevenDay: nil, updatedAt: Date().addingTimeInterval(-7200))
-        let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
-        let snap = try await provider(token: .success(token), client: spy,
-                                      localReader: StubClaudeLocalUsageReader(result: local)).fetch()
-        XCTAssertEqual(snap.status, .ok)
-        XCTAssertEqual(spy.calls.count, 1)
-    }
-
-    func testNilLocalUsageFallsBackToNetwork() async throws {
-        let token = ClaudeToken(accessToken: "t", expiresAt: nil)
-        let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
-        let snap = try await provider(token: .success(token), client: spy,
-                                      localReader: StubClaudeLocalUsageReader(result: nil)).fetch()
-        XCTAssertEqual(snap.status, .ok)
-        XCTAssertEqual(spy.calls.count, 1)
-    }
-
-    func testServesLocallyTrueWhenLocalUsageIsFresh() {
-        let local = ClaudeLocalUsage(fiveHour: .init(usedPercentage: 30, resetsAt: nil),
-                                     sevenDay: nil, updatedAt: Date().addingTimeInterval(-60))
-        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
-                         client: SpyHTTPClient(),
-                         localReader: StubClaudeLocalUsageReader(result: local))
-        XCTAssertTrue(p.servesLocally)
-    }
-
-    func testServesLocallyFalseWhenLocalUsageIsStale() {
-        let local = ClaudeLocalUsage(fiveHour: .init(usedPercentage: 30, resetsAt: nil),
-                                     sevenDay: nil, updatedAt: Date().addingTimeInterval(-7200))
-        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
-                         client: SpyHTTPClient(),
-                         localReader: StubClaudeLocalUsageReader(result: local))
-        XCTAssertFalse(p.servesLocally)
-    }
-
-    func testServesLocallyFalseWhenNoLocalReader() {
-        let p = provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)),
-                         client: SpyHTTPClient())
-        XCTAssertFalse(p.servesLocally)
+    func testMinimumIntervalIsOneHour() {
+        XCTAssertEqual(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).minimumInterval, 3600)
     }
 }

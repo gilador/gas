@@ -84,4 +84,8 @@ final class OpenAIUsageProviderTests: XCTestCase {
         guard case .rateLimited(_, let wait) = snap.status else { return XCTFail("expected .rateLimited") }
         XCTAssertEqual(wait, 0)
     }
+
+    func testMinimumIntervalIsZero() {
+        XCTAssertEqual(provider(auth: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).minimumInterval, 0)
+    }
 }

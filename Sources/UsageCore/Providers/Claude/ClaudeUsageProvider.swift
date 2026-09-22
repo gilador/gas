@@ -2,39 +2,25 @@ import Foundation
 
 public struct ClaudeUsageProvider: UsageProvider {
     public let id: ProviderID = .claude
+    public let minimumInterval: TimeInterval = 60 * 60
 
     private let tokenReader: TokenReader
     private let httpClient: UsageHTTPClient
     private let baseURL: URL
-    private let localReader: ClaudeLocalUsageReader?
-    private let localMaxAge: TimeInterval
     private let warningThreshold: Double
     private let criticalThreshold: Double
 
     public init(tokenReader: TokenReader, httpClient: UsageHTTPClient, baseURL: URL,
-                localReader: ClaudeLocalUsageReader? = nil, localMaxAge: TimeInterval = 3600,
                 warningThreshold: Double = 80, criticalThreshold: Double = 95) {
         self.tokenReader = tokenReader
         self.httpClient = httpClient
         self.baseURL = baseURL
-        self.localReader = localReader
-        self.localMaxAge = localMaxAge
         self.warningThreshold = warningThreshold
         self.criticalThreshold = criticalThreshold
     }
 
-    public var servesLocally: Bool {
-        guard let local = localReader?.readLocalUsage() else { return false }
-        return Date().timeIntervalSince(local.updatedAt) <= localMaxAge
-    }
-
     public func fetch() async throws -> UsageSnapshot {
         let now = Date()
-
-        if let local = localReader?.readLocalUsage(), now.timeIntervalSince(local.updatedAt) <= localMaxAge {
-            let limits = ClaudeLocalUsageMapper.map(local, warning: warningThreshold, critical: criticalThreshold)
-            return UsageSnapshot(provider: .claude, fetchedAt: local.updatedAt, limits: limits, status: .ok)
-        }
 
         let token: ClaudeToken
         do {

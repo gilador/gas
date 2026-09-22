@@ -12,10 +12,22 @@ public struct ProviderLimit: Equatable, Sendable {
 
 public struct UsageBoard: Codable, Sendable, Equatable {
     public private(set) var snapshots: [UsageSnapshot]
+    private var lastRequests: [String: Date]
 
     public init(snapshots: [UsageSnapshot] = []) {
         self.snapshots = []
+        self.lastRequests = [:]
         for snapshot in snapshots { replace(snapshot) }
+    }
+
+    enum CodingKeys: String, CodingKey { case snapshots, lastRequests }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decoded = try container.decode([UsageSnapshot].self, forKey: .snapshots)
+        self.snapshots = []
+        self.lastRequests = try container.decodeIfPresent([String: Date].self, forKey: .lastRequests) ?? [:]
+        for snapshot in decoded { replace(snapshot) }
     }
 
     public var isEmpty: Bool { snapshots.isEmpty }
@@ -29,6 +41,9 @@ public struct UsageBoard: Codable, Sendable, Equatable {
         snapshots.append(snapshot)
         snapshots.sort { Self.rank($0.provider) < Self.rank($1.provider) }
     }
+
+    public func lastRequest(for provider: ProviderID) -> Date? { lastRequests[provider.rawValue] }
+    public mutating func markRequested(_ provider: ProviderID, at date: Date) { lastRequests[provider.rawValue] = date }
 
     public var tightestLimits: [ProviderLimit] {
         snapshots.compactMap { snapshot in

@@ -5,22 +5,12 @@ struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
     let onSettings: () -> Void
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
-    @AppStorage("bridgeNoticeSeen") private var bridgeNoticeSeen = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if viewModel.board.isEmpty {
                 Text("Loading…")
             } else {
-                if !bridgeNoticeSeen {
-                    HStack(alignment: .top, spacing: 6) {
-                        Text("Tokens reads Claude usage from Claude Code's status line. Change in Settings.")
-                            .font(.caption).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button { bridgeNoticeSeen = true } label: { Image(systemName: "xmark.circle.fill") }
-                            .buttonStyle(.plain).foregroundStyle(.secondary).help("Dismiss")
-                    }
-                }
                 ForEach(Array(viewModel.board.snapshots.enumerated()), id: \.element.provider) { index, snapshot in
                     if index > 0 { Divider() }
                     ProviderSection(snapshot: snapshot)

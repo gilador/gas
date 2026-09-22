@@ -137,4 +137,11 @@ enum UsageProviderContract {
         XCTAssertGreaterThanOrEqual(snap.fetchedAt, before, file: file, line: line)
         XCTAssertLessThanOrEqual(snap.fetchedAt, after, file: file, line: line)
     }
+
+    /// C10: minimumInterval is never negative.
+    static func c10MinimumIntervalNonNegative(_ s: ProviderContractSubject,
+                                              file: StaticString = #filePath, line: UInt = #line) {
+        let p = s.make(.valid, SpyHTTPClient())
+        XCTAssertGreaterThanOrEqual(p.minimumInterval, 0, file: file, line: line)
+    }
 }

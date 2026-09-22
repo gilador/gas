@@ -11,13 +11,11 @@ public struct ProviderRegistry {
                                    codexAuthReader: CodexAuthReader,
                                    httpClient: UsageHTTPClient,
                                    claudeBaseURL: URL,
-                                   openAIBaseURL: URL,
-                                   claudeLocalReader: ClaudeLocalUsageReader? = nil) -> ProviderRegistry {
+                                   openAIBaseURL: URL) -> ProviderRegistry {
         ProviderRegistry(providers: [
             ClaudeUsageProvider(tokenReader: tokenReader,
                                 httpClient: httpClient,
-                                baseURL: claudeBaseURL,
-                                localReader: claudeLocalReader),
+                                baseURL: claudeBaseURL),
             OpenAIUsageProvider(authReader: codexAuthReader,
                                 httpClient: httpClient,
                                 baseURL: openAIBaseURL)

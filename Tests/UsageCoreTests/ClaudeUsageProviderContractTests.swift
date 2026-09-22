@@ -30,4 +30,5 @@ final class ClaudeUsageProviderContractTests: XCTestCase {
     func testC7HTTPStatusMapping() async throws { try await UsageProviderContract.c7HTTPStatusMapping(subject) }
     func testC8SendsBearerOnce() async throws { try await UsageProviderContract.c8SendsBearerOnce(subject) }
     func testC9FetchedAtIsNow() async throws { try await UsageProviderContract.c9FetchedAtIsNow(subject) }
+    func testC10MinimumIntervalNonNegative() { UsageProviderContract.c10MinimumIntervalNonNegative(subject) }
 }

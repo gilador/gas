@@ -78,4 +78,41 @@ final class UsageBoardTests: XCTestCase {
         let decoded = try JSONDecoder().decode(UsageBoard.self, from: data)
         XCTAssertEqual(decoded, board)
     }
+
+    func testLastRequestDefaultsToNil() {
+        let board = UsageBoard()
+        XCTAssertNil(board.lastRequest(for: .claude))
+    }
+
+    func testMarkRequestedIsPerProvider() {
+        var board = UsageBoard()
+        let stamp = Date(timeIntervalSince1970: 42)
+        board.markRequested(.claude, at: stamp)
+        XCTAssertEqual(board.lastRequest(for: .claude), stamp)
+        XCTAssertNil(board.lastRequest(for: .openai))
+    }
+
+    func testCodableRoundTripKeepsLastRequestStamp() throws {
+        var board = UsageBoard(snapshots: [snap(.claude, fetchedAt: 5)])
+        board.markRequested(.claude, at: Date(timeIntervalSince1970: 42))
+        let data = try JSONEncoder().encode(board)
+        let decoded = try JSONDecoder().decode(UsageBoard.self, from: data)
+        XCTAssertEqual(decoded, board)
+        XCTAssertEqual(decoded.lastRequest(for: .claude), Date(timeIntervalSince1970: 42))
+    }
+
+    func testDecodingBoardWithoutLastRequestsKeyHasNoStamps() throws {
+        let data = #"{"snapshots":[]}"#.data(using: .utf8)!
+        let board = try JSONDecoder().decode(UsageBoard.self, from: data)
+        XCTAssertNil(board.lastRequest(for: .claude))
+        XCTAssertNil(board.lastRequest(for: .openai))
+    }
+
+    func testReplaceDoesNotTouchStamps() {
+        var board = UsageBoard()
+        let stamp = Date(timeIntervalSince1970: 42)
+        board.markRequested(.claude, at: stamp)
+        board.replace(snap(.claude, fetchedAt: 9))
+        XCTAssertEqual(board.lastRequest(for: .claude), stamp)
+    }
 }
