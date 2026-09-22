@@ -3,6 +3,7 @@ import UsageCore
 
 struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
+    @AppStorage("panelTransparency") private var panelTransparency = 0.0
     let onTap: () -> Void
 
     var body: some View {
@@ -16,7 +17,7 @@ struct DesktopPanelView: View {
         .frame(width: 44, alignment: .top)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(red: 0.12, green: 0.22, blue: 0.34))
+                .fill(Color(red: 0.12, green: 0.22, blue: 0.34).opacity(1 - panelTransparency))
         )
         .environment(\.colorScheme, .dark)
     }

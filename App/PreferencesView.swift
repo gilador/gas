@@ -10,6 +10,7 @@ struct PreferencesView: View {
     @AppStorage("warningThreshold") private var warningThreshold = 80.0
     @AppStorage("criticalThreshold") private var criticalThreshold = 95.0
     @AppStorage("refreshInterval") private var refreshInterval = RefreshIntervals.defaultSeconds
+    @AppStorage("panelTransparency") private var panelTransparency = 0.0
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -40,6 +41,16 @@ struct PreferencesView: View {
                         Text("\(Int((refreshInterval / 60).rounded())) min").monospacedDigit()
                     }
                     TickIntervalSlider(seconds: $refreshInterval, stopsSeconds: RefreshIntervals.stopsSeconds)
+                }
+            }
+            Section("Floating panel") {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Transparency")
+                        Spacer()
+                        Text("\(Int((panelTransparency * 100).rounded()))%").monospacedDigit()
+                    }
+                    Slider(value: $panelTransparency, in: 0...0.8, step: 0.05)
                 }
             }
             Section {
