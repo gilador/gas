@@ -2,13 +2,13 @@ import Foundation
 
 public enum UsageRefresher {
     public static func refresh(_ board: UsageBoard, providers: [any UsageProvider],
-                               now: Date = Date(), ignoreMinimumInterval: Bool = false) async -> UsageBoard {
+                               now: Date = Date(), manual: Bool = false) async -> UsageBoard {
         let dueProviders = providers.filter { provider in
             if case .rateLimited(let until, _)? = board.snapshot(for: provider.id)?.status, until > now {
                 return false
             }
-            if !ignoreMinimumInterval, let last = board.lastRequest(for: provider.id),
-               now.timeIntervalSince(last) < provider.minimumInterval {
+            let interval = manual ? provider.manualMinimumInterval : provider.minimumInterval
+            if let last = board.lastRequest(for: provider.id), now.timeIntervalSince(last) < interval {
                 return false
             }
             return true

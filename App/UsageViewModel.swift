@@ -56,8 +56,12 @@ final class UsageViewModel: ObservableObject {
     }
 
     func start() {
-        timer?.invalidate()
         Task { await refresh() }
+        scheduleTimer()
+    }
+
+    private func scheduleTimer() {
+        timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: RefreshIntervals.seconds, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.nextTick = Date().addingTimeInterval(RefreshIntervals.seconds)
@@ -83,12 +87,12 @@ final class UsageViewModel: ObservableObject {
     func refresh(manual: Bool = false) async {
         if let inFlight { return await inFlight.value }
         let task = Task { @MainActor in
-            let updated = await UsageRefresher.refresh(board, providers: registry.providers,
-                                                        ignoreMinimumInterval: manual)
+            let updated = await UsageRefresher.refresh(board, providers: registry.providers, manual: manual)
             board = updated
             try? store.save(updated)
             notifications.process(updated)
             WidgetCenter.shared.reloadAllTimelines()
+            if manual { scheduleTimer() }
         }
         inFlight = task
         await task.value

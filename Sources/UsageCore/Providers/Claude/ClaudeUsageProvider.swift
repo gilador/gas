@@ -3,6 +3,7 @@ import Foundation
 public struct ClaudeUsageProvider: UsageProvider {
     public let id: ProviderID = .claude
     public let minimumInterval: TimeInterval = 60 * 60
+    public let manualMinimumInterval: TimeInterval = 60 * 60
 
     private let tokenReader: TokenReader
     private let httpClient: UsageHTTPClient

@@ -60,6 +60,7 @@ struct StubUsageProvider: UsageProvider, @unchecked Sendable {
     let result: Result<UsageSnapshot, Error>
     var delay: TimeInterval = 0
     var minimumInterval: TimeInterval = 0
+    var manualMinimumInterval: TimeInterval = 60
     func fetch() async throws -> UsageSnapshot {
         if delay > 0 { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
         return try result.get()
@@ -75,13 +76,16 @@ final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
     let id: ProviderID
     let result: Result<UsageSnapshot, Error>
     let minimumInterval: TimeInterval
+    let manualMinimumInterval: TimeInterval
     private let lock = NSLock()
     private var _calls = 0
     var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }
-    init(id: ProviderID, result: Result<UsageSnapshot, Error>, minimumInterval: TimeInterval = 0) {
+    init(id: ProviderID, result: Result<UsageSnapshot, Error>, minimumInterval: TimeInterval = 0,
+         manualMinimumInterval: TimeInterval = 60) {
         self.id = id
         self.result = result
         self.minimumInterval = minimumInterval
+        self.manualMinimumInterval = manualMinimumInterval
     }
     private func recordCall() {
         lock.lock(); defer { lock.unlock() }

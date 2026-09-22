@@ -88,4 +88,8 @@ final class OpenAIUsageProviderTests: XCTestCase {
     func testMinimumIntervalIsZero() {
         XCTAssertEqual(provider(auth: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).minimumInterval, 0)
     }
+
+    func testManualMinimumIntervalIsOneMinute() {
+        XCTAssertEqual(provider(auth: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).manualMinimumInterval, 60)
+    }
 }

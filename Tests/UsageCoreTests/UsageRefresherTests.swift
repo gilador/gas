@@ -199,14 +199,41 @@ final class UsageRefresherTests: XCTestCase {
         XCTAssertEqual(board.lastRequest(for: .claude), now)
     }
 
-    func testManualRefreshIgnoresMinimumInterval() async {
+    func testManualRefreshWithinDebounceIsSkipped() async {
         var previous = UsageBoard()
-        previous.markRequested(.claude, at: now.addingTimeInterval(-60))
+        previous.markRequested(.openai, at: now.addingTimeInterval(-30))
+        let openai = CountingUsageProvider(id: .openai, result: .success(snap(.openai)),
+                                           minimumInterval: 0, manualMinimumInterval: 60)
+        _ = await UsageRefresher.refresh(previous, providers: [openai], now: now, manual: true)
+        XCTAssertEqual(openai.calls, 0)
+    }
+
+    func testManualRefreshAfterDebounceIsFetched() async {
+        var previous = UsageBoard()
+        previous.markRequested(.openai, at: now.addingTimeInterval(-61))
+        let openai = CountingUsageProvider(id: .openai, result: .success(snap(.openai)),
+                                           minimumInterval: 0, manualMinimumInterval: 60)
+        let board = await UsageRefresher.refresh(previous, providers: [openai], now: now, manual: true)
+        XCTAssertEqual(openai.calls, 1)
+        XCTAssertEqual(board.lastRequest(for: .openai), now)
+    }
+
+    func testManualRefreshRespectsClaudeHour() async {
+        var previous = UsageBoard()
+        previous.markRequested(.claude, at: now.addingTimeInterval(-1800))
         let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude)),
-                                           minimumInterval: 3600)
-        _ = await UsageRefresher.refresh(previous, providers: [claude], now: now,
-                                         ignoreMinimumInterval: true)
-        XCTAssertEqual(claude.calls, 1)
+                                           minimumInterval: 3600, manualMinimumInterval: 3600)
+        _ = await UsageRefresher.refresh(previous, providers: [claude], now: now, manual: true)
+        XCTAssertEqual(claude.calls, 0)
+    }
+
+    func testAutomaticRefreshIgnoresDebounce() async {
+        var previous = UsageBoard()
+        previous.markRequested(.openai, at: now.addingTimeInterval(-30))
+        let openai = CountingUsageProvider(id: .openai, result: .success(snap(.openai)),
+                                           minimumInterval: 0, manualMinimumInterval: 60)
+        _ = await UsageRefresher.refresh(previous, providers: [openai], now: now, manual: false)
+        XCTAssertEqual(openai.calls, 1)
     }
 
     func testManualRefreshStillHonorsRateLimitDeadline() async {
@@ -214,8 +241,7 @@ final class UsageRefresherTests: XCTestCase {
             snap(.claude, fetchedAt: 100, status: .rateLimited(until: now.addingTimeInterval(60), wait: 900))
         ])
         let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude)))
-        _ = await UsageRefresher.refresh(previous, providers: [claude], now: now,
-                                         ignoreMinimumInterval: true)
+        _ = await UsageRefresher.refresh(previous, providers: [claude], now: now, manual: true)
         XCTAssertEqual(claude.calls, 0)
     }
 }
