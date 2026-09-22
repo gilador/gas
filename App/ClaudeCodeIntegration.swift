@@ -59,6 +59,8 @@ final class ClaudeCodeIntegration: ObservableObject {
                 }
                 try backupSettings()
                 try writeSettings(result.settings)
+            } else if ClaudeCodeStatusLine.needsRepair(settings: settings, bridgePath: bridgeURL.path) {
+                try writeSettings(result.settings)
             }
             refresh()
         } catch {
@@ -73,6 +75,10 @@ final class ClaudeCodeIntegration: ObservableObject {
         switch (isEnabled && hasClaudeCode, state) {
         case (true, .notConnected): connect()
         case (false, .connected): disconnect()
+        case (true, .connected):
+            if let settings = try? readSettings(), ClaudeCodeStatusLine.needsRepair(settings: settings, bridgePath: bridgeURL.path) {
+                connect()
+            }
         default: break
         }
     }

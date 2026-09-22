@@ -10,7 +10,7 @@ final class ClaudeCodeStatusLineTests: XCTestCase {
 
         let statusLine = result.settings["statusLine"] as? [String: Any]
         XCTAssertEqual(statusLine?["type"] as? String, "command")
-        XCTAssertEqual(statusLine?["command"] as? String, bridgePath)
+        XCTAssertEqual(statusLine?["command"] as? String, "\"\(bridgePath)\"")
         XCTAssertNil(statusLine?["refreshInterval"])
         XCTAssertNil(result.previousStatusLine)
         XCTAssertNil(result.previousCommand)
@@ -24,7 +24,7 @@ final class ClaudeCodeStatusLineTests: XCTestCase {
         let result = ClaudeCodeStatusLine.connect(settings: settings, bridgePath: bridgePath)
 
         let statusLine = result.settings["statusLine"] as? [String: Any]
-        XCTAssertEqual(statusLine?["command"] as? String, bridgePath)
+        XCTAssertEqual(statusLine?["command"] as? String, "\"\(bridgePath)\"")
         XCTAssertEqual(statusLine?["refreshInterval"] as? Int, 5)
         XCTAssertEqual(result.previousStatusLine as NSDictionary?, previousStatusLine as NSDictionary)
         XCTAssertEqual(result.previousCommand, "my-script.sh")
@@ -41,7 +41,7 @@ final class ClaudeCodeStatusLineTests: XCTestCase {
     }
 
     func testConnectWhenAlreadyConnectedLeavesSettingsUnchanged() {
-        let statusLine: [String: Any] = ["type": "command", "command": bridgePath]
+        let statusLine: [String: Any] = ["type": "command", "command": "\"\(bridgePath)\""]
         let settings: [String: Any] = ["statusLine": statusLine, "model": "opus"]
         let result = ClaudeCodeStatusLine.connect(settings: settings, bridgePath: bridgePath)
 
@@ -49,6 +49,18 @@ final class ClaudeCodeStatusLineTests: XCTestCase {
         XCTAssertEqual(result.settings as NSDictionary, settings as NSDictionary)
         XCTAssertNil(result.previousStatusLine)
         XCTAssertNil(result.previousCommand)
+    }
+
+    func testConnectOnUnquotedInstallRepairsCommandWithoutTouchingPrevious() {
+        let statusLine: [String: Any] = ["type": "command", "command": bridgePath]
+        let settings: [String: Any] = ["statusLine": statusLine, "model": "opus"]
+        let result = ClaudeCodeStatusLine.connect(settings: settings, bridgePath: bridgePath)
+
+        XCTAssertTrue(result.alreadyConnected)
+        XCTAssertNil(result.previousStatusLine)
+        XCTAssertNil(result.previousCommand)
+        let resultStatusLine = result.settings["statusLine"] as? [String: Any]
+        XCTAssertEqual(resultStatusLine?["command"] as? String, "\"\(bridgePath)\"")
     }
 
     func testIsConnectedTrueAndFalse() {
@@ -59,6 +71,26 @@ final class ClaudeCodeStatusLineTests: XCTestCase {
         XCTAssertTrue(ClaudeCodeStatusLine.isConnected(settings: connected, bridgePath: bridgePath))
         XCTAssertFalse(ClaudeCodeStatusLine.isConnected(settings: notConnected, bridgePath: bridgePath))
         XCTAssertFalse(ClaudeCodeStatusLine.isConnected(settings: none, bridgePath: bridgePath))
+    }
+
+    func testIsConnectedAcceptsQuotedAndUnquoted() {
+        let unquoted: [String: Any] = ["statusLine": ["type": "command", "command": bridgePath]]
+        let quoted: [String: Any] = ["statusLine": ["type": "command", "command": "\"\(bridgePath)\""]]
+        let other: [String: Any] = ["statusLine": ["type": "command", "command": "other.sh"]]
+
+        XCTAssertTrue(ClaudeCodeStatusLine.isConnected(settings: unquoted, bridgePath: bridgePath))
+        XCTAssertTrue(ClaudeCodeStatusLine.isConnected(settings: quoted, bridgePath: bridgePath))
+        XCTAssertFalse(ClaudeCodeStatusLine.isConnected(settings: other, bridgePath: bridgePath))
+    }
+
+    func testNeedsRepair() {
+        let unquoted: [String: Any] = ["statusLine": ["type": "command", "command": bridgePath]]
+        let quoted: [String: Any] = ["statusLine": ["type": "command", "command": "\"\(bridgePath)\""]]
+        let notConnected: [String: Any] = ["statusLine": ["type": "command", "command": "other.sh"]]
+
+        XCTAssertTrue(ClaudeCodeStatusLine.needsRepair(settings: unquoted, bridgePath: bridgePath))
+        XCTAssertFalse(ClaudeCodeStatusLine.needsRepair(settings: quoted, bridgePath: bridgePath))
+        XCTAssertFalse(ClaudeCodeStatusLine.needsRepair(settings: notConnected, bridgePath: bridgePath))
     }
 
     func testDisconnectRestoresPreviousStatusLine() {

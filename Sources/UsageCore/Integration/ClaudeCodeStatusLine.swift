@@ -10,16 +10,30 @@ public enum ClaudeCodeStatusLine {
         public let alreadyConnected: Bool
     }
 
+    public static func quotedCommand(bridgePath: String) -> String { "\"\(bridgePath)\"" }
+
+    private static func matchesBridge(_ command: String?, bridgePath: String) -> Bool {
+        command == bridgePath || command == quotedCommand(bridgePath: bridgePath)
+    }
+
     public static func isConnected(settings: [String: Any], bridgePath: String) -> Bool {
+        matchesBridge((settings["statusLine"] as? [String: Any])?["command"] as? String, bridgePath: bridgePath)
+    }
+
+    public static func needsRepair(settings: [String: Any], bridgePath: String) -> Bool {
         (settings["statusLine"] as? [String: Any])?["command"] as? String == bridgePath
     }
 
     public static func connect(settings: [String: Any], bridgePath: String) -> ConnectResult {
         let previous = settings["statusLine"] as? [String: Any]
         if isConnected(settings: settings, bridgePath: bridgePath) {
-            return ConnectResult(settings: settings, previousStatusLine: nil, previousCommand: nil, alreadyConnected: true)
+            var repaired = settings
+            var statusLine = previous ?? [:]
+            statusLine["command"] = quotedCommand(bridgePath: bridgePath)
+            repaired["statusLine"] = statusLine
+            return ConnectResult(settings: repaired, previousStatusLine: nil, previousCommand: nil, alreadyConnected: true)
         }
-        var bridge: [String: Any] = ["type": "command", "command": bridgePath]
+        var bridge: [String: Any] = ["type": "command", "command": quotedCommand(bridgePath: bridgePath)]
         if let interval = previous?["refreshInterval"] { bridge["refreshInterval"] = interval }
         if let padding = previous?["padding"] { bridge["padding"] = padding }
         var patched = settings
