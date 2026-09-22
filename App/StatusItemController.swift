@@ -46,6 +46,7 @@ final class StatusItemController: NSObject {
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
             rootView: MenuContentView(viewModel: viewModel, onSettings: onSettings))
+        NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         self.popover = popover
     }
