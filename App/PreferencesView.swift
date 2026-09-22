@@ -11,6 +11,8 @@ struct PreferencesView: View {
     @AppStorage("criticalThreshold") private var criticalThreshold = 85.0
     @AppStorage("panelTransparency") private var panelTransparency = 0.5
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
+    @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -20,6 +22,17 @@ struct PreferencesView: View {
                     ForEach(UsageDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
                 }
                 .pickerStyle(.segmented)
+            }
+            Section("Providers") {
+                ForEach(ProviderID.displayOrder, id: \.self) { provider in
+                    Toggle(isOn: binding(for: provider)) {
+                        HStack(spacing: 6) {
+                            ProviderIcon(provider: provider, size: 14)
+                            Text(provider.displayName)
+                        }
+                    }
+                    .disabled(isOnlyEnabled(provider))
+                }
             }
             Section("Notifications") {
                 VStack(alignment: .leading, spacing: 4) {
@@ -63,5 +76,21 @@ struct PreferencesView: View {
         }
         .padding(20)
         .formStyle(.grouped)
+    }
+
+    private func binding(for provider: ProviderID) -> Binding<Bool> {
+        switch provider {
+        case .claude: return Binding(get: { claudeEnabled }, set: { claudeEnabled = $0; providersChanged(to: $0) })
+        case .openai: return Binding(get: { openaiEnabled }, set: { openaiEnabled = $0; providersChanged(to: $0) })
+        case .xai: return .constant(false)
+        }
+    }
+
+    private func isOnlyEnabled(_ provider: ProviderID) -> Bool {
+        ProviderSettings.enabled() == [provider]
+    }
+
+    private func providersChanged(to enabled: Bool) {
+        if enabled { Task { await viewModel.refresh(manual: true) } }
     }
 }

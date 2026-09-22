@@ -157,6 +157,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
 - **`NotificationManager.process(_ board:)`**: for each snapshot with `.ok`, run the
   evaluator with the shared `NotificationState`; title
   `"\(provider.displayName) \(limit.label) at NN%"`. Team-signed gate unchanged.
+- **`PreferencesView`**: a Providers section with a toggle per provider; a disabled provider is not fetched and is hidden from the menu bar label, menu, floating panel, and threshold alerts, and the last enabled provider cannot be turned off.
 
 ### Widget
 

@@ -4,11 +4,14 @@ import UsageCore
 struct MenuBarLabelView: View {
     @ObservedObject var viewModel: UsageViewModel
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
+    @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     var body: some View {
+        let _ = (claudeEnabled, openaiEnabled)
         HStack(spacing: 2) {
-            ForEach(Array(ProviderID.displayOrder.enumerated()), id: \.element) { index, provider in
+            ForEach(Array(ProviderSettings.enabled().enumerated()), id: \.element) { index, provider in
                 if index > 0 {
                     Text("|").padding(.horizontal, 1)
                 }

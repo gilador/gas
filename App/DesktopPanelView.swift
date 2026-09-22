@@ -5,9 +5,12 @@ struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var alerts: AlertCenter
     @AppStorage("panelTransparency") private var panelTransparency = 0.5
+    @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
+    @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     let onTap: () -> Void
 
     var body: some View {
+        let _ = (claudeEnabled, openaiEnabled)
         VStack(spacing: 6) {
             content
         }
@@ -26,7 +29,7 @@ struct DesktopPanelView: View {
         if viewModel.board.isEmpty {
             Text("…").font(.caption).foregroundStyle(.secondary)
         } else {
-            ForEach(Array(viewModel.board.snapshots.enumerated()), id: \.element.provider) { index, snapshot in
+            ForEach(Array(viewModel.visibleSnapshots.enumerated()), id: \.element.provider) { index, snapshot in
                 if index > 0 {
                     Rectangle().fill(.white.opacity(0.15)).frame(width: 26, height: 1)
                 }

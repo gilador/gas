@@ -89,7 +89,7 @@ final class UsageViewModel: ObservableObject {
 
     /// Latest moment until which a manual refresh is debounced for every provider; nil when a click would fetch now.
     func manualDebounceEnd(now: Date = Date()) -> Date? {
-        let ends = registry.providers.compactMap { provider -> Date? in
+        let ends = registry.providers.filter { ProviderSettings.isEnabled($0.id) }.compactMap { provider -> Date? in
             guard let last = board.lastRequest(for: provider.id) else { return nil }
             return last.addingTimeInterval(provider.manualMinimumInterval)
         }
@@ -97,10 +97,15 @@ final class UsageViewModel: ObservableObject {
         return end
     }
 
+    /// Snapshots for enabled providers only; disabled providers stay hidden everywhere.
+    var visibleSnapshots: [UsageSnapshot] {
+        board.snapshots.filter { ProviderSettings.isEnabled($0.provider) }
+    }
+
     func refresh(manual: Bool = false) async {
         if let inFlight { return await inFlight.value }
         let task = Task { @MainActor in
-            let updated = await UsageRefresher.refresh(board, providers: registry.providers, manual: manual)
+            let updated = await UsageRefresher.refresh(board, providers: registry.providers.filter { ProviderSettings.isEnabled($0.id) }, manual: manual)
             board = updated
             try? store.save(updated)
             let crossings = thresholds.crossings(in: updated)

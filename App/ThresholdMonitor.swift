@@ -20,7 +20,7 @@ final class ThresholdMonitor {
         let upgrading = defaults.data(forKey: stateKey) == nil && defaults.object(forKey: legacyStateKey) != nil
         var state = loadState()
         var crossings: [ThresholdCrossing] = []
-        for snapshot in board.snapshots where snapshot.status == .ok {
+        for snapshot in board.snapshots where snapshot.status == .ok && ProviderSettings.isEnabled(snapshot.provider) {
             crossings += ThresholdEvaluator.evaluate(snapshot, state: &state,
                                                      warning: warning, critical: criticalThreshold)
         }

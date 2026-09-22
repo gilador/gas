@@ -5,8 +5,11 @@ struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
     let onSettings: () -> Void
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
+    @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
+    @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
 
     var body: some View {
+        let _ = (claudeEnabled, openaiEnabled)
         VStack(alignment: .leading, spacing: 8) {
             Text("g · a · s")
                 .font(.caption.bold())
@@ -16,7 +19,7 @@ struct MenuContentView: View {
             if viewModel.board.isEmpty {
                 Text("Loading…")
             } else {
-                ForEach(Array(viewModel.board.snapshots.enumerated()), id: \.element.provider) { index, snapshot in
+                ForEach(Array(viewModel.visibleSnapshots.enumerated()), id: \.element.provider) { index, snapshot in
                     if index > 0 { Divider() }
                     ProviderSection(snapshot: snapshot, nextRefresh: viewModel.nextRefresh(for: snapshot.provider))
                 }
