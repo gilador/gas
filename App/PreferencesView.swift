@@ -11,10 +11,17 @@ struct PreferencesView: View {
     @AppStorage("criticalThreshold") private var criticalThreshold = 95.0
     @AppStorage("refreshInterval") private var refreshInterval = RefreshIntervals.defaultSeconds
     @AppStorage("panelTransparency") private var panelTransparency = 0.0
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
         Form {
+            Section("Display") {
+                Picker("Show usage as", selection: $usageDisplayRaw) {
+                    ForEach(UsageDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+                }
+                .pickerStyle(.segmented)
+            }
             Section("Notifications") {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {

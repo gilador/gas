@@ -4,6 +4,8 @@ import UsageCore
 /// One provider in the floating strip: session percent, a thin bar for the session limit, a tick for the weekly one.
 struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     private static let barSize = CGSize(width: 8, height: 84)
 
@@ -34,7 +36,7 @@ struct ProviderStripItem: View {
     }
 
     private var percentText: String {
-        session.map { "\($0.displayPercent)%" } ?? "—"
+        session.map { "\(mode.percent(for: $0))%" } ?? "—"
     }
 
     private var bar: some View {
@@ -43,15 +45,15 @@ struct ProviderStripItem: View {
             if let session {
                 Capsule()
                     .fill(LimitPalette.color(for: session))
-                    .frame(height: Self.barSize.height * min(session.percentUsed, 100) / 100)
+                    .frame(height: Self.barSize.height * mode.fraction(for: session))
             }
             if let weekly {
                 Color.clear
                     .frame(width: Self.barSize.width + 6, height: 10)
                     .overlay(Rectangle().fill(LimitPalette.color(for: weekly)).frame(height: 2))
                     .contentShape(Rectangle())
-                    .help("Weekly: \(weekly.displayPercent)%")
-                    .offset(y: -(Self.barSize.height * min(weekly.percentUsed, 100) / 100) + 5)
+                    .help("Weekly: \(mode.percent(for: weekly))% \(mode == .used ? "used" : "left")")
+                    .offset(y: -(Self.barSize.height * mode.fraction(for: weekly)) + 5)
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
@@ -71,7 +73,7 @@ struct ProviderStripItem: View {
 
     private var helpText: String {
         var lines = snapshot.limits.map { limit -> String in
-            var line = "\(limit.label) · \(limit.displayPercent)%"
+            var line = "\(limit.label) · \(mode.percent(for: limit))% \(mode == .used ? "used" : "left")"
             if let reset = limit.resetsAt {
                 line += " · resets \(reset.formatted(.relative(presentation: .named)))"
             }

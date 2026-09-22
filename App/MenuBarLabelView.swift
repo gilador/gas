@@ -3,6 +3,8 @@ import UsageCore
 
 struct MenuBarLabelView: View {
     @ObservedObject var viewModel: UsageViewModel
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     var body: some View {
         HStack(spacing: 2) {
@@ -21,6 +23,6 @@ struct MenuBarLabelView: View {
 
     private func percentText(for provider: ProviderID) -> String {
         viewModel.board.snapshot(for: provider)?.tightestLimit
-            .map { "\($0.displayPercent)%" } ?? "—"
+            .map { "\(mode.percent(for: $0))%" } ?? "—"
     }
 }

@@ -68,15 +68,17 @@ struct MenuContentView: View {
 
 struct LimitRow: View {
     let limit: UsageLimit
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Text(limit.label).font(.callout)
                 Spacer()
-                Text("\(limit.displayPercent)%").font(.callout.monospacedDigit())
+                Text("\(mode.percent(for: limit))%" + (mode == .remaining ? " left" : "")).font(.callout.monospacedDigit())
             }
-            LimitBar(fraction: limit.percentUsed / 100, color: LimitPalette.color(for: limit))
+            LimitBar(fraction: mode.fraction(for: limit), color: LimitPalette.color(for: limit))
             if let reset = limit.resetsAt {
                 Text("Resets \(reset.formatted(.relative(presentation: .named)))")
                     .font(.caption2).foregroundStyle(.secondary)
