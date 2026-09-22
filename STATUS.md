@@ -92,13 +92,8 @@ open build/Build/Products/Debug/AgentUsageApp.app
 **Setup:** No setup: Claude usage comes only from the endpoint, at most once per hour; the last
 request time is persisted so relaunches do not reset the cadence.
 
-**Install:** `scripts/make-dmg.sh` builds a Release app and writes `dist/Tokens-<version>.dmg`.
-Open the DMG and drag Tokens to Applications. The build is unsigned, so the first launch needs
-right-click → Open (Gatekeeper) until Developer ID signing (§4/§5B) is done.
-
-`scripts/make-pkg.sh` builds a Release app and writes `dist/Tokens-<version>.pkg`: double-click,
-Continue, Install; installs to /Applications and launches it. Unsigned package, so first run
-needs right-click → Open once (a Developer ID Installer certificate avoids this — paid program).
+**Install:** `scripts/package.sh` builds and packages `Tokens.app` (DMG, PKG, or both — run
+`scripts/package.sh --help` for targets and signing options). See `scripts/README.md`.
 
 ---
 
