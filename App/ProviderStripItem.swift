@@ -47,6 +47,10 @@ struct ProviderStripItem: View {
         snapshot.limits.first { $0.id == "weekly_all" }
     }
 
+    private var scoped: UsageLimit? {
+        snapshot.limits.first { $0.id.hasPrefix("weekly_scoped") }
+    }
+
     private var percentText: String {
         session.map { "\(mode.percent(for: $0))%" } ?? "—"
     }
@@ -66,6 +70,14 @@ struct ProviderStripItem: View {
                     .contentShape(Rectangle())
                     .help("Weekly: \(mode.percent(for: weekly))% \(mode == .used ? "used" : "left")")
                     .offset(y: -(Self.barSize.height * mode.fraction(for: weekly)) + 5)
+            }
+            if let scoped {
+                Color.clear
+                    .frame(width: Self.barSize.width + 6, height: 10)
+                    .overlay(Rectangle().fill(Color.gray).frame(height: 2))
+                    .contentShape(Rectangle())
+                    .help("\(scoped.label): \(mode.percent(for: scoped))% \(mode == .used ? "used" : "left")")
+                    .offset(y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
