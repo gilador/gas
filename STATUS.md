@@ -17,7 +17,7 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 | Menu bar app (AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `gas`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover; 15-minute refresh (slider 15–60 min), dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
 | WidgetKit widget (`AgentUsageWidget`) | **Built (code)** | Builds; **does not register** unsigned (see §4) |
 | Desktop panel (pinned NSPanel, draggable, toggle) | **Done** | Builds; runs unsigned; toggle in menu |
-| Threshold notifications (80% / 95%, de-duped) | **Built** | Gated off unless team-signed (see §4) |
+| Threshold notifications (65% / 85%, de-duped) | **Built** | Gated off unless team-signed (see §4) |
 | Clean build (app + embedded widget) | **Done** | `xcodebuild … BUILD SUCCEEDED`, 0 warnings |
 
 **Everything above is on this branch, pending merge to `main`.** The app currently runs from a local unsigned build

@@ -7,8 +7,8 @@ struct PreferencesView: View {
     @ObservedObject var viewModel: UsageViewModel
     @Environment(\.dismiss) private var dismiss
 
-    @AppStorage("warningThreshold") private var warningThreshold = 80.0
-    @AppStorage("criticalThreshold") private var criticalThreshold = 95.0
+    @AppStorage("warningThreshold") private var warningThreshold = 65.0
+    @AppStorage("criticalThreshold") private var criticalThreshold = 85.0
     @AppStorage("panelTransparency") private var panelTransparency = 0.5
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled

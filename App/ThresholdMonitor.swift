@@ -8,7 +8,7 @@ final class ThresholdMonitor {
     private let legacyStateKey = "notificationState"
 
     var criticalThreshold: Double {
-        defaults.object(forKey: "criticalThreshold") as? Double ?? 95
+        defaults.object(forKey: "criticalThreshold") as? Double ?? 85
     }
 
     func isCritical(_ crossing: ThresholdCrossing) -> Bool {
@@ -16,7 +16,7 @@ final class ThresholdMonitor {
     }
 
     func crossings(in board: UsageBoard) -> [ThresholdCrossing] {
-        let warning = defaults.object(forKey: "warningThreshold") as? Double ?? 80
+        let warning = defaults.object(forKey: "warningThreshold") as? Double ?? 65
         let upgrading = defaults.data(forKey: stateKey) == nil && defaults.object(forKey: legacyStateKey) != nil
         var state = loadState()
         var crossings: [ThresholdCrossing] = []
