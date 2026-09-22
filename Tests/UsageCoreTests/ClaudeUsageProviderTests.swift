@@ -62,7 +62,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).minimumInterval, 3600)
     }
 
-    func testManualMinimumIntervalIsOneHour() {
-        XCTAssertEqual(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).manualMinimumInterval, 3600)
+    func testManualMinimumIntervalIsOneMinute() {
+        XCTAssertEqual(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).manualMinimumInterval, 60)
     }
 }
