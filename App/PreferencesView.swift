@@ -41,6 +41,9 @@ struct PreferencesView: View {
                         Text("\(Int((refreshInterval / 60).rounded())) min").monospacedDigit()
                     }
                     TickIntervalSlider(seconds: $refreshInterval, stopsSeconds: RefreshIntervals.stopsSeconds)
+                    Text("15 min is the minimum. More often would exceed Anthropic's usage-endpoint limit; Claude is fetched at most once an hour regardless.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Section("Floating panel") {
