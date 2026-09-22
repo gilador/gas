@@ -8,7 +8,7 @@ struct MenuBarLabelView: View {
         HStack(spacing: 2) {
             ForEach(Array(ProviderID.displayOrder.enumerated()), id: \.element) { index, provider in
                 if index > 0 {
-                    Text("|").foregroundStyle(.secondary).padding(.horizontal, 1)
+                    Text("|").padding(.horizontal, 1)
                 }
                 ProviderIcon(provider: provider, size: 14)
                 Text(percentText(for: provider))
