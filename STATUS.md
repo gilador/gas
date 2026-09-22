@@ -59,7 +59,7 @@ refresh the token; expired/401 → stale state. Response fields used: `rate_limi
   A provider with a non-`.ok` status keeps its rows dimmed to 40 % with the status text centered on top, no background.
   The floating panel is a 72-pt-wide vertical strip, one thin bar per provider (tightest limit, tick for the other window), percent above, glyph and data age below, hover for the full breakdown; stale/rate-limited providers get a frosted glass with a status icon.
   Settings has a Providers section with a toggle per provider; a disabled provider is not fetched and is hidden from the menu bar label, menu, floating panel, and threshold alerts, and the last enabled provider cannot be turned off.
-  Color scale: session green, weekly white, per-model gray (never recolored); warning orange, critical red, on every surface (`LimitPalette`).
+  Color scale: session green, weekly white, per-model purple, deepening with usage (never orange/red); warning orange, critical red, on every surface (`LimitPalette`).
   Thin wiring over `UsageCore`.
 - **`Widget/`** — `AgentUsageWidget` extension (TimelineProvider reads the App Group snapshot).
 - **`project.yml`** — XcodeGen source of truth → generates `AgentUsage.xcodeproj` (git-ignored).

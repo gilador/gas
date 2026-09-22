@@ -3,7 +3,7 @@ import UsageCore
 
 enum LimitPalette {
     static func color(for limit: UsageLimit) -> Color {
-        if limit.id.hasPrefix("weekly_scoped") { return .gray }
+        if limit.id.hasPrefix("weekly_scoped") { return perModel(limit.percentUsed) }
         switch limit.severity {
         case .critical: return .red
         case .warning: return .orange
@@ -11,11 +11,17 @@ enum LimitPalette {
         }
     }
 
+    /// Purple for per-model limits, deepening from light lavender at 0% to dark purple at 100%.
+    static func perModel(_ percent: Double) -> Color {
+        let t = min(max(percent, 0), 100) / 100
+        return Color(hue: 0.77, saturation: 0.3 + 0.6 * t, brightness: 0.95 - 0.4 * t)
+    }
+
     static func windowColor(for limit: UsageLimit) -> Color {
         switch limit.id {
         case "session": return .green
         case "weekly_all": return .white
-        default: return .gray
+        default: return perModel(limit.percentUsed)
         }
     }
 }

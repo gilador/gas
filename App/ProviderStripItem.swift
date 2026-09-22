@@ -74,7 +74,7 @@ struct ProviderStripItem: View {
             if let scoped {
                 Color.clear
                     .frame(width: Self.barSize.width + 6, height: 10)
-                    .overlay(Rectangle().fill(Color.gray).frame(height: 2))
+                    .overlay(Rectangle().fill(LimitPalette.color(for: scoped)).frame(height: 2))
                     .contentShape(Rectangle())
                     .help("\(scoped.label): \(mode.percent(for: scoped))% \(mode == .used ? "used" : "left")")
                     .offset(y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
