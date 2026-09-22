@@ -3,7 +3,7 @@ import UsageCore
 
 struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
-    @AppStorage("panelTransparency") private var panelTransparency = 0.0
+    @AppStorage("panelTransparency") private var panelTransparency = 0.5
     let onTap: () -> Void
 
     var body: some View {
