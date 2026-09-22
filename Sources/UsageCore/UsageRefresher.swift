@@ -2,12 +2,13 @@ import Foundation
 
 public enum UsageRefresher {
     public static func refresh(_ board: UsageBoard, providers: [any UsageProvider],
-                               now: Date = Date()) async -> UsageBoard {
+                               now: Date = Date(), ignoreMinimumInterval: Bool = false) async -> UsageBoard {
         let dueProviders = providers.filter { provider in
             if case .rateLimited(let until, _)? = board.snapshot(for: provider.id)?.status, until > now {
                 return false
             }
-            if let last = board.lastRequest(for: provider.id), now.timeIntervalSince(last) < provider.minimumInterval {
+            if !ignoreMinimumInterval, let last = board.lastRequest(for: provider.id),
+               now.timeIntervalSince(last) < provider.minimumInterval {
                 return false
             }
             return true
@@ -31,8 +32,8 @@ public enum UsageRefresher {
         }
 
         var updated = board
-        for provider in dueProviders {
-            updated.markRequested(provider.id, at: now)
+        for snapshot in fetched where snapshot.status != .needsSignIn && snapshot.status != .keychainDenied {
+            updated.markRequested(snapshot.provider, at: now)
         }
         for snapshot in fetched {
             let previous = board.snapshot(for: snapshot.provider)

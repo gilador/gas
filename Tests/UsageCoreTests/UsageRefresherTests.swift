@@ -177,4 +177,45 @@ final class UsageRefresherTests: XCTestCase {
         let board = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
         XCTAssertEqual(board.lastRequest(for: .claude), now)
     }
+
+    func testKeychainDeniedIsNotStamped() async {
+        let claude = CountingUsageProvider(id: .claude, result: .success(
+            snap(.claude, status: .keychainDenied)), minimumInterval: 3600)
+        let board = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        XCTAssertNil(board.lastRequest(for: .claude))
+    }
+
+    func testNeedsSignInIsNotStamped() async {
+        let claude = CountingUsageProvider(id: .claude, result: .success(
+            snap(.claude, status: .needsSignIn)), minimumInterval: 3600)
+        let board = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        XCTAssertNil(board.lastRequest(for: .claude))
+    }
+
+    func testOkIsStamped() async {
+        let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude)),
+                                           minimumInterval: 3600)
+        let board = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        XCTAssertEqual(board.lastRequest(for: .claude), now)
+    }
+
+    func testManualRefreshIgnoresMinimumInterval() async {
+        var previous = UsageBoard()
+        previous.markRequested(.claude, at: now.addingTimeInterval(-60))
+        let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude)),
+                                           minimumInterval: 3600)
+        _ = await UsageRefresher.refresh(previous, providers: [claude], now: now,
+                                         ignoreMinimumInterval: true)
+        XCTAssertEqual(claude.calls, 1)
+    }
+
+    func testManualRefreshStillHonorsRateLimitDeadline() async {
+        let previous = UsageBoard(snapshots: [
+            snap(.claude, fetchedAt: 100, status: .rateLimited(until: now.addingTimeInterval(60), wait: 900))
+        ])
+        let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude)))
+        _ = await UsageRefresher.refresh(previous, providers: [claude], now: now,
+                                         ignoreMinimumInterval: true)
+        XCTAssertEqual(claude.calls, 0)
+    }
 }

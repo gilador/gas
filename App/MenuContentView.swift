@@ -24,7 +24,7 @@ struct MenuContentView: View {
             }
             Divider()
             HStack(spacing: 14) {
-                Button { Task { await viewModel.refresh() } } label: {
+                Button { Task { await viewModel.refresh(manual: true) } } label: {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.plain)

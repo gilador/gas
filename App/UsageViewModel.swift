@@ -49,7 +49,7 @@ final class UsageViewModel: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 if connected && !self.wasConnected {
-                    await self.refresh()
+                    await self.refresh(manual: false)
                 }
                 self.wasConnected = connected
             }
@@ -65,10 +65,11 @@ final class UsageViewModel: ObservableObject {
         }
     }
 
-    func refresh() async {
+    func refresh(manual: Bool = false) async {
         if let inFlight { return await inFlight.value }
         let task = Task { @MainActor in
-            let updated = await UsageRefresher.refresh(board, providers: registry.providers)
+            let updated = await UsageRefresher.refresh(board, providers: registry.providers,
+                                                        ignoreMinimumInterval: manual)
             board = updated
             try? store.save(updated)
             notifications.process(updated)
