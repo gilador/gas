@@ -9,3 +9,4 @@ xcuserdata/
 .swiftpm/
 *.xcodeproj
 scripts/sign-identity.local
+*.p8
