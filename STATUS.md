@@ -14,7 +14,7 @@ desktop-pinned panel — with threshold notifications. Provider-abstracted for f
 |---|---|---|
 | `UsageCore` Swift package (models, DTO, mapper, provider, keychain reader, notifications logic, snapshot store, registry) | **Done** | `swift test` → **173 passed / 3 skipped / 0 failed (176 executed)** |
 | OpenAI provider (Codex `auth.json` reader, wham/usage, DTO, mapper, provider-contract tests) | **Done** | `swift test` → **173 passed / 3 skipped / 0 failed (176 executed)** |
-| Menu bar app (AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `Gas`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover; 15-minute refresh (slider 15–60 min), dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
+| Menu bar app (AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `gas`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover; 15-minute refresh (slider 15–60 min), dropdown with limits/reset/refresh) | **Done** | Builds; runs unsigned |
 | WidgetKit widget (`AgentUsageWidget`) | **Built (code)** | Builds; **does not register** unsigned (see §4) |
 | Desktop panel (pinned NSPanel, draggable, toggle) | **Done** | Builds; runs unsigned; toggle in menu |
 | Threshold notifications (80% / 95%, de-duped) | **Built** | Gated off unless team-signed (see §4) |
@@ -92,7 +92,7 @@ open build/Build/Products/Debug/AgentUsageApp.app
 **Setup:** No setup: Claude usage comes only from the endpoint, at most once per hour; the last
 request time is persisted so relaunches do not reset the cadence.
 
-**Install:** `scripts/package.sh` builds and packages `Gas.app` (DMG, PKG, or both — run
+**Install:** `scripts/package.sh` builds and packages `gas.app` (DMG, PKG, or both — run
 `scripts/package.sh --help` for targets and signing options). See `scripts/README.md`.
 
 ---
@@ -147,7 +147,7 @@ Tabbed Settings window (General / Providers enable-disable / Notifications toggl
 
 ## 6. Gotchas / lessons (so the next session doesn't relearn them)
 
-- **Unsigned builds must not touch the App Group container.** On this macOS, opening a file in `~/Library/Group Containers/group.com.gilad.agentusage/` from an unsigned process blocks on a privacy prompt (it hung the app at launch with a locked screen). The app stores its board in `~/Library/Application Support/Gas/` unless team-signed (`StorageLocation`). The widget still reads the group container, which only works signed.
+- **Unsigned builds must not touch the App Group container.** On this macOS, opening a file in `~/Library/Group Containers/group.com.gilad.agentusage/` from an unsigned process blocks on a privacy prompt (it hung the app at launch with a locked screen). The app stores its board in `~/Library/Application Support/gas/` unless team-signed (`StorageLocation`). The widget still reads the group container, which only works signed.
 - **`swift test` can hang** on integration tests that touch real system services: the Keychain
   reader test and the App Group container test are **env-gated** (opt-in via
   `RUN_KEYCHAIN_INTEGRATION_TESTS` / `RUN_APP_GROUP_INTEGRATION_TESTS`) precisely because

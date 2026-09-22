@@ -3,21 +3,32 @@ import UsageCore
 
 @MainActor
 final class AlertCenter: ObservableObject {
-    @Published private(set) var alertStart: [ProviderID: Date] = [:]
+    struct ActiveAlert {
+        let start: Date
+        let critical: Bool
+    }
+
+    @Published private(set) var active: [ProviderID: ActiveAlert] = [:]
     var onFirstAlert: (() -> Void)?
     var onAllAlertsEnded: (() -> Void)?
+    var onCritical: (([ThresholdCrossing]) -> Void)?
     private var expiry: Task<Void, Never>?
 
-    func raise(_ providers: Set<ProviderID>, at now: Date = Date()) {
-        guard !providers.isEmpty else { return }
-        let wasEmpty = alertStart.isEmpty
-        for p in providers { alertStart[p] = now }
+    func raise(_ crossings: [ThresholdCrossing], criticalIf: (ThresholdCrossing) -> Bool, at now: Date = Date()) {
+        guard !crossings.isEmpty else { return }
+        let wasEmpty = active.isEmpty
+        for crossing in crossings {
+            let existing = active[crossing.provider]
+            active[crossing.provider] = ActiveAlert(start: now, critical: existing?.critical == true || criticalIf(crossing))
+        }
         if wasEmpty { onFirstAlert?() }
+        let critical = crossings.filter(criticalIf)
+        if !critical.isEmpty { onCritical?(critical) }
         expiry?.cancel()
         expiry = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(AlertBlink.duration * 1_000_000_000))
             guard !Task.isCancelled else { return }
-            self?.alertStart.removeAll()
+            self?.active.removeAll()
             self?.onAllAlertsEnded?()
         }
     }

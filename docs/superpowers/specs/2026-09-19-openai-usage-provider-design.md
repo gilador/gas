@@ -148,12 +148,12 @@ Every provider in `displayOrder` is always shown; a provider with no data render
   "No usage data." when `.ok` with no limits. Status text is provider-aware:
   `.needsSignIn` → "Sign in to \(clientName) first."; `.keychainDenied` text unchanged.
   Sections separated by a thin `Divider`. One "Updated …" line at the bottom from
-  `board.latestFetchedAt`. Panel title "Gas"; quit alert "Quit Gas?".
+  `board.latestFetchedAt`. Panel title "gas"; quit alert "Quit gas?".
   Loading state ("Loading…") when the board is empty. When a provider's status is not `.ok`
   and it still has limits, rows dimmed to 40 % with the status text centered on top, no background.
   The floating panel (`DesktopPanelView`) is a 72-pt-wide vertical strip, one thin bar per provider (tightest limit, tick for the other window), percent above, glyph and data age below, hover for the full breakdown; stale/rate-limited providers get a frosted glass with a status icon.
   Color scale: session green, weekly white, per-model blue; warning orange, critical red, on every surface (`LimitPalette`).
-- **`MenuBarLabelView`**: AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `Gas`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover.
+- **`MenuBarLabelView`**: AppKit `NSStatusItem` hosting the SwiftUI label (autosave name `gas`, default preferred position 120 pt from the right so a crowded bar does not hide it); click opens the menu as a popover.
 - **`NotificationManager.process(_ board:)`**: for each snapshot with `.ok`, run the
   evaluator with the shared `NotificationState`; title
   `"\(provider.displayName) \(limit.label) at NN%"`. Team-signed gate unchanged.
@@ -163,7 +163,7 @@ Every provider in `displayOrder` is always shown; a provider with no data render
 - `UsageEntry.board: UsageBoard?`; provider reads `store.load()`.
 - `.systemMedium`: for each provider in the board, a header line and the `session` /
   `weekly_all` rows. `.systemSmall`: one row per provider showing the tightest limit.
-- Display name and description: "Gas" / "Plan-quota usage for Claude and OpenAI."
+- Display name and description: "gas" / "Plan-quota usage for Claude and OpenAI."
 - Stale marker: `latestFetchedAt` older than 30 min.
 
 ## Rate-limit backoff

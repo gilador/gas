@@ -33,7 +33,7 @@ struct DesktopPanelView: View {
                 if index > 0 {
                     Rectangle().fill(.white.opacity(0.15)).frame(width: 26, height: 1)
                 }
-                ProviderStripItem(snapshot: snapshot, alertStart: alerts.alertStart[snapshot.provider])
+                ProviderStripItem(snapshot: snapshot, alert: alerts.active[snapshot.provider])
             }
         }
     }

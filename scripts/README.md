@@ -1,6 +1,6 @@
 # Packaging scripts
 
-One command builds and packages Gas.app:
+One command builds and packages gas.app:
 
 ```
 scripts/package.sh [dmg|pkg|all] [--identity "<codesign identity or SHA-1>"]
@@ -8,15 +8,15 @@ scripts/package.sh --help
 ```
 
 Targets (default `all`):
-- `dmg` — `dist/Gas-<version>.dmg`, a drag-to-/Applications disk image.
-- `pkg` — `dist/Gas-<version>.pkg`, an installer that puts the app in /Applications and launches it.
+- `dmg` — `dist/gas-<version>.dmg`, a drag-to-/Applications disk image.
+- `pkg` — `dist/gas-<version>.pkg`, an installer that puts the app in /Applications and launches it.
 - `all` — builds both; the app is built and signed once and reused for both.
 
 ## Scripts
 
 | Script | Does |
 | --- | --- |
-| `build-release.sh` | Builds a Release `Gas.app` and signs it. Prints the signed app path. |
+| `build-release.sh` | Builds a Release `gas.app` and signs it. Prints the signed app path. |
 | `make-dmg.sh` | Wraps the app in a DMG. Builds it first, or reuses a built app path given as `$1`. |
 | `make-pkg.sh` | Wraps the app in a `.pkg` installer. Builds it first, or reuses a built app path given as `$1`. |
 | `package.sh` | The one entry point above: checks prerequisites, resolves signing, calls the scripts above. |
@@ -39,7 +39,7 @@ works, but macOS Keychain "Always Allow" does not survive rebuilds with it.
 
 ## What a friend needs to do
 
-- First launch: right-click Gas → Open (Gatekeeper), once.
+- First launch: right-click gas → Open (Gatekeeper), once.
 - Claude Code signed in, for the Claude numbers.
 - Codex CLI signed in, for the OpenAI numbers.
 

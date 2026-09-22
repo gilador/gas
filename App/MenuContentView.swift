@@ -8,7 +8,7 @@ struct MenuContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Gas")
+            Text("gas")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
@@ -59,7 +59,7 @@ struct MenuContentView: View {
 
     private func confirmQuit() {
         let alert = NSAlert()
-        alert.messageText = "Quit Gas?"
+        alert.messageText = "Quit gas?"
         alert.informativeText = "The menu bar item and desktop panel will stop updating until you reopen the app."
         alert.addButton(withTitle: "Quit")
         let cancel = alert.addButton(withTitle: "Cancel")

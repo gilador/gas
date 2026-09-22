@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds a Release Gas.app, signs it, and prints the path of the signed bundle.
+# Builds a Release gas.app, signs it, and prints the path of the signed bundle.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DERIVED=build-release
@@ -14,7 +14,7 @@ xcodebuild -project AgentUsage.xcodeproj -scheme AgentUsageApp -configuration Re
 APP="$DERIVED/Build/Products/Release/AgentUsageApp.app"
 [ -d "$APP" ] || { echo "build failed: $APP missing" >&2; exit 1; }
 mkdir -p "$STAGE"
-ditto "$APP" "$STAGE/Gas.app"
+ditto "$APP" "$STAGE/gas.app"
 IDENTITY="${SIGN_IDENTITY:-$(cat scripts/sign-identity.local 2>/dev/null || true)}"
 IDENTITY="${IDENTITY:--}"
 if [ "$IDENTITY" = "-" ]; then
@@ -22,5 +22,5 @@ if [ "$IDENTITY" = "-" ]; then
 else
   echo "→ Signing with $IDENTITY" >&2
 fi
-codesign --force --deep --options runtime --sign "$IDENTITY" "$STAGE/Gas.app" >&2
-echo "$STAGE/Gas.app"
+codesign --force --deep --options runtime --sign "$IDENTITY" "$STAGE/gas.app" >&2
+echo "$STAGE/gas.app"

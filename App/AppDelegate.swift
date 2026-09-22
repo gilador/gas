@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UsageCore
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -17,6 +18,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         viewModel.alerts.onFirstAlert = { [weak self] in self?.panelController.showForAlert() }
         viewModel.alerts.onAllAlertsEnded = { [weak self] in self?.panelController.hideAfterAlertIfUnpinned() }
+        viewModel.alerts.onCritical = { crossings in
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.alertStyle = .critical
+                alert.messageText = "Critical gas limit reached"
+                alert.informativeText = crossings.map { "\($0.provider.displayName) · \($0.limit.label) is at \($0.limit.displayPercent)%." }.joined(separator: "\n")
+                alert.addButton(withTitle: "OK")
+                NSApp.activate(ignoringOtherApps: true)
+                alert.window.center()
+                alert.runModal()
+            }
+        }
         applyPanelVisibility()
         defaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in

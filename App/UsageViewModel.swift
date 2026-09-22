@@ -95,7 +95,7 @@ final class UsageViewModel: ObservableObject {
             try? store.save(updated)
             let crossings = thresholds.crossings(in: updated)
             notifications.post(crossings)
-            alerts.raise(Set(crossings.map(\.provider)))
+            alerts.raise(crossings, criticalIf: thresholds.isCritical)
             WidgetCenter.shared.reloadAllTimelines()
             if manual { scheduleTimer() }
         }

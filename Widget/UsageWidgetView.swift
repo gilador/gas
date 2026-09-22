@@ -10,7 +10,7 @@ struct UsageWidgetView: View {
         if let board = entry.board, !board.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text("Gas").font(.caption.bold())
+                    Text("gas").font(.caption.bold())
                     Spacer()
                     if let fetched = board.latestFetchedAt, isStale(fetched) {
                         Image(systemName: "clock.badge.exclamationmark")
