@@ -1,7 +1,7 @@
 import SwiftUI
 import UsageCore
 
-/// One provider in the floating strip: percent, a thin bar for the tightest limit, a tick for the other one.
+/// One provider in the floating strip: session percent, a thin bar for the session limit, a tick for the weekly one.
 struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
 
@@ -13,9 +13,11 @@ struct ProviderStripItem: View {
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
             bar
             ProviderIcon(provider: snapshot.provider, size: 14)
-            Text(snapshot.fetchedAt, style: .relative)
-                .font(.system(size: 9)).foregroundStyle(.secondary)
-                .lineLimit(1).minimumScaleFactor(0.7)
+            TimelineView(.periodic(from: .now, by: 30)) { _ in
+                Text(snapshot.fetchedAt.formatted(.relative(presentation: .numeric, unitsStyle: .narrow)))
+                    .font(.system(size: 9)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
@@ -23,30 +25,33 @@ struct ProviderStripItem: View {
         .help(helpText)
     }
 
-    private var tightest: UsageLimit? { snapshot.tightestLimit }
+    private var session: UsageLimit? {
+        snapshot.limits.first { $0.id == "session" } ?? snapshot.tightestLimit
+    }
 
-    private var other: UsageLimit? {
-        let mains = snapshot.limits.filter { $0.id == "session" || $0.id == "weekly_all" }
-        return mains.first { $0.id != tightest?.id }
+    private var weekly: UsageLimit? {
+        snapshot.limits.first { $0.id == "weekly_all" }
     }
 
     private var percentText: String {
-        tightest.map { "\($0.displayPercent)%" } ?? "—"
+        session.map { "\($0.displayPercent)%" } ?? "—"
     }
 
     private var bar: some View {
         ZStack(alignment: .bottom) {
             Capsule().fill(.white.opacity(0.15))
-            if let tightest {
+            if let session {
                 Capsule()
-                    .fill(LimitPalette.color(for: tightest))
-                    .frame(height: Self.barSize.height * min(tightest.percentUsed, 100) / 100)
+                    .fill(LimitPalette.color(for: session))
+                    .frame(height: Self.barSize.height * min(session.percentUsed, 100) / 100)
             }
-            if let other {
-                Rectangle()
-                    .fill(LimitPalette.color(for: other))
-                    .frame(width: Self.barSize.width + 6, height: 2)
-                    .offset(y: -(Self.barSize.height * min(other.percentUsed, 100) / 100))
+            if let weekly {
+                Color.clear
+                    .frame(width: Self.barSize.width + 6, height: 10)
+                    .overlay(Rectangle().fill(LimitPalette.color(for: weekly)).frame(height: 2))
+                    .contentShape(Rectangle())
+                    .help("Weekly: \(weekly.displayPercent)%")
+                    .offset(y: -(Self.barSize.height * min(weekly.percentUsed, 100) / 100) + 5)
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
