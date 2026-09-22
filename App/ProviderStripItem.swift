@@ -9,10 +9,10 @@ struct ProviderStripItem: View {
 
     var body: some View {
         VStack(spacing: 4) {
+            ProviderIcon(provider: snapshot.provider, size: 14)
             Text(percentText)
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
             bar
-            ProviderIcon(provider: snapshot.provider, size: 14)
             TimelineView(.periodic(from: .now, by: 30)) { _ in
                 Text(snapshot.fetchedAt.formatted(.relative(presentation: .named, unitsStyle: .narrow)))
                     .font(.system(size: 9)).foregroundStyle(.secondary)
