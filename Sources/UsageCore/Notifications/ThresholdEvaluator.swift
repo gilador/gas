@@ -1,7 +1,11 @@
 import Foundation
 
+public enum AlertLevel: String, Codable, Sendable {
+    case warning, critical
+}
+
 public struct NotificationState: Codable, Equatable, Sendable {
-    /// key: "<provider>#<limitID>#<threshold>" -> resetsAt (epoch seconds, 0 if none) it last fired for.
+    /// key: "<provider>#<limitID>#<level>" -> resetsAt (epoch seconds, 0 if none) of the window it fired in.
     public var fired: [String: Double]
 
     public init(fired: [String: Double] = [:]) {
@@ -12,34 +16,34 @@ public struct NotificationState: Codable, Equatable, Sendable {
 public struct ThresholdCrossing: Equatable, Sendable {
     public let provider: ProviderID
     public let limit: UsageLimit
+    public let level: AlertLevel
     public let threshold: Double
 
-    public init(provider: ProviderID, limit: UsageLimit, threshold: Double) {
+    public init(provider: ProviderID, limit: UsageLimit, level: AlertLevel, threshold: Double) {
         self.provider = provider
         self.limit = limit
+        self.level = level
         self.threshold = threshold
     }
 }
 
+/// One alert per limit, per level, per reset window. Only a new reset window re-arms a flag,
+/// so moving a threshold or a dip in the reading never repeats an alert.
 public enum ThresholdEvaluator {
     public static func evaluate(_ snapshot: UsageSnapshot,
                                 state: inout NotificationState,
-                                thresholds: [Double]) -> [ThresholdCrossing] {
+                                warning: Double,
+                                critical: Double) -> [ThresholdCrossing] {
         var crossings: [ThresholdCrossing] = []
         for limit in snapshot.limits {
             let window = limit.resetsAt?.timeIntervalSince1970 ?? 0
-            for threshold in thresholds {
-                let key = "\(snapshot.provider.rawValue)#\(limit.id)#\(threshold)"
-                if limit.percentUsed >= threshold {
-                    if !isSameWindow(state.fired[key], window) {
-                        crossings.append(ThresholdCrossing(provider: snapshot.provider,
-                                                           limit: limit, threshold: threshold))
-                        state.fired[key] = window
-                    }
-                } else {
-                    // dropped below threshold — clear so it can re-fire on the next climb.
-                    state.fired[key] = nil
-                }
+            for (level, threshold) in [(AlertLevel.warning, warning), (AlertLevel.critical, critical)]
+            where limit.percentUsed >= threshold {
+                let key = "\(snapshot.provider.rawValue)#\(limit.id)#\(level.rawValue)"
+                guard !isSameWindow(state.fired[key], window) else { continue }
+                crossings.append(ThresholdCrossing(provider: snapshot.provider, limit: limit,
+                                                   level: level, threshold: threshold))
+                state.fired[key] = window
             }
         }
         return crossings

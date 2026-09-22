@@ -4,27 +4,32 @@ import UsageCore
 @MainActor
 final class ThresholdMonitor {
     private let defaults = UserDefaults.standard
-    private let stateKey = "notificationState"
+    private let stateKey = "alertState"
+    private let legacyStateKey = "notificationState"
 
     var criticalThreshold: Double {
         defaults.object(forKey: "criticalThreshold") as? Double ?? 95
     }
 
     func isCritical(_ crossing: ThresholdCrossing) -> Bool {
-        crossing.threshold >= criticalThreshold
+        crossing.level == .critical
     }
 
     func crossings(in board: UsageBoard) -> [ThresholdCrossing] {
-        let thresholds = [
-            defaults.object(forKey: "warningThreshold") as? Double ?? 80,
-            criticalThreshold
-        ]
+        let warning = defaults.object(forKey: "warningThreshold") as? Double ?? 80
+        let upgrading = defaults.data(forKey: stateKey) == nil && defaults.object(forKey: legacyStateKey) != nil
         var state = loadState()
         var crossings: [ThresholdCrossing] = []
         for snapshot in board.snapshots where snapshot.status == .ok {
-            crossings += ThresholdEvaluator.evaluate(snapshot, state: &state, thresholds: thresholds)
+            crossings += ThresholdEvaluator.evaluate(snapshot, state: &state,
+                                                     warning: warning, critical: criticalThreshold)
         }
         saveState(state)
+        if upgrading {
+            // Old per-threshold flags mean these windows were already alerted; start the new flags silently.
+            defaults.removeObject(forKey: legacyStateKey)
+            return []
+        }
         return crossings
     }
 

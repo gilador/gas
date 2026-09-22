@@ -8,7 +8,7 @@ struct MenuContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("gas")
+            Text("g·a·s")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)

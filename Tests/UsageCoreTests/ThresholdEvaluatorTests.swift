@@ -3,93 +3,94 @@ import Foundation
 @testable import UsageCore
 
 final class ThresholdEvaluatorTests: XCTestCase {
-    private func limit(_ pct: Double, resetsAt: Double? = 1000) -> UsageLimit {
-        UsageLimit(id: "five_hour", label: "Session (5h)", percentUsed: pct,
+    private func limit(_ pct: Double, id: String = "five_hour", resetsAt: Double? = 1000) -> UsageLimit {
+        UsageLimit(id: id, label: id, percentUsed: pct,
                    resetsAt: resetsAt.map { Date(timeIntervalSince1970: $0) }, severity: .normal)
     }
     private func snap(_ limits: [UsageLimit], provider: ProviderID = .claude) -> UsageSnapshot {
         UsageSnapshot(provider: provider, fetchedAt: Date(), limits: limits, status: .ok)
     }
-
-    func testFiresOnCrossing() {
-        var state = NotificationState()
-        let crossings = ThresholdEvaluator.evaluate(snap([limit(82)]), state: &state,
-                                                    thresholds: [80, 95])
-        XCTAssertEqual(crossings.count, 1)
-        XCTAssertEqual(crossings.first?.threshold, 80)
+    private func eval(_ snapshot: UsageSnapshot, _ state: inout NotificationState,
+                      warning: Double = 80, critical: Double = 95) -> [ThresholdCrossing] {
+        ThresholdEvaluator.evaluate(snapshot, state: &state, warning: warning, critical: critical)
     }
 
-    func testBothThresholdsFireWhenAboveBoth() {
+    func testWarningFiresOnce() {
         var state = NotificationState()
-        let crossings = ThresholdEvaluator.evaluate(snap([limit(96)]), state: &state,
-                                                    thresholds: [80, 95])
-        XCTAssertEqual(Set(crossings.map { $0.threshold }), [80, 95])
+        let first = eval(snap([limit(82)]), &state)
+        XCTAssertEqual(first.map(\.level), [.warning])
+        XCTAssertEqual(first.first?.threshold, 80)
+    }
+
+    func testCriticalFiresAfterWarningInSameWindow() {
+        var state = NotificationState()
+        _ = eval(snap([limit(82)]), &state)
+        let later = eval(snap([limit(96)]), &state)
+        XCTAssertEqual(later.map(\.level), [.critical])
+    }
+
+    func testJumpPastBothFiresBothLevels() {
+        var state = NotificationState()
+        XCTAssertEqual(eval(snap([limit(96)]), &state).map(\.level), [.warning, .critical])
     }
 
     func testDoesNotRefireSameWindow() {
         var state = NotificationState()
-        _ = ThresholdEvaluator.evaluate(snap([limit(82)]), state: &state, thresholds: [80])
-        let second = ThresholdEvaluator.evaluate(snap([limit(85)]), state: &state, thresholds: [80])
-        XCTAssertTrue(second.isEmpty)
+        _ = eval(snap([limit(96)]), &state)
+        XCTAssertTrue(eval(snap([limit(99)]), &state).isEmpty)
     }
 
     func testRefiresAfterWindowResets() {
         var state = NotificationState()
-        _ = ThresholdEvaluator.evaluate(snap([limit(82, resetsAt: 1000)]), state: &state, thresholds: [80])
-        let after = ThresholdEvaluator.evaluate(snap([limit(82, resetsAt: 2000)]), state: &state, thresholds: [80])
-        XCTAssertEqual(after.count, 1)
+        _ = eval(snap([limit(82, resetsAt: 1000)]), &state)
+        XCTAssertEqual(eval(snap([limit(82, resetsAt: 20_000)]), &state).map(\.level), [.warning])
     }
 
-    func testRefiresAfterDroppingBelowThenClimbing() {
+    func testDroppingBelowDoesNotRearmWithinWindow() {
         var state = NotificationState()
-        _ = ThresholdEvaluator.evaluate(snap([limit(82)]), state: &state, thresholds: [80])
-        _ = ThresholdEvaluator.evaluate(snap([limit(70)]), state: &state, thresholds: [80])
-        let refire = ThresholdEvaluator.evaluate(snap([limit(83)]), state: &state, thresholds: [80])
-        XCTAssertEqual(refire.count, 1)
+        _ = eval(snap([limit(82)]), &state)
+        _ = eval(snap([limit(70)]), &state)
+        XCTAssertTrue(eval(snap([limit(83)]), &state).isEmpty)
     }
 
-    func testStateIsCodableRoundTrip() throws {
+    func testChangingThresholdValueDoesNotRefire() {
         var state = NotificationState()
-        _ = ThresholdEvaluator.evaluate(snap([limit(82)]), state: &state, thresholds: [80])
-        let data = try JSONEncoder().encode(state)
-        let decoded = try JSONDecoder().decode(NotificationState.self, from: data)
-        XCTAssertEqual(decoded, state)
+        _ = eval(snap([limit(82)]), &state, warning: 80)
+        XCTAssertTrue(eval(snap([limit(82)]), &state, warning: 75).isEmpty)
+        XCTAssertTrue(eval(snap([limit(82)]), &state, warning: 81).isEmpty)
+    }
+
+    func testEachLimitHasItsOwnFlag() {
+        var state = NotificationState()
+        let crossings = eval(snap([limit(90, id: "session"), limit(90, id: "weekly_scoped#Fable")]), &state)
+        XCTAssertEqual(crossings.map(\.limit.id), ["session", "weekly_scoped#Fable"])
     }
 
     func testSameLimitIDOnTwoProvidersFiresTwice() {
         var state = NotificationState()
-        let claude = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .claude),
-                                                 state: &state, thresholds: [80])
-        let openai = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .openai),
-                                                 state: &state, thresholds: [80])
-        XCTAssertEqual(claude.count, 1)
-        XCTAssertEqual(openai.count, 1)
+        let claude = eval(snap([limit(82)], provider: .claude), &state)
+        let openai = eval(snap([limit(82)], provider: .openai), &state)
         XCTAssertEqual(claude.first?.provider, .claude)
         XCTAssertEqual(openai.first?.provider, .openai)
     }
 
-    func testStateKeyIncludesProvider() {
+    func testStateKeyIsProviderLimitLevel() {
         var state = NotificationState()
-        _ = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .openai), state: &state, thresholds: [80])
-        XCTAssertEqual(Array(state.fired.keys), ["openai#five_hour#80.0"])
-    }
-
-    func testOneProviderDroppingDoesNotClearTheOther() {
-        var state = NotificationState()
-        _ = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .claude), state: &state, thresholds: [80])
-        _ = ThresholdEvaluator.evaluate(snap([limit(82)], provider: .openai), state: &state, thresholds: [80])
-        _ = ThresholdEvaluator.evaluate(snap([limit(10)], provider: .openai), state: &state, thresholds: [80])
-        let claudeAgain = ThresholdEvaluator.evaluate(snap([limit(85)], provider: .claude),
-                                                      state: &state, thresholds: [80])
-        XCTAssertTrue(claudeAgain.isEmpty)
+        _ = eval(snap([limit(82)], provider: .openai), &state)
+        XCTAssertEqual(Array(state.fired.keys), ["openai#five_hour#warning"])
     }
 
     func testResetTimeJitterDoesNotRefire() {
         var state = NotificationState()
-        _ = ThresholdEvaluator.evaluate(snap([limit(82, resetsAt: 1_790_168_400)]), state: &state, thresholds: [80])
-        let later = ThresholdEvaluator.evaluate(snap([limit(85, resetsAt: 1_790_168_398.805)]), state: &state, thresholds: [80])
-        let again = ThresholdEvaluator.evaluate(snap([limit(86, resetsAt: 1_790_168_400.805)]), state: &state, thresholds: [80])
-        XCTAssertTrue(later.isEmpty)
-        XCTAssertTrue(again.isEmpty)
+        _ = eval(snap([limit(82, resetsAt: 1_790_168_400)]), &state)
+        XCTAssertTrue(eval(snap([limit(85, resetsAt: 1_790_168_398.805)]), &state).isEmpty)
+        XCTAssertTrue(eval(snap([limit(86, resetsAt: 1_790_168_400.805)]), &state).isEmpty)
+    }
+
+    func testStateIsCodableRoundTrip() throws {
+        var state = NotificationState()
+        _ = eval(snap([limit(96)]), &state)
+        let decoded = try JSONDecoder().decode(NotificationState.self, from: JSONEncoder().encode(state))
+        XCTAssertEqual(decoded, state)
     }
 }

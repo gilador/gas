@@ -99,7 +99,7 @@ resetAt: Double? }`. Snake-case `CodingKeys`. `additional_rate_limits`, `credits
 - `resetsAt = Date(timeIntervalSince1970: resetAt)` or `nil`.
 - Severity via `Severity.from`. `nil` rate limit → `[]`.
 
-**`ThresholdEvaluator`** — de-dupe key becomes `"<provider>#<limitID>#<threshold>"`.
+**`ThresholdEvaluator`** — de-dupe key becomes `"<provider>#<limitID>#<level>" (warning|critical)`.
 `ThresholdCrossing` gains `provider: ProviderID`. Existing fired keys are orphaned once
 (one possible re-notification after upgrade; accepted).
 
