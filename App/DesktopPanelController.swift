@@ -77,7 +77,7 @@ final class DesktopPanelController {
     }
 
     private func makePanel(viewModel: UsageViewModel) -> NSPanel {
-        let panel = NSPanel(
+        let panel = GlassPanel(
             contentRect: NSRect(origin: .zero, size: Self.size),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
@@ -131,4 +131,11 @@ final class DesktopPanelController {
         return NSPoint(x: vf.maxX - size.width - 20,
                        y: vf.maxY - size.height - 20)
     }
+}
+
+/// Liquid Glass freezes its backdrop in windows that are not key; this display-only panel
+/// reports itself key and main so the glass keeps sampling what is behind it.
+final class GlassPanel: NSPanel {
+    override var isKeyWindow: Bool { true }
+    override var isMainWindow: Bool { true }
 }

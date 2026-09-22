@@ -1,15 +1,21 @@
 import SwiftUI
 import AppKit
 
-/// Live behind-window blur. Liquid Glass stops refreshing its backdrop while the app is inactive,
-/// and this app never becomes active, so the classic material in its always-active state is used.
+/// Liquid Glass on macOS 26 (what the menu uses), the popover blur material before that.
 struct PanelGlass: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
-        content
-            .background(VisualEffectBackground(cornerRadius: cornerRadius))
-            .overlay(RoundedRectangle(cornerRadius: cornerRadius).strokeBorder(.white.opacity(0.2), lineWidth: 1))
+        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+        if #available(macOS 26.0, *) {
+            content
+                .glassEffect(.regular, in: shape)
+                .overlay(shape.strokeBorder(.white.opacity(0.15), lineWidth: 1))
+        } else {
+            content
+                .background(VisualEffectBackground(cornerRadius: cornerRadius))
+                .overlay(shape.strokeBorder(.white.opacity(0.2), lineWidth: 1))
+        }
     }
 }
 
