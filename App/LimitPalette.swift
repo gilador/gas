@@ -3,6 +3,7 @@ import UsageCore
 
 enum LimitPalette {
     static func color(for limit: UsageLimit) -> Color {
+        if limit.id.hasPrefix("weekly_scoped") { return .gray }
         switch limit.severity {
         case .critical: return .red
         case .warning: return .orange
@@ -14,7 +15,7 @@ enum LimitPalette {
         switch limit.id {
         case "session": return .green
         case "weekly_all": return .white
-        default: return Color(red: 0.55, green: 0.75, blue: 1.0)
+        default: return .gray
         }
     }
 }

@@ -83,4 +83,13 @@ final class ThresholdEvaluatorTests: XCTestCase {
                                                       state: &state, thresholds: [80])
         XCTAssertTrue(claudeAgain.isEmpty)
     }
+
+    func testResetTimeJitterDoesNotRefire() {
+        var state = NotificationState()
+        _ = ThresholdEvaluator.evaluate(snap([limit(82, resetsAt: 1_790_168_400)]), state: &state, thresholds: [80])
+        let later = ThresholdEvaluator.evaluate(snap([limit(85, resetsAt: 1_790_168_398.805)]), state: &state, thresholds: [80])
+        let again = ThresholdEvaluator.evaluate(snap([limit(86, resetsAt: 1_790_168_400.805)]), state: &state, thresholds: [80])
+        XCTAssertTrue(later.isEmpty)
+        XCTAssertTrue(again.isEmpty)
+    }
 }

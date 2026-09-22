@@ -31,7 +31,7 @@ public enum ThresholdEvaluator {
             for threshold in thresholds {
                 let key = "\(snapshot.provider.rawValue)#\(limit.id)#\(threshold)"
                 if limit.percentUsed >= threshold {
-                    if state.fired[key] != window {
+                    if !isSameWindow(state.fired[key], window) {
                         crossings.append(ThresholdCrossing(provider: snapshot.provider,
                                                            limit: limit, threshold: threshold))
                         state.fired[key] = window
@@ -43,5 +43,11 @@ public enum ThresholdEvaluator {
             }
         }
         return crossings
+    }
+
+    /// Providers report the same reset time with up to a few seconds of jitter between fetches.
+    private static func isSameWindow(_ fired: Double?, _ window: Double) -> Bool {
+        guard let fired else { return false }
+        return abs(fired - window) < 120
     }
 }
