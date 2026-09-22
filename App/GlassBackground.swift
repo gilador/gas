@@ -1,8 +1,25 @@
 import SwiftUI
 import AppKit
 
-/// The same behind-window material the menu's popover uses.
-struct GlassBackground: NSViewRepresentable {
+/// Liquid Glass on macOS 26 (what the menu's popover uses), the popover blur material before that.
+struct PanelGlass: ViewModifier {
+    let cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+        if #available(macOS 26.0, *) {
+            content
+                .glassEffect(.regular, in: shape)
+                .overlay(shape.strokeBorder(.white.opacity(0.15), lineWidth: 1))
+        } else {
+            content
+                .background(VisualEffectBackground(cornerRadius: cornerRadius))
+                .overlay(shape.strokeBorder(.white.opacity(0.2), lineWidth: 1))
+        }
+    }
+}
+
+private struct VisualEffectBackground: NSViewRepresentable {
     let cornerRadius: CGFloat
 
     func makeNSView(context: Context) -> NSVisualEffectView {

@@ -16,11 +16,7 @@ struct DesktopPanelView: View {
         .padding(.horizontal, 4)
         .padding(.vertical, 10)
         .frame(width: 44, alignment: .top)
-        .background(GlassBackground(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
-        )
+        .modifier(PanelGlass(cornerRadius: 12))
         .opacity(1 - 0.9 * panelTransparency)
         .environment(\.colorScheme, .dark)
     }
