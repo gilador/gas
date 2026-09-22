@@ -24,24 +24,31 @@ struct PreferencesView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Section("Notifications") {
-                HStack {
-                    Text("Warning %")
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Warning %")
+                        Spacer()
+                        Text("\(Int(warningThreshold))").monospacedDigit()
+                    }
                     Slider(value: $warningThreshold, in: 15...100, step: 1)
-                    Text("\(Int(warningThreshold))")
                 }
-                HStack {
-                    Text("Critical %")
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Critical %")
+                        Spacer()
+                        Text("\(Int(criticalThreshold))").monospacedDigit()
+                    }
                     Slider(value: $criticalThreshold, in: 15...100, step: 1)
-                    Text("\(Int(criticalThreshold))")
                 }
             }
             Section {
-                HStack {
-                    Text("Refresh")
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Refresh")
+                        Spacer()
+                        Text("\(Int((refreshInterval / 60).rounded())) min").monospacedDigit()
+                    }
                     TickIntervalSlider(seconds: $refreshInterval, stopsSeconds: RefreshIntervals.stopsSeconds)
-                    Text("\(Int((refreshInterval / 60).rounded())) min")
-                        .monospacedDigit()
-                        .frame(width: 52, alignment: .trailing)
                 }
             }
             Section {
