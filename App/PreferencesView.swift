@@ -35,6 +35,7 @@ struct PreferencesView: View {
                 }
             }
             Section("Notifications") {
+                NotificationPermissionRow(notifications: viewModel.notifications)
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("Warning %")
@@ -92,5 +93,31 @@ struct PreferencesView: View {
 
     private func providersChanged(to enabled: Bool) {
         if enabled { Task { await viewModel.refresh(manual: true) } }
+    }
+}
+
+private struct NotificationPermissionRow: View {
+    @ObservedObject var notifications: NotificationManager
+
+    var body: some View {
+        HStack {
+            Text(text).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            if notifications.permission == .denied || notifications.permission == .notDetermined {
+                Button("Open Notification Settings") { notifications.openSystemSettings() }
+            }
+        }
+        .task { await notifications.refreshPermission() }
+    }
+
+    private var text: String {
+        switch notifications.permission {
+        case .allowed: return "macOS notifications are on for gas."
+        case .notDetermined: return "gas has not been allowed to notify yet."
+        case .denied: return "macOS notifications are off for gas."
+        case .unavailable: return "Notifications need a team-signed build. Critical alerts show as a dialog."
+        case .blockedBySigning: return "macOS only lets Developer ID signed apps notify. Critical alerts show as a dialog until then."
+        }
     }
 }

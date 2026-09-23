@@ -15,7 +15,7 @@ final class UsageViewModel: ObservableObject {
 
     private let registry: ProviderRegistry
     private let store: SnapshotStore
-    private let notifications: NotificationManager
+    let notifications: NotificationManager
     private let thresholds = ThresholdMonitor()
     private var timer: Timer?
     private let pathMonitor = NWPathMonitor()

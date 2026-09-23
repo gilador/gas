@@ -18,7 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         viewModel.alerts.onFirstAlert = { [weak self] in self?.panelController.showForAlert() }
         viewModel.alerts.onAllAlertsEnded = { [weak self] in self?.panelController.hideAfterAlertIfUnpinned() }
-        viewModel.alerts.onCritical = { crossings in
+        viewModel.alerts.onCritical = { [weak viewModel] crossings in
+            // macOS notifications replace the dialog whenever the system allows them.
+            guard viewModel?.notifications.permission != .allowed else { return }
             DispatchQueue.main.async {
                 let alert = NSAlert()
                 alert.alertStyle = .critical
