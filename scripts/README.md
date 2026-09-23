@@ -39,8 +39,12 @@ works, but macOS Keychain "Always Allow" does not survive rebuilds with it.
 
 ## What a friend needs to do
 
-- First launch: right-click gas → Open (Gatekeeper), once.
+- macOS blocks the downloaded installer ("Apple could not verify … is free of malware"). Once: click Done,
+  then System Settings → Privacy & Security → Security → "gas-1.0.1.pkg was blocked" → Open Anyway,
+  and enter the Mac password. (macOS 15+ removed the right-click → Open shortcut.)
+  Terminal alternative: `xattr -d com.apple.quarantine ~/Downloads/gas-<version>.pkg`.
+- The installer clears the block on the app itself, so gas launches without a second warning.
 - Claude Code signed in, for the Claude numbers.
 - Codex CLI signed in, for the OpenAI numbers.
 
-A Developer ID certificate + notarization (paid Apple Developer Program) removes the right-click → Open step.
+A Developer ID certificate + notarization (paid Apple Developer Program) removes the Open Anyway step (and enables macOS notifications).
