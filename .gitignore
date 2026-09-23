@@ -10,3 +10,4 @@ xcuserdata/
 *.xcodeproj
 scripts/sign-identity.local
 *.p8
+build-release.stale/
