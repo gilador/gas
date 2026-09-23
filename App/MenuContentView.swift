@@ -24,8 +24,8 @@ struct MenuContentView: View {
                     ProviderSection(snapshot: snapshot, nextRefresh: viewModel.nextRefresh(for: snapshot.provider))
                 }
                 if let updated = viewModel.board.latestFetchedAt {
-                    TimelineView(.periodic(from: .now, by: 1)) { _ in
-                        Text("Updated \(updated.formatted(.relative(presentation: .numeric, unitsStyle: .abbreviated)))")
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text("Updated \(RelativeAge.compact(from: updated, now: context.date))")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }

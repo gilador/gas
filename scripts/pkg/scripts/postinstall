@@ -6,6 +6,10 @@ sleep 1
 USER_HOME=$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
 [ -n "$USER_HOME" ] && rm -rf "$USER_HOME/Applications/gas.app"
 xattr -dr com.apple.quarantine /Applications/gas.app 2>/dev/null || true
+# Hand the bundle to the user, as a drag-install would, so later updates need no admin rights.
+if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
+  chown -R "$CONSOLE_USER":staff /Applications/gas.app
+fi
 if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
   sudo -u "$CONSOLE_USER" open /Applications/gas.app || true
 fi

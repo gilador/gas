@@ -27,8 +27,8 @@ struct ProviderStripItem: View {
             Text(percentText)
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
             bar
-            TimelineView(.periodic(from: .now, by: 1)) { _ in
-                Text(snapshot.fetchedAt.formatted(.relative(presentation: .named, unitsStyle: .narrow)))
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                Text(RelativeAge.compact(from: snapshot.fetchedAt, now: context.date))
                     .font(.system(size: 9)).foregroundStyle(.secondary)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
