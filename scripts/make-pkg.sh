@@ -15,11 +15,14 @@ fi
 mkdir -p "$ROOT/Applications"
 ditto "$APP" "$ROOT/Applications/gas.app"
 echo "→ Creating PKG…" >&2
-# Installer otherwise "relocates" the app onto any copy with the same bundle id (e.g. a build folder).
+# Always replace /Applications/gas.app: no relocation onto other copies with the same bundle id,
+# and no version check, which silently skips a bundle whose build is not newer.
 pkgbuild --analyze --root "$ROOT" dist/component.plist >/dev/null
 i=0
 while plutil -extract "$i" xml1 -o /dev/null dist/component.plist 2>/dev/null; do
   plutil -replace "$i.BundleIsRelocatable" -bool NO dist/component.plist
+  plutil -replace "$i.BundleIsVersionChecked" -bool NO dist/component.plist
+  plutil -replace "$i.BundleOverwriteAction" -string upgrade dist/component.plist
   i=$((i + 1))
 done
 pkgbuild --root "$ROOT" --component-plist dist/component.plist --install-location / \

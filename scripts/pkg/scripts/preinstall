@@ -1,0 +1,9 @@
+#!/bin/bash
+# Quits a running gas before its files are replaced, so an update never swaps a live bundle.
+pkill -TERM -x AgentUsageApp 2>/dev/null || true
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  pgrep -x AgentUsageApp >/dev/null || break
+  sleep 0.5
+done
+pkill -KILL -x AgentUsageApp 2>/dev/null || true
+exit 0

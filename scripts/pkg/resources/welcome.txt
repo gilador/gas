@@ -1,6 +1,7 @@
 gas shows your Claude and OpenAI subscription usage in the menu bar.
 
 This installer places gas in your Applications folder and starts it.
+If gas is already running, it quits it first and starts the new version when done.
 
 Two one-time prompts may follow:
   • macOS Keychain: gas reads the sign-in that Claude Code stores. Click "Always Allow".
