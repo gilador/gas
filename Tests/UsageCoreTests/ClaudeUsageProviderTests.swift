@@ -23,6 +23,13 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(spy.calls[0].headers["anthropic-beta"], "oauth-2025-04-20")
     }
 
+    func testSendsClaudeCodeUserAgent() async throws {
+        let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
+        let token = ClaudeToken(accessToken: "t", expiresAt: nil)
+        _ = try await provider(token: .success(token), client: spy).fetch()
+        XCTAssertEqual(spy.calls[0].headers["User-Agent"], "claude-code/2.1.281")
+    }
+
     func testAccessDeniedReturnsKeychainDenied() async throws {
         let snap = try await provider(token: .failure(TokenReaderError.accessDenied),
                                       client: SpyHTTPClient()).fetch()

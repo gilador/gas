@@ -4,6 +4,7 @@ public struct ClaudeUsageProvider: UsageProvider {
     public let id: ProviderID = .claude
     public let minimumInterval: TimeInterval = 60 * 60
     public let manualMinimumInterval: TimeInterval = 60
+    public static let userAgent = "claude-code/2.1.281"
 
     private let tokenReader: TokenReader
     private let httpClient: UsageHTTPClient
@@ -42,11 +43,13 @@ public struct ClaudeUsageProvider: UsageProvider {
         let headers = [
             "Authorization": "Bearer \(token.accessToken)",
             "anthropic-beta": "oauth-2025-04-20",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "User-Agent": Self.userAgent
         ]
 
         do {
             let (data, response) = try await httpClient.get(url, headers: headers)
+            UsageLog.response(.claude, response, data: data)
             if response.statusCode == 401 {
                 return snapshot(now, .stale(reason: "Unauthorized — open Claude Code to refresh"))
             }
@@ -62,7 +65,8 @@ public struct ClaudeUsageProvider: UsageProvider {
                                                warning: warningThreshold,
                                                critical: criticalThreshold)
             return UsageSnapshot(provider: .claude, fetchedAt: now, limits: limits, status: .ok)
-        } catch is URLError {
+        } catch let error as URLError {
+            UsageLog.networkError(.claude, error)
             return snapshot(now, .stale(reason: "Network unavailable — retrying"))
         } catch is DecodingError {
             return snapshot(now, .error(message: "Couldn't read usage data"))

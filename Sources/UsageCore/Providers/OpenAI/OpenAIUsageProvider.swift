@@ -45,6 +45,7 @@ public struct OpenAIUsageProvider: UsageProvider {
 
         do {
             let (data, response) = try await httpClient.get(url, headers: headers)
+            UsageLog.response(.openai, response, data: data)
             if response.statusCode == 401 {
                 return snapshot(now, .stale(reason: "Unauthorized — open Codex to refresh"))
             }
@@ -60,7 +61,8 @@ public struct OpenAIUsageProvider: UsageProvider {
                                                warning: warningThreshold,
                                                critical: criticalThreshold)
             return UsageSnapshot(provider: .openai, fetchedAt: now, limits: limits, status: .ok)
-        } catch is URLError {
+        } catch let error as URLError {
+            UsageLog.networkError(.openai, error)
             return snapshot(now, .stale(reason: "Network unavailable — retrying"))
         } catch is DecodingError {
             return snapshot(now, .error(message: "Couldn't read usage data"))
