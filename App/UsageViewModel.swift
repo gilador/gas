@@ -29,7 +29,7 @@ final class UsageViewModel: ObservableObject {
         let openAIBase = env["CHATGPT_BASE_URL"].flatMap { URL(string: $0) }
             ?? URL(string: "https://chatgpt.com")!
         self.registry = ProviderRegistry.makeDefault(
-            tokenReader: KeychainTokenReader(),
+            tokenReader: SecurityCLITokenReader(),
             codexAuthReader: FileCodexAuthReader(),
             httpClient: URLSessionHTTPClient(),
             claudeBaseURL: claudeBase,

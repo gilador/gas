@@ -148,6 +148,7 @@ Tabbed Settings window (General / Providers enable-disable / Notifications toggl
 
 ## 6. Gotchas / lessons (so the next session doesn't relearn them)
 
+- **Keychain prompts: read through `/usr/bin/security`.** Claude Code writes `Claude Code-credentials` with that tool and rewrites the item on every token refresh, which resets any "Always Allow" granted to another app. `SecurityCLITokenReader` runs `security find-generic-password … -w`, which the item always trusts, so gas never prompts.
 - **macOS notifications need Developer ID.** Gatekeeper rejects development-signed builds, and `usernoted` then refuses them ("Notifications are not allowed for this application"). The app posts notifications when allowed and falls back to the critical dialog otherwise; Settings → Notifications names the reason. Note: in zsh, `log` is a builtin — use `/usr/bin/log show`.
 - **Unsigned builds must not touch the App Group container.** On this macOS, opening a file in `~/Library/Group Containers/group.com.gilad.agentusage/` from an unsigned process blocks on a privacy prompt (it hung the app at launch with a locked screen). The app stores its board in `~/Library/Application Support/gas/` unless team-signed (`StorageLocation`). The widget still reads the group container, which only works signed.
 - **`swift test` can hang** on integration tests that touch real system services: the Keychain

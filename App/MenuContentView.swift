@@ -21,7 +21,8 @@ struct MenuContentView: View {
             } else {
                 ForEach(Array(viewModel.visibleSnapshots.enumerated()), id: \.element.provider) { index, snapshot in
                     if index > 0 { Divider() }
-                    ProviderSection(snapshot: snapshot, nextRefresh: viewModel.nextRefresh(for: snapshot.provider))
+                    ProviderSection(snapshot: snapshot, nextRefresh: viewModel.nextRefresh(for: snapshot.provider),
+                                    onRetry: { Task { await viewModel.refresh(manual: true) } })
                 }
                 if let updated = viewModel.board.latestFetchedAt {
                     TimelineView(.periodic(from: .now, by: 1)) { context in

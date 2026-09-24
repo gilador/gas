@@ -4,6 +4,7 @@ import UsageCore
 struct ProviderSection: View {
     let snapshot: UsageSnapshot
     var nextRefresh: Date? = nil
+    var onRetry: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -59,6 +60,11 @@ struct ProviderSection: View {
             }
             if statusText != nil {
                 statusLabel.font(.caption).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if let onRetry, snapshot.status == .keychainDenied || snapshot.status == .needsSignIn {
+                    Button("Try again", action: onRetry)
+                        .buttonStyle(.link)
+                        .font(.caption)
+                }
             } else {
                 Text("Waiting for first data…").font(.caption).foregroundStyle(.secondary)
             }
