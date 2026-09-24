@@ -1,5 +1,5 @@
 import Foundation
 
 enum RefreshIntervals {
-    static let seconds: TimeInterval = 15 * 60
+    static let seconds: TimeInterval = 5 * 60
 }

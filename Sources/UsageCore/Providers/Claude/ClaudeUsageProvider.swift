@@ -2,7 +2,8 @@ import Foundation
 
 public struct ClaudeUsageProvider: UsageProvider {
     public let id: ProviderID = .claude
-    public let minimumInterval: TimeInterval = 60 * 60
+    /// Just under the 5-minute tick, so timer jitter does not skip every second call.
+    public let minimumInterval: TimeInterval = 5 * 60 - 30
     public let manualMinimumInterval: TimeInterval = 60
     public static let userAgent = "claude-code/2.1.281"
 
