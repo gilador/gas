@@ -46,7 +46,13 @@ struct ProviderStripItem: View {
 
     private var weekly: UsageLimit? { snapshot.limits.first { $0.id == "weekly_all" } }
 
-    private var front: UsageLimit? { session ?? headline }
+    /// The shorter fill goes in front so both layers stay visible, whichever window each one is.
+    private var layers: (back: UsageLimit?, front: UsageLimit?) {
+        let pair = [session, weekly].compactMap { $0 }
+        let sorted = (pair.isEmpty ? [headline].compactMap { $0 } : pair)
+            .sorted { mode.fraction(for: $0) > mode.fraction(for: $1) }
+        return sorted.count > 1 ? (sorted[0], sorted[1]) : (nil, sorted.first)
+    }
 
     private var exhausted: Bool { (headline?.percentUsed ?? 0) >= 100 }
 
@@ -59,25 +65,26 @@ struct ProviderStripItem: View {
     }
 
     private var bar: some View {
-        ZStack(alignment: .bottom) {
+        let (back, front) = layers
+        return ZStack(alignment: .bottom) {
             Capsule().fill(.white.opacity(0.15))
-            if let weekly, weekly.id != front?.id {
+            if let back {
                 Capsule()
-                    .fill(LimitPalette.backLayerColor(for: weekly))
-                    .frame(height: Self.barSize.height * mode.fraction(for: weekly))
+                    .fill(LimitPalette.backLayerColor(for: back))
+                    .frame(height: Self.barSize.height * mode.fraction(for: back))
             }
             if let front {
                 Capsule()
-                    .fill(LimitPalette.color(for: front))
+                    .fill(LimitPalette.frontLayerColor(for: front))
                     .frame(height: Self.barSize.height * mode.fraction(for: front))
             }
-            if let weekly, weekly.id != front?.id {
+            if let back {
                 Color.clear
                     .frame(width: Self.barSize.width + 6, height: 10)
                     .overlay(Rectangle().fill(.white).frame(height: 2))
                     .contentShape(Rectangle())
-                    .help("Weekly: \(mode.percent(for: weekly))% \(mode == .used ? "used" : "left")")
-                    .offset(y: -(Self.barSize.height * mode.fraction(for: weekly)) + 5)
+                    .help("\(back.label): \(mode.percent(for: back))% \(mode == .used ? "used" : "left")")
+                    .offset(y: -(Self.barSize.height * mode.fraction(for: back)) + 5)
             }
             if let scoped {
                 Color.clear

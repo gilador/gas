@@ -17,7 +17,14 @@ enum LimitPalette {
         return Color(hue: 0.77, saturation: 0.3 + 0.6 * t, brightness: 0.95 - 0.4 * t)
     }
 
-    /// The weekly layer drawn behind the session in the strip: a darker shade of the same scale.
+    static func frontLayerColor(for limit: UsageLimit) -> Color {
+        switch limit.severity {
+        case .critical: return .red
+        case .warning: return .orange
+        case .normal: return .green
+        }
+    }
+
     static func backLayerColor(for limit: UsageLimit) -> Color {
         switch limit.severity {
         case .critical: return Color(red: 0.55, green: 0.13, blue: 0.13)
