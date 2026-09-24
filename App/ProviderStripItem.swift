@@ -26,7 +26,6 @@ struct ProviderStripItem: View {
                 }
             Text(percentText)
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
-                .foregroundStyle(exhausted ? Color.red : Color.primary)
             bar
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 Text(RelativeAge.compact(from: snapshot.fetchedAt, now: context.date))
@@ -53,8 +52,6 @@ struct ProviderStripItem: View {
             .sorted { mode.fraction(for: $0) > mode.fraction(for: $1) }
         return sorted.count > 1 ? (sorted[0], sorted[1]) : (nil, sorted.first)
     }
-
-    private var exhausted: Bool { (headline?.percentUsed ?? 0) >= 100 }
 
     private var scoped: UsageLimit? {
         snapshot.limits.first { $0.id.hasPrefix("weekly_scoped") }
@@ -96,7 +93,6 @@ struct ProviderStripItem: View {
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
-        .overlay { if exhausted { Capsule().stroke(Color.red, lineWidth: 2).padding(-2.5) } }
     }
 
     private var glass: some View {
