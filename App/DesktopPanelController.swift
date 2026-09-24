@@ -68,7 +68,7 @@ final class DesktopPanelController {
             window.title = "Settings"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
-            window.setContentSize(NSSize(width: 380, height: 520))
+            window.setContentSize(NSSize(width: 380, height: 580))
             window.center()
             settingsWindow = window
         }

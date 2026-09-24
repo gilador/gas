@@ -14,6 +14,7 @@ struct PreferencesView: View {
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var copiedDiagnostics = false
 
     var body: some View {
         Form {
@@ -71,12 +72,22 @@ struct PreferencesView: View {
                                       : SMAppService.mainApp.unregister())
                     }
             }
+            Section("Troubleshooting") {
+                Button(copiedDiagnostics ? "Copied — paste it into a message" : "Copy diagnostics", action: copyDiagnostics)
+            }
             Button("Done") {
                 dismiss()
             }
         }
         .padding(20)
         .formStyle(.grouped)
+    }
+
+    private func copyDiagnostics() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(viewModel.diagnosticsReport(), forType: .string)
+        copiedDiagnostics = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { copiedDiagnostics = false }
     }
 
     private func binding(for provider: ProviderID) -> Binding<Bool> {
