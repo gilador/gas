@@ -85,11 +85,11 @@ struct ProviderStripItem: View {
             }
             if let scoped {
                 Color.clear
-                    .frame(width: Self.barSize.width + 6, height: 10)
-                    .overlay(Rectangle().fill(LimitPalette.color(for: scoped)).frame(height: 2))
+                    .frame(width: 10, height: 10)
+                    .overlay(RoundedRectangle(cornerRadius: 1).fill(LimitPalette.color(for: scoped)).frame(width: 5, height: 3))
                     .contentShape(Rectangle())
                     .help("\(scoped.label): \(mode.percent(for: scoped))% \(mode == .used ? "used" : "left")")
-                    .offset(y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
+                    .offset(x: -(Self.barSize.width / 2 + 5), y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
