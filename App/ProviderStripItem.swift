@@ -1,7 +1,7 @@
 import SwiftUI
 import UsageCore
 
-/// One provider in the floating strip: the fill and number follow the limit that blocks first; the other main limit is a tick.
+/// One provider in the floating strip; the number follows the limit that blocks first.
 struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
     var alert: AlertCenter.ActiveAlert? = nil
@@ -26,6 +26,7 @@ struct ProviderStripItem: View {
                 }
             Text(percentText)
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                .foregroundStyle(exhausted ? Color.red : Color.primary)
             bar
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 Text(RelativeAge.compact(from: snapshot.fetchedAt, now: context.date))
@@ -41,9 +42,11 @@ struct ProviderStripItem: View {
 
     private var headline: UsageLimit? { snapshot.headlineLimit }
 
-    private var secondary: UsageLimit? {
-        snapshot.limits.first { ($0.id == "session" || $0.id == "weekly_all") && $0.id != headline?.id }
-    }
+    private var session: UsageLimit? { snapshot.limits.first { $0.id == "session" } }
+
+    private var weekly: UsageLimit? { snapshot.limits.first { $0.id == "weekly_all" } }
+
+    private var front: UsageLimit? { session ?? headline }
 
     private var exhausted: Bool { (headline?.percentUsed ?? 0) >= 100 }
 
@@ -57,19 +60,24 @@ struct ProviderStripItem: View {
 
     private var bar: some View {
         ZStack(alignment: .bottom) {
-            Capsule().fill(exhausted ? Color.red.opacity(0.45) : Color.white.opacity(0.15))
-            if let headline {
+            Capsule().fill(.white.opacity(0.15))
+            if let weekly, weekly.id != front?.id {
                 Capsule()
-                    .fill(LimitPalette.color(for: headline))
-                    .frame(height: Self.barSize.height * mode.fraction(for: headline))
+                    .fill(LimitPalette.backLayerColor(for: weekly))
+                    .frame(height: Self.barSize.height * mode.fraction(for: weekly))
             }
-            if let secondary {
+            if let front {
+                Capsule()
+                    .fill(LimitPalette.color(for: front))
+                    .frame(height: Self.barSize.height * mode.fraction(for: front))
+            }
+            if let weekly, weekly.id != front?.id {
                 Color.clear
                     .frame(width: Self.barSize.width + 6, height: 10)
-                    .overlay(Rectangle().fill(LimitPalette.color(for: secondary)).frame(height: 2))
+                    .overlay(Rectangle().fill(.white).frame(height: 2))
                     .contentShape(Rectangle())
-                    .help("\(secondary.label): \(mode.percent(for: secondary))% \(mode == .used ? "used" : "left")")
-                    .offset(y: -(Self.barSize.height * mode.fraction(for: secondary)) + 5)
+                    .help("Weekly: \(mode.percent(for: weekly))% \(mode == .used ? "used" : "left")")
+                    .offset(y: -(Self.barSize.height * mode.fraction(for: weekly)) + 5)
             }
             if let scoped {
                 Color.clear
@@ -81,6 +89,7 @@ struct ProviderStripItem: View {
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
+        .overlay { if exhausted { Capsule().stroke(Color.red, lineWidth: 2).padding(-2.5) } }
     }
 
     private var glass: some View {
