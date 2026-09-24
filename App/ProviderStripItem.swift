@@ -86,7 +86,9 @@ struct ProviderStripItem: View {
             if let scoped {
                 Color.clear
                     .frame(width: 10, height: 10)
-                    .overlay(RoundedRectangle(cornerRadius: 1).fill(LimitPalette.color(for: scoped)).frame(width: 5, height: 3))
+                    .overlay(alignment: .trailing) {
+                        PointerTriangle().fill(LimitPalette.color(for: scoped)).frame(width: 6, height: 7).padding(.trailing, 1)
+                    }
                     .contentShape(Rectangle())
                     .help("\(scoped.label): \(mode.percent(for: scoped))% \(mode == .used ? "used" : "left")")
                     .offset(x: -(Self.barSize.width / 2 + 5), y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
@@ -148,6 +150,17 @@ struct ProviderStripItem: View {
         case .ok: return .primary
         case .stale, .needsSignIn, .rateLimited: return .orange
         case .keychainDenied, .error: return .red
+        }
+    }
+}
+
+private struct PointerTriangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.closeSubpath()
         }
     }
 }
