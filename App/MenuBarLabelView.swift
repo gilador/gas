@@ -25,7 +25,7 @@ struct MenuBarLabelView: View {
     }
 
     private func percentText(for provider: ProviderID) -> String {
-        viewModel.board.snapshot(for: provider)?.tightestLimit
+        viewModel.board.snapshot(for: provider)?.headlineLimit
             .map { "\(mode.percent(for: $0))%" } ?? "—"
     }
 }

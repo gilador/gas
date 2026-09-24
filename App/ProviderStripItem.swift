@@ -1,7 +1,7 @@
 import SwiftUI
 import UsageCore
 
-/// One provider in the floating strip: session percent, a thin bar for the session limit, a tick for the weekly one.
+/// One provider in the floating strip: the fill and number follow the limit that blocks first; the other main limit is a tick.
 struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
     var alert: AlertCenter.ActiveAlert? = nil
@@ -39,37 +39,37 @@ struct ProviderStripItem: View {
         .help(helpText)
     }
 
-    private var session: UsageLimit? {
-        snapshot.limits.first { $0.id == "session" } ?? snapshot.tightestLimit
+    private var headline: UsageLimit? { snapshot.headlineLimit }
+
+    private var secondary: UsageLimit? {
+        snapshot.limits.first { ($0.id == "session" || $0.id == "weekly_all") && $0.id != headline?.id }
     }
 
-    private var weekly: UsageLimit? {
-        snapshot.limits.first { $0.id == "weekly_all" }
-    }
+    private var exhausted: Bool { (headline?.percentUsed ?? 0) >= 100 }
 
     private var scoped: UsageLimit? {
         snapshot.limits.first { $0.id.hasPrefix("weekly_scoped") }
     }
 
     private var percentText: String {
-        session.map { "\(mode.percent(for: $0))%" } ?? "—"
+        headline.map { "\(mode.percent(for: $0))%" } ?? "—"
     }
 
     private var bar: some View {
         ZStack(alignment: .bottom) {
-            Capsule().fill(.white.opacity(0.15))
-            if let session {
+            Capsule().fill(exhausted ? Color.red.opacity(0.45) : Color.white.opacity(0.15))
+            if let headline {
                 Capsule()
-                    .fill(LimitPalette.color(for: session))
-                    .frame(height: Self.barSize.height * mode.fraction(for: session))
+                    .fill(LimitPalette.color(for: headline))
+                    .frame(height: Self.barSize.height * mode.fraction(for: headline))
             }
-            if let weekly {
+            if let secondary {
                 Color.clear
                     .frame(width: Self.barSize.width + 6, height: 10)
-                    .overlay(Rectangle().fill(LimitPalette.color(for: weekly)).frame(height: 2))
+                    .overlay(Rectangle().fill(LimitPalette.color(for: secondary)).frame(height: 2))
                     .contentShape(Rectangle())
-                    .help("Weekly: \(mode.percent(for: weekly))% \(mode == .used ? "used" : "left")")
-                    .offset(y: -(Self.barSize.height * mode.fraction(for: weekly)) + 5)
+                    .help("\(secondary.label): \(mode.percent(for: secondary))% \(mode == .used ? "used" : "left")")
+                    .offset(y: -(Self.barSize.height * mode.fraction(for: secondary)) + 5)
             }
             if let scoped {
                 Color.clear

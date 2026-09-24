@@ -47,7 +47,7 @@ public struct UsageBoard: Codable, Sendable, Equatable {
 
     public var tightestLimits: [ProviderLimit] {
         snapshots.compactMap { snapshot in
-            snapshot.tightestLimit.map { ProviderLimit(provider: snapshot.provider, limit: $0) }
+            snapshot.headlineLimit.map { ProviderLimit(provider: snapshot.provider, limit: $0) }
         }
     }
 

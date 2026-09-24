@@ -99,4 +99,27 @@ final class UsageSnapshotTests: XCTestCase {
         XCTAssertEqual(merged.fetchedAt, Date(timeIntervalSince1970: 100))
         XCTAssertEqual(merged.status, .rateLimited(until: Date(timeIntervalSince1970: 1100), wait: 900))
     }
+
+    func testHeadlineIsTheMostUsedProviderWideLimit() {
+        let snap = UsageSnapshot(provider: .openai, fetchedAt: Date(),
+                                 limits: [limit("session", 0), limit("weekly_all", 100)], status: .ok)
+        XCTAssertEqual(snap.headlineLimit?.id, "weekly_all")
+    }
+
+    func testHeadlineIgnoresPerModelLimits() {
+        let snap = UsageSnapshot(provider: .claude, fetchedAt: Date(),
+                                 limits: [limit("session", 40), limit("weekly_all", 60), limit("weekly_scoped#Fable", 95)],
+                                 status: .ok)
+        XCTAssertEqual(snap.headlineLimit?.id, "weekly_all")
+    }
+
+    func testHeadlineFallsBackToPerModelWhenAlone() {
+        let snap = UsageSnapshot(provider: .claude, fetchedAt: Date(),
+                                 limits: [limit("weekly_scoped#Fable", 30)], status: .ok)
+        XCTAssertEqual(snap.headlineLimit?.id, "weekly_scoped#Fable")
+    }
+
+    func testHeadlineNilWithoutLimits() {
+        XCTAssertNil(UsageSnapshot(provider: .claude, fetchedAt: Date(), limits: [], status: .ok).headlineLimit)
+    }
 }

@@ -28,6 +28,13 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
         limits.max(by: { $0.percentUsed < $1.percentUsed })
     }
 
+    /// The limit that decides whether the provider can be used: the most-used provider-wide limit.
+    /// Per-model limits (`weekly_scoped#…`) block only one model, so they count only when alone.
+    public var headlineLimit: UsageLimit? {
+        let providerWide = limits.filter { !$0.id.hasPrefix("weekly_scoped") }
+        return (providerWide.isEmpty ? limits : providerWide).max(by: { $0.percentUsed < $1.percentUsed })
+    }
+
     /// Keeps the previous good limits (and their timestamp) when a refresh fails transiently.
     public func mergingLastGood(previous: UsageSnapshot?) -> UsageSnapshot {
         guard let previous, previous.provider == provider,

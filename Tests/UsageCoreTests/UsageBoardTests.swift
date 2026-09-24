@@ -115,4 +115,11 @@ final class UsageBoardTests: XCTestCase {
         board.replace(snap(.claude, fetchedAt: 9))
         XCTAssertEqual(board.lastRequest(for: .claude), stamp)
     }
+
+    func testTightestLimitsUseTheHeadlineNotPerModelLimits() {
+        let board = UsageBoard(snapshots: [
+            snap(.claude, limits: [limit("session", 40), limit("weekly_all", 60), limit("weekly_scoped#Fable", 95)])
+        ])
+        XCTAssertEqual(board.tightestLimits.first?.limit.id, "weekly_all")
+    }
 }
