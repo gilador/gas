@@ -75,13 +75,13 @@ struct ProviderStripItem: View {
                     .fill(LimitPalette.frontLayerColor(for: front))
                     .frame(height: Self.barSize.height * mode.fraction(for: front))
             }
-            if let back {
+            if let weekly, back != nil {
                 Color.clear
                     .frame(width: Self.barSize.width + 6, height: 10)
                     .overlay(Rectangle().fill(.white).frame(height: 2))
                     .contentShape(Rectangle())
-                    .help("\(back.label): \(mode.percent(for: back))% \(mode == .used ? "used" : "left")")
-                    .offset(y: -(Self.barSize.height * mode.fraction(for: back)) + 5)
+                    .help("\(weekly.label): \(mode.percent(for: weekly))% \(mode == .used ? "used" : "left")")
+                    .offset(y: -(Self.barSize.height * mode.fraction(for: weekly)) + 5)
             }
             if let scoped {
                 Color.clear
