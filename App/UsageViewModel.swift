@@ -97,6 +97,19 @@ final class UsageViewModel: ObservableObject {
         return end
     }
 
+    func diagnosticsReport(now: Date = Date()) -> String {
+        let info = Bundle.main.infoDictionary
+        let version = "\(info?["CFBundleShortVersionString"] as? String ?? "?") (\(info?["CFBundleVersion"] as? String ?? "?"))"
+        let token = Result(catching: { try SecurityCLITokenReader().readClaudeToken() })
+        return DiagnosticsReport.render(appVersion: version,
+                                        osVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+                                        now: now,
+                                        keychainEntries: ClaudeKeychainEntries.list(),
+                                        tokenStatus: DiagnosticsReport.tokenStatus(token, now: now),
+                                        board: board,
+                                        recentLog: UsageLog.recentLines())
+    }
+
     /// Snapshots for enabled providers only; disabled providers stay hidden everywhere.
     var visibleSnapshots: [UsageSnapshot] {
         board.snapshots.filter { ProviderSettings.isEnabled($0.provider) }

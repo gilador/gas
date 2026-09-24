@@ -1,8 +1,27 @@
 import Foundation
 import os
 
-enum UsageLog {
+final class LineBuffer: @unchecked Sendable {
+    private let capacity: Int
+    private let lock = NSLock()
+    private var storage: [String] = []
+
+    init(capacity: Int) { self.capacity = capacity }
+
+    var lines: [String] { lock.lock(); defer { lock.unlock() }; return storage }
+
+    func append(_ line: String) {
+        lock.lock(); defer { lock.unlock() }
+        storage.append(line)
+        if storage.count > capacity { storage.removeFirst(storage.count - capacity) }
+    }
+}
+
+public enum UsageLog {
     private static let network = Logger(subsystem: "com.gilad.agentusage", category: "network")
+    private static let recent = LineBuffer(capacity: 50)
+
+    public static func recentLines() -> [String] { recent.lines }
 
     /// Status, Retry-After and the error type and message only; never headers, tokens or the raw body.
     static func response(_ provider: ProviderID, _ response: HTTPURLResponse, data: Data) {
@@ -11,7 +30,11 @@ enum UsageLog {
         if !(200..<300).contains(response.statusCode) {
             line += " error=\(errorSummary(data))"
         }
-        network.log("\(line, privacy: .public)")
+        record(line)
+    }
+
+    static func networkError(_ provider: ProviderID, _ error: URLError) {
+        record("\(provider.rawValue) network error \(error.code.rawValue)")
     }
 
     static func errorSummary(_ data: Data) -> String {
@@ -24,7 +47,8 @@ enum UsageLog {
         return "\(type): \(message.prefix(200))"
     }
 
-    static func networkError(_ provider: ProviderID, _ error: URLError) {
-        network.log("\(provider.rawValue, privacy: .public) network error \(error.code.rawValue, privacy: .public)")
+    private static func record(_ line: String) {
+        network.log("\(line, privacy: .public)")
+        recent.append("\(ISO8601DateFormatter().string(from: Date())) \(line)")
     }
 }

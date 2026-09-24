@@ -5,6 +5,7 @@ struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
     let onSettings: () -> Void
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
+    @State private var copiedDiagnostics = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
 
@@ -56,6 +57,12 @@ struct MenuContentView: View {
                 .buttonStyle(.plain)
                 .help("Preferences")
 
+                Button(action: copyDiagnostics) {
+                    Image(systemName: copiedDiagnostics ? "checkmark" : "stethoscope")
+                }
+                .buttonStyle(.plain)
+                .help("Copy diagnostics")
+
                 Button(action: confirmQuit) {
                     Image(systemName: "power")
                 }
@@ -70,6 +77,13 @@ struct MenuContentView: View {
         }
         .padding(12)
         .frame(width: 280)
+    }
+
+    private func copyDiagnostics() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(viewModel.diagnosticsReport(), forType: .string)
+        copiedDiagnostics = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copiedDiagnostics = false }
     }
 
     private func confirmQuit() {
