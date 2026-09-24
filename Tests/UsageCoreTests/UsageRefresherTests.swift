@@ -244,4 +244,42 @@ final class UsageRefresherTests: XCTestCase {
         _ = await UsageRefresher.refresh(previous, providers: [claude], now: now, manual: true)
         XCTAssertEqual(claude.calls, 0)
     }
+
+    private func rateLimitedClaude(fingerprint: String?) -> CountingUsageProvider {
+        let claude = CountingUsageProvider(id: .claude, result: .success(
+            snap(.claude, fetchedAt: 10_000, status: .rateLimited(until: now, wait: 1555))),
+                                           minimumInterval: 270)
+        claude.fingerprint = fingerprint
+        return claude
+    }
+
+    func testRateLimitWaitEndsWhenTheCredentialChanges() async {
+        let claude = rateLimitedClaude(fingerprint: "old")
+        let limited = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        claude.fingerprint = "new"
+        _ = await UsageRefresher.refresh(limited, providers: [claude], now: now.addingTimeInterval(60))
+        XCTAssertEqual(claude.calls, 2)
+    }
+
+    func testRateLimitWaitHoldsWhenTheCredentialIsTheSame() async {
+        let claude = rateLimitedClaude(fingerprint: "same")
+        let limited = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        _ = await UsageRefresher.refresh(limited, providers: [claude], now: now.addingTimeInterval(600))
+        XCTAssertEqual(claude.calls, 1)
+    }
+
+    func testRateLimitWaitHoldsWhenTheCredentialIsUnknown() async {
+        let claude = rateLimitedClaude(fingerprint: nil)
+        let limited = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        claude.fingerprint = "new"
+        _ = await UsageRefresher.refresh(limited, providers: [claude], now: now.addingTimeInterval(600))
+        XCTAssertEqual(claude.calls, 1)
+    }
+
+    func testCredentialFingerprintIsNotSaved() async throws {
+        let claude = rateLimitedClaude(fingerprint: "fp-4f2a")
+        let limited = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        let json = String(decoding: try JSONEncoder().encode(limited), as: UTF8.self)
+        XCTAssertFalse(json.contains("fp-4f2a"))
+    }
 }

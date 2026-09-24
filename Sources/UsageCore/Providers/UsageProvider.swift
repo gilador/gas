@@ -7,9 +7,12 @@ public protocol UsageProvider: Sendable {
     /// Debounce for manual (user-triggered) refreshes.
     var manualMinimumInterval: TimeInterval { get }
     func fetch() async throws -> UsageSnapshot
+    /// A hash of the credential in use, so a new sign-in can end a rate-limit wait; nil when unknown.
+    func credentialFingerprint() -> String?
 }
 
 public extension UsageProvider {
     var minimumInterval: TimeInterval { 0 }
     var manualMinimumInterval: TimeInterval { 60 }
+    func credentialFingerprint() -> String? { nil }
 }

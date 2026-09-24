@@ -77,6 +77,7 @@ final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
     let result: Result<UsageSnapshot, Error>
     let minimumInterval: TimeInterval
     let manualMinimumInterval: TimeInterval
+    var fingerprint: String?
     private let lock = NSLock()
     private var _calls = 0
     var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }
@@ -92,4 +93,5 @@ final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
         _calls += 1
     }
     func fetch() async throws -> UsageSnapshot { recordCall(); return try result.get() }
+    func credentialFingerprint() -> String? { fingerprint }
 }

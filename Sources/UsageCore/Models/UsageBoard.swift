@@ -13,6 +13,8 @@ public struct ProviderLimit: Equatable, Sendable {
 public struct UsageBoard: Codable, Sendable, Equatable {
     public private(set) var snapshots: [UsageSnapshot]
     private var lastRequests: [String: Date]
+    /// In memory only: the credential hash that got the last 429, per provider.
+    private var rateLimitedCredentials: [String: String] = [:]
 
     public init(snapshots: [UsageSnapshot] = []) {
         self.snapshots = []
@@ -44,6 +46,11 @@ public struct UsageBoard: Codable, Sendable, Equatable {
 
     public func lastRequest(for provider: ProviderID) -> Date? { lastRequests[provider.rawValue] }
     public mutating func markRequested(_ provider: ProviderID, at date: Date) { lastRequests[provider.rawValue] = date }
+
+    public func rateLimitedCredential(for provider: ProviderID) -> String? { rateLimitedCredentials[provider.rawValue] }
+    public mutating func setRateLimitedCredential(_ fingerprint: String?, for provider: ProviderID) {
+        rateLimitedCredentials[provider.rawValue] = fingerprint
+    }
 
     public var tightestLimits: [ProviderLimit] {
         snapshots.compactMap { snapshot in

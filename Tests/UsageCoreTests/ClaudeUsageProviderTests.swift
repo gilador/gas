@@ -72,4 +72,18 @@ final class ClaudeUsageProviderTests: XCTestCase {
     func testManualMinimumIntervalIsOneMinute() {
         XCTAssertEqual(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).manualMinimumInterval, 60)
     }
+
+    func testCredentialFingerprintChangesWithTheTokenAndHidesIt() {
+        let a = provider(token: .success(ClaudeToken(accessToken: "token-a", expiresAt: nil)),
+                         client: SpyHTTPClient()).credentialFingerprint()
+        let b = provider(token: .success(ClaudeToken(accessToken: "token-b", expiresAt: nil)),
+                         client: SpyHTTPClient()).credentialFingerprint()
+        XCTAssertNotNil(a)
+        XCTAssertNotEqual(a, b)
+        XCTAssertFalse(a?.contains("token-a") ?? true)
+    }
+
+    func testCredentialFingerprintIsNilWithoutAToken() {
+        XCTAssertNil(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).credentialFingerprint())
+    }
 }

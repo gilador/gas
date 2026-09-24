@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public struct ClaudeUsageProvider: UsageProvider {
@@ -74,6 +75,11 @@ public struct ClaudeUsageProvider: UsageProvider {
         } catch {
             return snapshot(now, .error(message: "Unexpected error"))
         }
+    }
+
+    public func credentialFingerprint() -> String? {
+        guard let token = try? tokenReader.readClaudeToken() else { return nil }
+        return SHA256.hash(data: Data(token.accessToken.utf8)).prefix(8).map { String(format: "%02x", $0) }.joined()
     }
 
     private func snapshot(_ now: Date, _ status: FetchStatus) -> UsageSnapshot {
