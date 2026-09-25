@@ -8,7 +8,7 @@ final class DesktopPanelController {
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
     private var resizeObserver: NSObjectProtocol?
-    private var topLeft: NSPoint?
+    private var topRight: NSPoint?
     private var settingsWindow: NSWindow?
     private var menuPopover: NSPopover?
     private static let size = NSSize(width: 44, height: 280)
@@ -104,21 +104,22 @@ final class DesktopPanelController {
             let origin = moved.frame.origin
             UserDefaults.standard.set(Double(origin.x), forKey: Self.originXKey)
             UserDefaults.standard.set(Double(origin.y), forKey: Self.originYKey)
-            let topLeft = NSPoint(x: moved.frame.minX, y: moved.frame.maxY)
-            MainActor.assumeIsolated { self?.topLeft = topLeft }
+            let topRight = NSPoint(x: moved.frame.maxX, y: moved.frame.maxY)
+            MainActor.assumeIsolated { self?.topRight = topRight }
         }
         resizeObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didResizeNotification, object: panel, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.keepTopLeft() }
+            MainActor.assumeIsolated { self?.keepTopRight() }
         }
         return panel
     }
 
-    /// AppKit keeps the bottom-left corner when the content changes size; a layout flip should keep the top-left one.
-    private func keepTopLeft() {
-        guard let panel, let topLeft else { return }
+    /// AppKit keeps the bottom-left corner when the content changes size; a layout flip keeps the top-right one,
+    /// where the flip pill sits in both layouts, so the pointer stays on it.
+    private func keepTopRight() {
+        guard let panel, let topRight else { return }
         var frame = panel.frame
-        frame.origin = NSPoint(x: topLeft.x, y: topLeft.y - frame.height)
+        frame.origin = NSPoint(x: topRight.x - frame.width, y: topRight.y - frame.height)
         if let visible = (panel.screen ?? NSScreen.main)?.visibleFrame {
             frame.origin.x = min(max(frame.origin.x, visible.minX), visible.maxX - frame.width)
             frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - frame.height)
