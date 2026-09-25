@@ -6,7 +6,6 @@ USER_HOME=$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory 2>/dev/null | a
 if [ -n "$USER_HOME" ] && [ "$CONSOLE_USER" != "root" ]; then
   sudo -u "$CONSOLE_USER" rm -rf "$USER_HOME/Applications/gas.app"
 fi
-xattr -dr com.apple.quarantine /Applications/gas.app 2>/dev/null || true
 if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
   sudo -u "$CONSOLE_USER" open /Applications/gas.app || true
 fi
