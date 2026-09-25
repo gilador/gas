@@ -40,6 +40,8 @@ struct ProviderStripItem: View {
                     Spacer(minLength: 2)
                     age
                 }
+                // As tall as the digits, not the line, so the icon and the padding center on what shows.
+                .frame(height: 9)
                 horizontalBar
             }
             .frame(width: Self.horizontalBarLength)
@@ -140,7 +142,7 @@ struct ProviderStripItem: View {
     private var horizontalBar: some View {
         let (back, front) = layers
         let length = Self.horizontalBarLength
-        let thickness = Self.barSize.width
+        let thickness = Self.barSize.width + 6
         return ZStack(alignment: .leading) {
             Capsule().fill(.white.opacity(0.15))
             if let back {
@@ -155,7 +157,7 @@ struct ProviderStripItem: View {
             }
             if let weekly, back != nil {
                 Color.clear
-                    .frame(width: 10, height: thickness + 6)
+                    .frame(width: 10, height: thickness)
                     .overlay(Rectangle().fill(.white).frame(width: 2))
                     .contentShape(Rectangle())
                     .help(usageHelp(weekly))

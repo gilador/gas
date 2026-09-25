@@ -22,9 +22,9 @@ struct DesktopPanelView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { onTap() }
-        .padding(horizontal ? EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 2)
+        .padding(horizontal ? EdgeInsets(top: 7, leading: 6, bottom: 7, trailing: 2)
                             : EdgeInsets(top: 2, leading: 4, bottom: 10, trailing: 4))
-        .frame(width: horizontal ? nil : 44, height: horizontal ? 44 : nil, alignment: .topLeading)
+        .frame(width: horizontal ? nil : 44, alignment: .topLeading)
         .modifier(PanelGlass(cornerRadius: 12))
         .opacity(1 - 0.9 * panelTransparency)
         .environment(\.colorScheme, .dark)
@@ -59,9 +59,9 @@ private struct LayoutToggle: View {
     var body: some View {
         Capsule()
             .fill(.white)
-            .frame(width: horizontal ? 5 : 30, height: horizontal ? 30 : 5)
+            .frame(width: horizontal ? 5 : 30, height: horizontal ? 24 : 5)
             .opacity(hovering ? 0.9 : 0)
-            .frame(width: horizontal ? 12 : 36, height: horizontal ? 32 : 12)
+            .frame(width: horizontal ? 12 : 36, height: horizontal ? 26 : 12)
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
             .onTapGesture(perform: action)
