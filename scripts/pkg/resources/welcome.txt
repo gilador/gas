@@ -1,3 +1,5 @@
+Not a production build. You will be asked to approve for reinstall purposes: click "Allow".
+
 gas shows your Claude and OpenAI subscription usage in the menu bar.
 
 This installer places gas in your Applications folder and starts it.
