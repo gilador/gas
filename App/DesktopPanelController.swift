@@ -94,8 +94,12 @@ final class DesktopPanelController {
         panel.hidesOnDeactivate = false
         panel.isFloatingPanel = false
 
-        let host = NSHostingView(rootView: DesktopPanelView(viewModel: viewModel, alerts: viewModel.alerts, onTap: { [weak self] in self?.toggleMenu() }))
+        let pointer = PointerTracker()
+        let host = TrackingHostingView(rootView: DesktopPanelView(viewModel: viewModel, alerts: viewModel.alerts, pointer: pointer,
+                                                                  onTap: { [weak self] in self?.toggleMenu() }))
+        host.tracker = pointer
         host.sizingOptions = [.preferredContentSize]
+        panel.acceptsMouseMovedEvents = true
         panel.contentView = host
 
         moveObserver = NotificationCenter.default.addObserver(
@@ -121,10 +125,14 @@ final class DesktopPanelController {
         var frame = panel.frame
         frame.origin = NSPoint(x: topRight.x - frame.width, y: topRight.y - frame.height)
         if let visible = (panel.screen ?? NSScreen.main)?.visibleFrame {
-            frame.origin.x = min(max(frame.origin.x, visible.minX), visible.maxX - frame.width)
-            frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - frame.height)
+            frame.origin = Self.fitted(frame.origin, size: frame.size, in: visible)
         }
         if frame.origin != panel.frame.origin { panel.setFrameOrigin(frame.origin) }
+    }
+
+    private static func fitted(_ origin: NSPoint, size: NSSize, in visible: NSRect) -> NSPoint {
+        NSPoint(x: min(max(origin.x, visible.minX), visible.maxX - size.width),
+                y: min(max(origin.y, visible.minY), visible.maxY - size.height))
     }
 
     private func positionPanel(_ panel: NSPanel) {
@@ -142,8 +150,8 @@ final class DesktopPanelController {
 
     private func clampedOrigin(_ origin: NSPoint, size: NSSize) -> NSPoint {
         let rect = NSRect(origin: origin, size: size)
-        if NSScreen.screens.contains(where: { $0.visibleFrame.intersects(rect) }) {
-            return origin
+        if let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(rect) }) {
+            return Self.fitted(origin, size: size, in: screen.visibleFrame)
         }
         return defaultOrigin(size: size)
     }

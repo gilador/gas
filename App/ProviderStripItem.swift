@@ -10,7 +10,6 @@ struct ProviderStripItem: View {
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     private static let barSize = CGSize(width: 8, height: 84)
-    private static let horizontalBarLength: CGFloat = 84
 
     var body: some View {
         Group {
@@ -33,20 +32,16 @@ struct ProviderStripItem: View {
 
     private var horizontalBody: some View {
         HStack(spacing: 7) {
-            icon
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    percent
-                    Spacer(minLength: 2)
-                    age
-                }
-                // As tall as the digits, not the line, so the icon and the padding center on what shows.
-                .frame(height: 9)
-                horizontalBar
+            VStack(spacing: 2) {
+                icon
+                age
             }
-            .frame(width: Self.horizontalBarLength)
+            .frame(width: 34)
+            horizontalBar
+            percent
+                .fixedSize()
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 4)
     }
 
     private var icon: some View {
@@ -139,43 +134,11 @@ struct ProviderStripItem: View {
         .frame(width: Self.barSize.width, height: Self.barSize.height)
     }
 
+    /// The vertical bar turned 90° clockwise, so both layouts show exactly the same bar.
     private var horizontalBar: some View {
-        let (back, front) = layers
-        let length = Self.horizontalBarLength
-        let thickness = Self.barSize.width + 6
-        return ZStack(alignment: .leading) {
-            Capsule().fill(.white.opacity(0.15))
-            if let back {
-                Capsule()
-                    .fill(LimitPalette.backLayerColor(for: back))
-                    .frame(width: length * mode.fraction(for: back))
-            }
-            if let front {
-                Capsule()
-                    .fill(LimitPalette.frontLayerColor(for: front))
-                    .frame(width: length * mode.fraction(for: front))
-            }
-            if let weekly, back != nil {
-                Color.clear
-                    .frame(width: 10, height: thickness)
-                    .overlay(Rectangle().fill(.white).frame(width: 2))
-                    .contentShape(Rectangle())
-                    .help(usageHelp(weekly))
-                    .offset(x: length * mode.fraction(for: weekly) - 5)
-            }
-            if let scoped {
-                Color.clear
-                    .frame(width: 10, height: 10)
-                    .overlay(alignment: .top) {
-                        PointerTriangle(pointsUp: true).fill(LimitPalette.color(for: scoped))
-                            .frame(width: 7, height: 6).padding(.top, 1)
-                    }
-                    .contentShape(Rectangle())
-                    .help(usageHelp(scoped))
-                    .offset(x: length * mode.fraction(for: scoped) - 5, y: thickness / 2 + 5)
-            }
-        }
-        .frame(width: length, height: thickness)
+        bar
+            .rotationEffect(.degrees(90))
+            .frame(width: Self.barSize.height, height: Self.barSize.width + 6)
     }
 
     private var glass: some View {
@@ -236,19 +199,11 @@ struct ProviderStripItem: View {
 }
 
 private struct PointerTriangle: Shape {
-    var pointsUp = false
-
     func path(in rect: CGRect) -> Path {
         Path { path in
-            if pointsUp {
-                path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-                path.addLine(to: CGPoint(x: rect.midX, y: rect.minY))
-                path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-            } else {
-                path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-                path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-                path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-            }
+            path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
             path.closeSubpath()
         }
     }

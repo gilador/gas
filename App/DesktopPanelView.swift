@@ -3,35 +3,51 @@ import UsageCore
 
 struct DesktopPanelView: View {
     static let horizontalKey = "panelHorizontal"
+    /// The flip pill shows once the pointer is this close to its hit area: about 10 pt past a "0%" label.
+    private static let revealMargin: CGFloat = 14
+    /// From the glass edge to the pill's center.
+    private static let pillInset: CGFloat = 10
 
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var alerts: AlertCenter
+    @ObservedObject var pointer: PointerTracker
     @AppStorage("panelTransparency") private var panelTransparency = 0.05
     @AppStorage(horizontalKey) private var horizontal = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     let onTap: () -> Void
+    @State private var toggleFrame: CGRect = .zero
 
     var body: some View {
         let _ = (claudeEnabled, openaiEnabled)
         let layout = horizontal ? AnyLayout(HStackLayout(spacing: 6)) : AnyLayout(VStackLayout(spacing: 6))
-        layout {
-            if !horizontal { toggle }
-            content
-            if horizontal { toggle }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { onTap() }
-        .padding(horizontal ? EdgeInsets(top: 7, leading: 6, bottom: 7, trailing: 2)
-                            : EdgeInsets(top: 2, leading: 4, bottom: 10, trailing: 4))
-        .frame(width: horizontal ? nil : 44, alignment: .topLeading)
-        .modifier(PanelGlass(cornerRadius: 12))
-        .opacity(1 - 0.9 * panelTransparency)
-        .environment(\.colorScheme, .dark)
+        layout { content }
+            .contentShape(Rectangle())
+            .onTapGesture { onTap() }
+            .padding(horizontal ? EdgeInsets(top: 7, leading: 6, bottom: 7, trailing: 16)
+                                : EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4))
+            .frame(width: horizontal ? nil : 44, alignment: .topLeading)
+            .modifier(PanelGlass(cornerRadius: 12))
+            .overlay(alignment: horizontal ? .trailing : .top) { toggle }
+            .onPreferenceChange(ToggleFrameKey.self) { toggleFrame = $0 }
+            .opacity(1 - 0.9 * panelTransparency)
+            .environment(\.colorScheme, .dark)
     }
 
     private var toggle: some View {
-        LayoutToggle(horizontal: horizontal) { horizontal.toggle() }
+        LayoutToggle(horizontal: horizontal, visible: toggleVisible) { horizontal.toggle() }
+            .background(GeometryReader { proxy in
+                Color.clear.preference(key: ToggleFrameKey.self, value: proxy.frame(in: .global))
+            })
+            .offset(x: horizontal ? LayoutToggle.hitThickness / 2 - Self.pillInset : 0,
+                    y: horizontal ? 0 : Self.pillInset - LayoutToggle.hitThickness / 2)
+    }
+
+    private var toggleVisible: Bool {
+        guard let pointer = pointer.location, toggleFrame != .zero else { return false }
+        let dx = max(toggleFrame.minX - pointer.x, 0, pointer.x - toggleFrame.maxX)
+        let dy = max(toggleFrame.minY - pointer.y, 0, pointer.y - toggleFrame.maxY)
+        return hypot(dx, dy) <= Self.revealMargin
     }
 
     @ViewBuilder
@@ -50,22 +66,32 @@ struct DesktopPanelView: View {
     }
 }
 
-/// Hidden until the pointer is over it: a pill on the top edge (right edge when horizontal) that flips the layout.
+/// A pill near the top edge (right edge when horizontal) that flips the layout; hidden until the pointer is near.
 private struct LayoutToggle: View {
+    static let hitThickness: CGFloat = 12
+
     let horizontal: Bool
+    let visible: Bool
     let action: () -> Void
-    @State private var hovering = false
 
     var body: some View {
         Capsule()
             .fill(.white)
             .frame(width: horizontal ? 5 : 30, height: horizontal ? 24 : 5)
-            .opacity(hovering ? 0.9 : 0)
-            .frame(width: horizontal ? 12 : 36, height: horizontal ? 26 : 12)
+            .opacity(visible ? 0.9 : 0)
+            .frame(width: horizontal ? Self.hitThickness : 36, height: horizontal ? 26 : Self.hitThickness)
             .contentShape(Rectangle())
-            .onHover { hovering = $0 }
             .onTapGesture(perform: action)
             .help(horizontal ? "Vertical layout" : "Horizontal layout")
-            .animation(.easeOut(duration: 0.15), value: hovering)
+            .animation(.easeOut(duration: 0.15), value: visible)
+    }
+}
+
+/// Views that do not report still pass the default into reduce, so keep the one real value.
+private struct ToggleFrameKey: PreferenceKey {
+    static let defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let next = nextValue()
+        if next != .zero { value = next }
     }
 }
