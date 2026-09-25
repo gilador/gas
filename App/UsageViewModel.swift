@@ -33,7 +33,8 @@ final class UsageViewModel: ObservableObject {
             codexAuthReader: FileCodexAuthReader(),
             httpClient: URLSessionHTTPClient(),
             claudeBaseURL: claudeBase,
-            openAIBaseURL: openAIBase)
+            openAIBaseURL: openAIBase,
+            claudeRenewer: ClaudeCodeRenewer(isEnabled: { ProviderSettings.renewsClaudeToken() }))
         self.store = SnapshotStore(containerURL: StorageLocation.containerURL(appGroupID: Self.appGroupID))
         self.notifications = NotificationManager()
         self.board = store.load() ?? UsageBoard()

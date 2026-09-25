@@ -13,20 +13,23 @@ public struct ClaudeUsageProvider: UsageProvider {
     private let baseURL: URL
     private let warningThreshold: Double
     private let criticalThreshold: Double
+    private let renewer: TokenRenewer?
 
     public init(tokenReader: TokenReader, httpClient: UsageHTTPClient, baseURL: URL,
-                warningThreshold: Double = 80, criticalThreshold: Double = 95) {
+                warningThreshold: Double = 80, criticalThreshold: Double = 95,
+                renewer: TokenRenewer? = nil) {
         self.tokenReader = tokenReader
         self.httpClient = httpClient
         self.baseURL = baseURL
         self.warningThreshold = warningThreshold
         self.criticalThreshold = criticalThreshold
+        self.renewer = renewer
     }
 
     public func fetch() async throws -> UsageSnapshot {
         let now = Date()
 
-        let token: ClaudeToken
+        var token: ClaudeToken
         do {
             token = try tokenReader.readClaudeToken()
         } catch TokenReaderError.notFound {
@@ -38,7 +41,14 @@ public struct ClaudeUsageProvider: UsageProvider {
         }
 
         if let expiry = token.expiresAt, expiry <= now {
-            return snapshot(now, .stale(reason: "Token expired — open Claude Code to refresh"))
+            guard let renewer, renewer.isEnabled else {
+                return snapshot(now, .stale(reason: "Token expired — open Claude Code to refresh"))
+            }
+            guard await renewer.renew(), let renewed = try? tokenReader.readClaudeToken(),
+                  (renewed.expiresAt ?? .distantFuture) > Date() else {
+                return snapshot(now, .stale(reason: "Couldn't renew — open Claude Code"))
+            }
+            token = renewed
         }
 
         let url = baseURL.appendingPathComponent("api/oauth/usage")

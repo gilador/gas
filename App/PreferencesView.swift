@@ -15,6 +15,7 @@ struct PreferencesView: View {
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var copiedDiagnostics = false
+    @AppStorage(ProviderSettings.renewClaudeTokenKey) private var renewClaudeToken = true
 
     var body: some View {
         Form {
@@ -34,6 +35,9 @@ struct PreferencesView: View {
                     }
                     .disabled(isOnlyEnabled(provider))
                 }
+                Toggle("Renew Claude token automatically", isOn: $renewClaudeToken)
+                    .disabled(!claudeEnabled)
+                    .help("When the token expires, gas runs Claude Code once in the background (one short Haiku reply) so it renews its token.")
             }
             Section("Notifications") {
                 NotificationPermissionRow(notifications: viewModel.notifications)

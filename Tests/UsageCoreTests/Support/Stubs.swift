@@ -95,3 +95,32 @@ final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
     func fetch() async throws -> UsageSnapshot { recordCall(); return try result.get() }
     func credentialFingerprint() -> String? { fingerprint }
 }
+
+/// Returns the results in order, then repeats the last one.
+final class SequenceTokenReader: TokenReader, @unchecked Sendable {
+    private let lock = NSLock()
+    private var results: [Result<ClaudeToken, Error>]
+    init(_ results: [Result<ClaudeToken, Error>]) { self.results = results }
+    func readClaudeToken() throws -> ClaudeToken {
+        lock.lock()
+        let result = results.count > 1 ? results.removeFirst() : results[0]
+        lock.unlock()
+        return try result.get()
+    }
+}
+
+final class StubRenewer: TokenRenewer, @unchecked Sendable {
+    let isEnabled: Bool
+    private let succeeds: Bool
+    private let lock = NSLock()
+    private var _calls = 0
+    var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }
+    init(isEnabled: Bool = true, succeeds: Bool) {
+        self.isEnabled = isEnabled
+        self.succeeds = succeeds
+    }
+    func renew() async -> Bool {
+        lock.lock(); _calls += 1; lock.unlock()
+        return succeeds
+    }
+}

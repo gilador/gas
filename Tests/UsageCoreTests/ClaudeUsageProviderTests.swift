@@ -86,4 +86,45 @@ final class ClaudeUsageProviderTests: XCTestCase {
     func testCredentialFingerprintIsNilWithoutAToken() {
         XCTAssertNil(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).credentialFingerprint())
     }
+
+    private let expired = ClaudeToken(accessToken: "old", expiresAt: Date().addingTimeInterval(-60))
+    private let fresh = ClaudeToken(accessToken: "fresh", expiresAt: Date().addingTimeInterval(8 * 3600))
+
+    func testExpiredTokenIsRenewedThenFetched() async throws {
+        let renewer = StubRenewer(succeeds: true)
+        let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
+        let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired), .success(fresh)]),
+                                         httpClient: spy, baseURL: base, renewer: renewer)
+        let snap = try await claude.fetch()
+        XCTAssertEqual(snap.status, .ok)
+        XCTAssertEqual(renewer.calls, 1)
+        XCTAssertEqual(spy.calls.map { $0.headers["Authorization"] }, ["Bearer fresh"])
+    }
+
+    func testFailedRenewalAsksToOpenClaudeCode() async throws {
+        let spy = SpyHTTPClient()
+        let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired)]),
+                                         httpClient: spy, baseURL: base, renewer: StubRenewer(succeeds: false))
+        let snap = try await claude.fetch()
+        XCTAssertEqual(snap.status, .stale(reason: "Couldn't renew — open Claude Code"))
+        XCTAssertTrue(spy.calls.isEmpty)
+    }
+
+    func testRenewalThatLeavesTheTokenExpiredIsAFailure() async throws {
+        let spy = SpyHTTPClient()
+        let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired)]),
+                                         httpClient: spy, baseURL: base, renewer: StubRenewer(succeeds: true))
+        let snap = try await claude.fetch()
+        XCTAssertEqual(snap.status, .stale(reason: "Couldn't renew — open Claude Code"))
+        XCTAssertTrue(spy.calls.isEmpty)
+    }
+
+    func testDisabledRenewerKeepsTheExpiredMessage() async throws {
+        let renewer = StubRenewer(isEnabled: false, succeeds: true)
+        let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired)]),
+                                         httpClient: SpyHTTPClient(), baseURL: base, renewer: renewer)
+        let snap = try await claude.fetch()
+        XCTAssertEqual(snap.status, .stale(reason: "Token expired — open Claude Code to refresh"))
+        XCTAssertEqual(renewer.calls, 0)
+    }
 }

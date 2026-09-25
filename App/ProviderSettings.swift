@@ -8,6 +8,12 @@ enum ProviderSettings {
         defaults.object(forKey: key(provider)) as? Bool ?? true
     }
 
+    static let renewClaudeTokenKey = "renewClaudeToken"
+
+    static func renewsClaudeToken(defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: renewClaudeTokenKey) as? Bool ?? true
+    }
+
     static func enabled(defaults: UserDefaults = .standard) -> [ProviderID] {
         ProviderID.displayOrder.filter { isEnabled($0, defaults: defaults) }
     }

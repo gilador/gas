@@ -47,6 +47,8 @@ public enum UsageLog {
         return "\(type): \(message.prefix(200))"
     }
 
+    static func note(_ line: String) { record(line) }
+
     private static func record(_ line: String) {
         network.log("\(line, privacy: .public)")
         recent.append("\(ISO8601DateFormatter().string(from: Date())) \(line)")
