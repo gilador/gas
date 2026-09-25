@@ -7,6 +7,8 @@ final class DesktopPanelController {
 
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
+    private var resizeObserver: NSObjectProtocol?
+    private var topLeft: NSPoint?
     private var settingsWindow: NSWindow?
     private var menuPopover: NSPopover?
     private static let size = NSSize(width: 44, height: 280)
@@ -50,7 +52,8 @@ final class DesktopPanelController {
         popover.contentViewController = NSHostingController(
             rootView: MenuContentView(viewModel: viewModel, onSettings: { [weak self] in self?.openSettings() }))
         NSApp.activate()
-        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minX)
+        let horizontal = UserDefaults.standard.bool(forKey: DesktopPanelView.horizontalKey)
+        popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: horizontal ? .minY : .minX)
         DispatchQueue.main.async {
             NSApp.activate()
             popover.contentViewController?.view.window?.makeKeyAndOrderFront(nil)
@@ -96,13 +99,31 @@ final class DesktopPanelController {
         panel.contentView = host
 
         moveObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didMoveNotification, object: panel, queue: .main) { note in
+            forName: NSWindow.didMoveNotification, object: panel, queue: .main) { [weak self] note in
             guard let moved = note.object as? NSWindow else { return }
             let origin = moved.frame.origin
             UserDefaults.standard.set(Double(origin.x), forKey: Self.originXKey)
             UserDefaults.standard.set(Double(origin.y), forKey: Self.originYKey)
+            let topLeft = NSPoint(x: moved.frame.minX, y: moved.frame.maxY)
+            MainActor.assumeIsolated { self?.topLeft = topLeft }
+        }
+        resizeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification, object: panel, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.keepTopLeft() }
         }
         return panel
+    }
+
+    /// AppKit keeps the bottom-left corner when the content changes size; a layout flip should keep the top-left one.
+    private func keepTopLeft() {
+        guard let panel, let topLeft else { return }
+        var frame = panel.frame
+        frame.origin = NSPoint(x: topLeft.x, y: topLeft.y - frame.height)
+        if let visible = (panel.screen ?? NSScreen.main)?.visibleFrame {
+            frame.origin.x = min(max(frame.origin.x, visible.minX), visible.maxX - frame.width)
+            frame.origin.y = min(max(frame.origin.y, visible.minY), visible.maxY - frame.height)
+        }
+        if frame.origin != panel.frame.origin { panel.setFrameOrigin(frame.origin) }
     }
 
     private func positionPanel(_ panel: NSPanel) {

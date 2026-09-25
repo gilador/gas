@@ -5,38 +5,78 @@ import UsageCore
 struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
     var alert: AlertCenter.ActiveAlert? = nil
+    var horizontal = false
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     private static let barSize = CGSize(width: 8, height: 84)
+    private static let horizontalBarLength: CGFloat = 84
 
     var body: some View {
+        Group {
+            if horizontal { horizontalBody } else { verticalBody }
+        }
+        .overlay { if snapshot.status != .ok && !snapshot.limits.isEmpty { glass } }
+        .help(helpText)
+    }
+
+    private var verticalBody: some View {
         VStack(spacing: 4) {
-            ProviderIcon(provider: snapshot.provider, size: 14)
-                .overlay(alignment: .topTrailing) {
-                    if let alert {
-                        TimelineView(.periodic(from: alert.start, by: AlertBlink.period)) { context in
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(alert.critical ? .red : .yellow)
-                                .opacity(AlertBlink.isOn(elapsed: context.date.timeIntervalSince(alert.start)) ? 1 : 0)
-                        }
-                        .offset(x: 8, y: -6)
-                    }
-                }
-            Text(percentText)
-                .font(.system(size: 11, weight: .semibold).monospacedDigit())
+            icon
+            percent
             bar
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                Text(RelativeAge.compact(from: snapshot.fetchedAt, now: context.date))
-                    .font(.system(size: 9)).foregroundStyle(.secondary)
-                    .lineLimit(1).minimumScaleFactor(0.7)
-            }
+            age
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
-        .overlay { if snapshot.status != .ok && !snapshot.limits.isEmpty { glass } }
-        .help(helpText)
+    }
+
+    private var horizontalBody: some View {
+        HStack(spacing: 7) {
+            icon
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    percent
+                    Spacer(minLength: 2)
+                    age
+                }
+                horizontalBar
+            }
+            .frame(width: Self.horizontalBarLength)
+        }
+        .padding(.horizontal, 6)
+    }
+
+    private var icon: some View {
+        ProviderIcon(provider: snapshot.provider, size: 14)
+            .overlay(alignment: .topTrailing) {
+                if let alert {
+                    TimelineView(.periodic(from: alert.start, by: AlertBlink.period)) { context in
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(alert.critical ? .red : .yellow)
+                            .opacity(AlertBlink.isOn(elapsed: context.date.timeIntervalSince(alert.start)) ? 1 : 0)
+                    }
+                    .offset(x: 8, y: -6)
+                }
+            }
+    }
+
+    private var percent: some View {
+        Text(percentText)
+            .font(.system(size: 11, weight: .semibold).monospacedDigit())
+    }
+
+    private var age: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            Text(RelativeAge.compact(from: snapshot.fetchedAt, now: context.date))
+                .font(.system(size: 9)).foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.7)
+        }
+    }
+
+    private func usageHelp(_ limit: UsageLimit) -> String {
+        "\(limit.label): \(mode.percent(for: limit))% \(mode == .used ? "used" : "left")"
     }
 
     private var headline: UsageLimit? { snapshot.headlineLimit }
@@ -80,7 +120,7 @@ struct ProviderStripItem: View {
                     .frame(width: Self.barSize.width + 6, height: 10)
                     .overlay(Rectangle().fill(.white).frame(height: 2))
                     .contentShape(Rectangle())
-                    .help("\(weekly.label): \(mode.percent(for: weekly))% \(mode == .used ? "used" : "left")")
+                    .help(usageHelp(weekly))
                     .offset(y: -(Self.barSize.height * mode.fraction(for: weekly)) + 5)
             }
             if let scoped {
@@ -90,11 +130,50 @@ struct ProviderStripItem: View {
                         PointerTriangle().fill(LimitPalette.color(for: scoped)).frame(width: 6, height: 7).padding(.trailing, 1)
                     }
                     .contentShape(Rectangle())
-                    .help("\(scoped.label): \(mode.percent(for: scoped))% \(mode == .used ? "used" : "left")")
+                    .help(usageHelp(scoped))
                     .offset(x: -(Self.barSize.width / 2 + 5), y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
+    }
+
+    private var horizontalBar: some View {
+        let (back, front) = layers
+        let length = Self.horizontalBarLength
+        let thickness = Self.barSize.width
+        return ZStack(alignment: .leading) {
+            Capsule().fill(.white.opacity(0.15))
+            if let back {
+                Capsule()
+                    .fill(LimitPalette.backLayerColor(for: back))
+                    .frame(width: length * mode.fraction(for: back))
+            }
+            if let front {
+                Capsule()
+                    .fill(LimitPalette.frontLayerColor(for: front))
+                    .frame(width: length * mode.fraction(for: front))
+            }
+            if let weekly, back != nil {
+                Color.clear
+                    .frame(width: 10, height: thickness + 6)
+                    .overlay(Rectangle().fill(.white).frame(width: 2))
+                    .contentShape(Rectangle())
+                    .help(usageHelp(weekly))
+                    .offset(x: length * mode.fraction(for: weekly) - 5)
+            }
+            if let scoped {
+                Color.clear
+                    .frame(width: 10, height: 10)
+                    .overlay(alignment: .top) {
+                        PointerTriangle(pointsUp: true).fill(LimitPalette.color(for: scoped))
+                            .frame(width: 7, height: 6).padding(.top, 1)
+                    }
+                    .contentShape(Rectangle())
+                    .help(usageHelp(scoped))
+                    .offset(x: length * mode.fraction(for: scoped) - 5, y: thickness / 2 + 5)
+            }
+        }
+        .frame(width: length, height: thickness)
     }
 
     private var glass: some View {
@@ -155,11 +234,19 @@ struct ProviderStripItem: View {
 }
 
 private struct PointerTriangle: Shape {
+    var pointsUp = false
+
     func path(in rect: CGRect) -> Path {
         Path { path in
-            path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            if pointsUp {
+                path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+                path.addLine(to: CGPoint(x: rect.midX, y: rect.minY))
+                path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            } else {
+                path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+                path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+                path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            }
             path.closeSubpath()
         }
     }
