@@ -25,8 +25,8 @@ final class ClaudeCodeRenewerTests: XCTestCase {
     func testRunsClaudeOnceWithALightHeadlessCall() async {
         let spy = RunSpy(status: 0)
         let renewer = ClaudeCodeRenewer(locate: { [claudePath] in claudePath }, run: spy.run)
-        let renewed = await renewer.renew()
-        XCTAssertTrue(renewed)
+        let result = await renewer.renew()
+        XCTAssertEqual(result, .renewed)
         XCTAssertEqual(spy.calls.count, 1)
         XCTAssertEqual(spy.calls.first?.0, claudePath)
         let arguments = spy.calls.first?.1 ?? []
@@ -37,23 +37,23 @@ final class ClaudeCodeRenewerTests: XCTestCase {
         XCTAssertEqual(arguments.firstIndex(of: "--tools").map { arguments[$0 + 1] }, "")
     }
 
-    func testNonZeroExitIsAFailure() async {
+    func testNonZeroExitMeansClaudeCodeIsNotLoggedIn() async {
         let renewer = ClaudeCodeRenewer(locate: { [claudePath] in claudePath }, run: RunSpy(status: 1).run)
-        let renewed = await renewer.renew()
-        XCTAssertFalse(renewed)
+        let result = await renewer.renew()
+        XCTAssertEqual(result, .failed)
     }
 
-    func testTimeoutIsAFailure() async {
+    func testTimeoutIsUnavailable() async {
         let renewer = ClaudeCodeRenewer(locate: { [claudePath] in claudePath }, run: RunSpy(status: nil).run)
-        let renewed = await renewer.renew()
-        XCTAssertFalse(renewed)
+        let result = await renewer.renew()
+        XCTAssertEqual(result, .unavailable)
     }
 
-    func testMissingClaudeIsAFailureWithoutRunning() async {
+    func testMissingClaudeIsUnavailableWithoutRunning() async {
         let spy = RunSpy(status: 0)
         let renewer = ClaudeCodeRenewer(locate: { nil }, run: spy.run)
-        let renewed = await renewer.renew()
-        XCTAssertFalse(renewed)
+        let result = await renewer.renew()
+        XCTAssertEqual(result, .unavailable)
         XCTAssertTrue(spy.calls.isEmpty)
     }
 
@@ -66,9 +66,20 @@ final class ClaudeCodeRenewerTests: XCTestCase {
         let tooSoon = await renewer.renew()
         clock.now += 31 * 60
         let later = await renewer.renew()
-        XCTAssertFalse(tooSoon)
-        XCTAssertTrue(later)
+        XCTAssertEqual(tooSoon, .renewed)
+        XCTAssertEqual(later, .renewed)
         XCTAssertEqual(spy.calls.count, 2)
+    }
+
+    func testATryWithinTheHourRepeatsTheLastResult() async {
+        let spy = RunSpy(status: 1)
+        let clock = Clock()
+        let renewer = ClaudeCodeRenewer(locate: { [claudePath] in claudePath }, run: spy.run, now: { clock.now })
+        _ = await renewer.renew()
+        clock.now += 10 * 60
+        let repeated = await renewer.renew()
+        XCTAssertEqual(repeated, .failed)
+        XCTAssertEqual(spy.calls.count, 1)
     }
 
     func testIsEnabledFollowsTheSetting() {

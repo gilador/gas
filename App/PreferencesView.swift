@@ -37,7 +37,7 @@ struct PreferencesView: View {
                 }
                 Toggle("Renew Claude token automatically", isOn: $renewClaudeToken)
                     .disabled(!claudeEnabled)
-                    .help("When the token expires, gas runs Claude Code once in the background (one short Haiku reply) so it renews its token.")
+                    .help("When the token expires or the server rejects it, gas runs Claude Code once in the background (one short Haiku reply) so it renews its token, or finds that it is logged out.")
             }
             Section("Notifications") {
                 NotificationPermissionRow(notifications: viewModel.notifications)

@@ -99,7 +99,7 @@ struct ProviderSection: View {
         case .stale(let reason):
             return reason
         case .needsSignIn:
-            return "Sign in to \(snapshot.provider.clientName) first."
+            return "Not logged in. \(snapshot.provider.signInHint)."
         case .keychainDenied:
             return "Keychain access denied — grant access."
         case .error(let message):

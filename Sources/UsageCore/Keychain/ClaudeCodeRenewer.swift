@@ -1,8 +1,17 @@
 import Foundation
 
+public enum RenewResult: Sendable, Equatable {
+    /// Claude Code ran its reply, so its token is valid now.
+    case renewed
+    /// Claude Code ran and refused, which means it is not logged in.
+    case failed
+    /// Claude Code was not found, could not start, or took too long.
+    case unavailable
+}
+
 public protocol TokenRenewer: Sendable {
     var isEnabled: Bool { get }
-    func renew() async -> Bool
+    func renew() async -> RenewResult
 }
 
 /// Lets Claude Code renew its own OAuth token with one small headless reply, so gas never writes the Keychain.
@@ -39,18 +48,23 @@ public struct ClaudeCodeRenewer: TokenRenewer {
 
     public var isEnabled: Bool { enabled() }
 
-    public func renew() async -> Bool {
-        guard attempts.claim(at: now(), gap: Self.minimumGap) else {
+    public func renew() async -> RenewResult {
+        let date = now()
+        if let recent = attempts.begin(at: date, gap: Self.minimumGap) {
             UsageLog.note("claude renew skipped: last try less than 1 h ago")
-            return false
+            return recent
         }
-        guard let claude = locate() else {
+        let result: RenewResult
+        if let claude = locate() {
+            let status = await run(claude, Self.arguments)
+            UsageLog.note("claude renew exit=\(status.map(String.init) ?? "timeout")")
+            result = status.map { $0 == 0 ? .renewed : .failed } ?? .unavailable
+        } else {
             UsageLog.note("claude renew failed: claude not found")
-            return false
+            result = .unavailable
         }
-        let status = await run(claude, Self.arguments)
-        UsageLog.note("claude renew exit=\(status.map(String.init) ?? "timeout")")
-        return status == 0
+        attempts.finish(result)
+        return result
     }
 
     public static func locateClaude() -> URL? {
@@ -87,12 +101,18 @@ public struct ClaudeCodeRenewer: TokenRenewer {
 
 private final class AttemptLog: @unchecked Sendable {
     private let lock = NSLock()
-    private var last: Date?
+    private var last: (date: Date, result: RenewResult)?
 
-    func claim(at date: Date, gap: TimeInterval) -> Bool {
+    /// Nil when a new try may start (and marks it started); otherwise the result of the try within the gap.
+    func begin(at date: Date, gap: TimeInterval) -> RenewResult? {
         lock.lock(); defer { lock.unlock() }
-        if let last, date.timeIntervalSince(last) < gap { return false }
-        last = date
-        return true
+        if let last, date.timeIntervalSince(last.date) < gap { return last.result }
+        last = (date, .unavailable)
+        return nil
+    }
+
+    func finish(_ result: RenewResult) {
+        lock.lock(); defer { lock.unlock() }
+        if let date = last?.date { last = (date, result) }
     }
 }

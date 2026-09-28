@@ -17,6 +17,11 @@ final class ProviderIDTests: XCTestCase {
         XCTAssertEqual(ProviderID.openai.glyph, "⬡")
     }
 
+    func testSignInHints() {
+        XCTAssertEqual(ProviderID.claude.signInHint, "Run /login in Claude Code")
+        XCTAssertEqual(ProviderID.openai.signInHint, "Run codex login in Terminal")
+    }
+
     func testClientNames() {
         XCTAssertEqual(ProviderID.claude.clientName, "Claude Code")
         XCTAssertEqual(ProviderID.openai.clientName, "Codex CLI")

@@ -170,7 +170,7 @@ struct ProviderStripItem: View {
         switch snapshot.status {
         case .ok: return nil
         case .stale(let reason): return reason
-        case .needsSignIn: return "Sign in to \(snapshot.provider.clientName) first."
+        case .needsSignIn: return "Not logged in. \(snapshot.provider.signInHint)."
         case .keychainDenied: return "Keychain access denied — grant access."
         case .error(let message): return message
         case .rateLimited(let until, _):

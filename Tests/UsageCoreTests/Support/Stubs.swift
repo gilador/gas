@@ -111,16 +111,36 @@ final class SequenceTokenReader: TokenReader, @unchecked Sendable {
 
 final class StubRenewer: TokenRenewer, @unchecked Sendable {
     let isEnabled: Bool
-    private let succeeds: Bool
+    private let result: RenewResult
     private let lock = NSLock()
     private var _calls = 0
     var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }
-    init(isEnabled: Bool = true, succeeds: Bool) {
+    init(isEnabled: Bool = true, result: RenewResult) {
         self.isEnabled = isEnabled
-        self.succeeds = succeeds
+        self.result = result
     }
-    func renew() async -> Bool {
+    func renew() async -> RenewResult {
         lock.lock(); _calls += 1; lock.unlock()
-        return succeeds
+        return result
+    }
+}
+
+/// Answers with the given statuses in order, then repeats the last; records the Authorization header.
+final class SequenceHTTPClient: UsageHTTPClient, @unchecked Sendable {
+    private let lock = NSLock()
+    private var statuses: [Int]
+    private let data: Data
+    private var _authorizations: [String?] = []
+    var authorizations: [String?] { lock.lock(); defer { lock.unlock() }; return _authorizations }
+    init(statuses: [Int], data: Data = Data()) {
+        self.statuses = statuses
+        self.data = data
+    }
+    func get(_ url: URL, headers: [String: String]) async throws -> (Data, HTTPURLResponse) {
+        lock.lock()
+        _authorizations.append(headers["Authorization"])
+        let status = statuses.count > 1 ? statuses.removeFirst() : statuses[0]
+        lock.unlock()
+        return (data, HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!)
     }
 }

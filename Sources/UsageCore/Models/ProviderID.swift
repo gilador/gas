@@ -21,6 +21,14 @@ public enum ProviderID: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    public var signInHint: String {
+        switch self {
+        case .claude: return "Run /login in Claude Code"
+        case .openai: return "Run codex login in Terminal"
+        case .xai: return "Sign in to xAI"
+        }
+    }
+
     public var clientName: String {
         switch self {
         case .claude: return "Claude Code"
