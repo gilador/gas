@@ -27,8 +27,10 @@ Success means that the user does nothing else by hand. Every other step is one c
 
 ## The setup window
 
-- It opens by itself **one time**, at the first launch after install. A `setupShown` flag in UserDefaults records that.
+- It opens by itself **one time**, at the first launch after install, and only if at least one turned-on provider is not ready. A `setupShown` flag in UserDefaults records the first launch in both cases. If every provider is ready, gas sets the flag and does not open the window.
+- gas preferences survive updates and reinstalls, so the flag stays set. An update or a reinstall does not open the window again. A new Mac or a new macOS user account has no flag, so the window can open there. The first update to the version with this feature has no flag yet, so it acts like a first launch.
 - Settings gets a **"Set up providers…"** button that opens it at any time.
+- In the menu, a provider that is not ready (for example "Not logged in") also shows a **"Set up…"** link that opens the window. gas never opens the window by itself after the first launch.
 - It has a **Done** button at all times.
 - It has one row for each provider (Claude, OpenAI), with the provider icon, a status line and at most one button.
 
@@ -82,8 +84,9 @@ These were checked on this Mac on 2026-09-28.
 2. **`SetupState`** (UsageCore, new, pure). Its inputs are installed, logged in, provider turned on, the latest `FetchStatus`, and the step in progress. It returns the row state from the table.
 3. **`ProcessRunner`** (UsageCore). The process code moves here from `ClaudeCodeRenewer`. It adds a timeout and captures stdout for the status parsers. `ClaudeCodeRenewer` then uses `CLITool.claude.locate()`.
 4. **`SetupModel`** (App, `@MainActor`, `ObservableObject`). It keeps each row's state and runs Set up, Try again, Don't use and Use.
-5. **`SetupView`** and its window (App). `DesktopPanelController` opens the window in the same way as the Settings window. `AppDelegate` opens it at first launch.
+5. **`SetupView`** and its window (App). `DesktopPanelController` opens the window in the same way as the Settings window. `AppDelegate` opens it at first launch, when `setupShown` is not set and a turned-on provider is not ready.
 6. **Settings**: the "Set up providers…" button.
+7. **Menu** (`ProviderSection`): the "Set up…" link next to a provider that is not ready.
 
 ## Errors
 
