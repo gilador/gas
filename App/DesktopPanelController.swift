@@ -4,12 +4,15 @@ import SwiftUI
 @MainActor
 final class DesktopPanelController {
     var viewModel: UsageViewModel?
+    var setupModel: SetupModel?
 
     private var panel: NSPanel?
     private var moveObserver: NSObjectProtocol?
     private var resizeObserver: NSObjectProtocol?
     private var topRight: NSPoint?
     private var settingsWindow: NSWindow?
+    private var setupWindow: NSWindow?
+    private var setupCloseObserver: NSObjectProtocol?
     private var menuPopover: NSPopover?
     private static let size = NSSize(width: 44, height: 280)
     // nonisolated: immutable Sendable constants referenced from the @Sendable didMove observer closure.
@@ -50,7 +53,9 @@ final class DesktopPanelController {
         popover.behavior = .transient
         popover.appearance = NSAppearance(named: .darkAqua)
         popover.contentViewController = NSHostingController(
-            rootView: MenuContentView(viewModel: viewModel, onSettings: { [weak self] in self?.openSettings() }))
+            rootView: MenuContentView(viewModel: viewModel,
+                                      onSettings: { [weak self] in self?.openSettings() },
+                                      onSetup: { [weak self] in self?.openSetup() }))
         NSApp.activate()
         let horizontal = UserDefaults.standard.bool(forKey: DesktopPanelView.horizontalKey)
         popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: horizontal ? .minY : .minX)
@@ -65,7 +70,8 @@ final class DesktopPanelController {
         guard let viewModel else { return }
         NSApp.activate(ignoringOtherApps: true)
         if settingsWindow == nil {
-            let hosting = NSHostingController(rootView: PreferencesView(viewModel: viewModel))
+            let hosting = NSHostingController(rootView: PreferencesView(viewModel: viewModel,
+                                                                       onSetup: { [weak self] in self?.openSetup() }))
             hosting.sizingOptions = []
             let window = NSWindow(contentViewController: hosting)
             window.title = "Settings"
@@ -77,6 +83,31 @@ final class DesktopPanelController {
         }
         settingsWindow?.makeKeyAndOrderFront(nil)
         settingsWindow?.orderFrontRegardless()
+    }
+
+    func openSetup() {
+        guard let setupModel else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        if setupWindow == nil {
+            let hosting = NSHostingController(rootView: SetupView(model: setupModel, onDone: { [weak self] in
+                self?.setupWindow?.close()
+            }))
+            hosting.sizingOptions = []
+            let window = NSWindow(contentViewController: hosting)
+            window.title = "Set up providers"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.setContentSize(NSSize(width: 500, height: 340))
+            window.center()
+            setupCloseObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak setupModel] _ in
+                MainActor.assumeIsolated { setupModel?.cancel() }
+            }
+            setupWindow = window
+        }
+        setupWindow?.makeKeyAndOrderFront(nil)
+        setupWindow?.orderFrontRegardless()
+        Task { await setupModel.inspect() }
     }
 
     private func makePanel(viewModel: UsageViewModel) -> NSPanel {

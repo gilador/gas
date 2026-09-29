@@ -8,6 +8,10 @@ enum ProviderSettings {
         defaults.object(forKey: key(provider)) as? Bool ?? true
     }
 
+    static func setEnabled(_ enabled: Bool, for provider: ProviderID, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: key(provider))
+    }
+
     static let renewClaudeTokenKey = "renewClaudeToken"
 
     static func renewsClaudeToken(defaults: UserDefaults = .standard) -> Bool {

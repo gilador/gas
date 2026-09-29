@@ -4,6 +4,7 @@ import UsageCore
 struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
     let onSettings: () -> Void
+    let onSetup: () -> Void
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
@@ -22,7 +23,8 @@ struct MenuContentView: View {
                 ForEach(Array(viewModel.visibleSnapshots.enumerated()), id: \.element.provider) { index, snapshot in
                     if index > 0 { Divider() }
                     ProviderSection(snapshot: snapshot, nextRefresh: viewModel.nextRefresh(for: snapshot.provider),
-                                    onRetry: { Task { await viewModel.refresh(manual: true) } })
+                                    onRetry: { Task { await viewModel.refresh(manual: true) } },
+                                    onSetup: onSetup)
                 }
                 if let updated = viewModel.board.latestFetchedAt {
                     TimelineView(.periodic(from: .now, by: 1)) { context in

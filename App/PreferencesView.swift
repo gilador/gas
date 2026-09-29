@@ -5,6 +5,7 @@ import UsageCore
 
 struct PreferencesView: View {
     @ObservedObject var viewModel: UsageViewModel
+    let onSetup: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("warningThreshold") private var warningThreshold = 65.0
@@ -38,6 +39,7 @@ struct PreferencesView: View {
                 Toggle("Renew Claude token automatically", isOn: $renewClaudeToken)
                     .disabled(!claudeEnabled)
                     .help("When the token expires or the server rejects it, gas runs Claude Code once in the background (one short Haiku reply) so it renews its token, or finds that it is logged out.")
+                Button("Set up providers…", action: onSetup)
             }
             Section("Notifications") {
                 NotificationPermissionRow(notifications: viewModel.notifications)

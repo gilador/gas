@@ -5,6 +5,7 @@ struct ProviderSection: View {
     let snapshot: UsageSnapshot
     var nextRefresh: Date? = nil
     var onRetry: (() -> Void)? = nil
+    var onSetup: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -15,6 +16,11 @@ struct ProviderSection: View {
             .font(.caption.bold())
             .foregroundStyle(.secondary)
             content
+            if snapshot.status.needsSetup, let onSetup {
+                Button("Set up…", action: onSetup)
+                    .buttonStyle(.link)
+                    .font(.caption)
+            }
             if let nextRefresh {
                 Text("Next refresh \(nextRefresh.formatted(date: .omitted, time: .shortened))")
                     .font(.caption2).foregroundStyle(.secondary)

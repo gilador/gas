@@ -7,6 +7,11 @@ public enum FetchStatus: Codable, Sendable, Equatable {
     case keychainDenied
     case error(message: String)
     case rateLimited(until: Date, wait: TimeInterval)
+
+    /// Problems the setup window can fix, as opposed to ones that pass by themselves.
+    public var needsSetup: Bool {
+        self == .needsSignIn || self == .keychainDenied
+    }
 }
 
 public struct UsageSnapshot: Codable, Sendable, Equatable {

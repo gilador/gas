@@ -10,12 +10,14 @@ final class StatusItemController: NSObject {
 
     private let viewModel: UsageViewModel
     private let onSettings: () -> Void
+    private let onSetup: () -> Void
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
 
-    init(viewModel: UsageViewModel, onSettings: @escaping () -> Void) {
+    init(viewModel: UsageViewModel, onSettings: @escaping () -> Void, onSetup: @escaping () -> Void) {
         self.viewModel = viewModel
         self.onSettings = onSettings
+        self.onSetup = onSetup
         super.init()
         if UserDefaults.standard.object(forKey: Self.positionKey) == nil {
             UserDefaults.standard.set(Self.defaultPosition, forKey: Self.positionKey)
@@ -45,7 +47,7 @@ final class StatusItemController: NSObject {
         let popover = NSPopover()
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
-            rootView: MenuContentView(viewModel: viewModel, onSettings: onSettings))
+            rootView: MenuContentView(viewModel: viewModel, onSettings: onSettings, onSetup: onSetup))
         NSApp.activate()
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         DispatchQueue.main.async {

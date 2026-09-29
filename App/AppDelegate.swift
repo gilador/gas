@@ -13,8 +13,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let viewModel = UsageViewModel()
         self.viewModel = viewModel
         panelController.viewModel = viewModel
+        let setupModel = SetupModel(viewModel: viewModel)
+        panelController.setupModel = setupModel
         statusItemController = StatusItemController(viewModel: viewModel) { [weak self] in
             self?.panelController.openSettings()
+        } onSetup: { [weak self] in
+            self?.panelController.openSetup()
+        }
+        Task {
+            guard !UserDefaults.standard.bool(forKey: "setupShown") else { return }
+            await viewModel.refresh()
+            await setupModel.inspect()
+            UserDefaults.standard.set(true, forKey: "setupShown")
+            if setupModel.needsAttention { panelController.openSetup() }
         }
         viewModel.alerts.onFirstAlert = { [weak self] in self?.panelController.showForAlert() }
         viewModel.alerts.onAllAlertsEnded = { [weak self] in self?.panelController.hideAfterAlertIfUnpinned() }

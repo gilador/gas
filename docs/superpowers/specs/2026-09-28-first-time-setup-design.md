@@ -36,9 +36,9 @@ Success means that the user does nothing else by hand. Every other step is one c
 
 | State | Status line | Button |
 |---|---|---|
-| Ready | ~~Claude — ready~~ (strikethrough, green check) | none |
+| Ready | "Claude — ready" (green, with a check) | none |
 | CLI missing | "Claude Code is not installed. Set up downloads Anthropic's official installer and opens the sign-in page." | **Set up** |
-| Not logged in, or expired | "Not logged in. Set up opens the sign-in page in your browser." | **Set up** |
+| Not logged in, or expired | "Not logged in. Sign in opens the sign-in page in your browser." | **Sign in** |
 | Rate limited | "Server busy — next try at ‹HH:MM›" | none |
 | Other read error (network, server) | "Can't read usage: ‹reason›" | **Try again** |
 | Turned off | Gray: "Not used" | **Use** |
@@ -92,7 +92,7 @@ These were checked on this Mac on 2026-09-28.
 
 - **Install fails** (non-zero exit, no network, or more than 5 min): "Install failed: ‹last output line›", with **Try again**.
 - **Install works, but no binary is found**, even through the login shell: "Installed, but gas can't find it", with **Try again**.
-- **Sign-in not finished in 5 min:** "Sign-in not finished", with **Set up**.
+- **Sign-in not finished in 5 min:** "Sign-in not finished", with **Sign in**.
 - **The status output cannot be parsed:** "Can't check the login", with **Try again**.
 
 ## Security
@@ -120,4 +120,3 @@ Each step writes one line to `UsageLog`, for example `setup claude install exit=
 ## Open items
 
 - Check where the Codex installer puts the binary. If it is not a known path, add it to `CLITool.codex`.
-- The strikethrough and check style for Ready rows are decided when the UI is built, following the existing Settings look.

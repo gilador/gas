@@ -28,16 +28,14 @@ public struct ClaudeCodeRenewer: TokenRenewer {
     ]
     /// An API key in Claude Code's settings would let the call succeed without a token renewal; this caps the spend.
     public static let minimumGap: TimeInterval = 60 * 60
-    private static let timeout: TimeInterval = 90
-
     private let enabled: @Sendable () -> Bool
-    private let locate: @Sendable () -> URL?
+    private let locate: @Sendable () async -> URL?
     private let run: Runner
     private let now: @Sendable () -> Date
     private let attempts = AttemptLog()
 
     public init(isEnabled: @escaping @Sendable () -> Bool = { true },
-                locate: @escaping @Sendable () -> URL? = { ClaudeCodeRenewer.locateClaude() },
+                locate: @escaping @Sendable () async -> URL? = { await CLITool.claude.locate() },
                 run: @escaping Runner = ClaudeCodeRenewer.runProcess,
                 now: @escaping @Sendable () -> Date = { Date() }) {
         self.enabled = isEnabled
@@ -55,7 +53,7 @@ public struct ClaudeCodeRenewer: TokenRenewer {
             return recent
         }
         let result: RenewResult
-        if let claude = locate() {
+        if let claude = await locate() {
             let status = await run(claude, Self.arguments)
             UsageLog.note("claude renew exit=\(status.map(String.init) ?? "timeout")")
             result = status.map { $0 == 0 ? .renewed : .failed } ?? .unavailable
@@ -67,35 +65,8 @@ public struct ClaudeCodeRenewer: TokenRenewer {
         return result
     }
 
-    public static func locateClaude() -> URL? {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return ["\(home)/.local/bin/claude", "\(home)/.claude/local/claude", "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
-            .first { FileManager.default.isExecutableFile(atPath: $0) }
-            .map { URL(fileURLWithPath: $0) }
-    }
-
     public static let runProcess: Runner = { executable, arguments in
-        await withCheckedContinuation { continuation in
-            let process = Process()
-            process.executableURL = executable
-            process.arguments = arguments
-            process.currentDirectoryURL = FileManager.default.temporaryDirectory
-            process.standardInput = FileHandle.nullDevice
-            process.standardOutput = FileHandle.nullDevice
-            process.standardError = FileHandle.nullDevice
-            process.terminationHandler = { finished in
-                continuation.resume(returning: finished.terminationReason == .exit ? finished.terminationStatus : nil)
-            }
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(returning: nil)
-                return
-            }
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
-                if process.isRunning { process.terminate() }
-            }
-        }
+        await ProcessRunner.run(executable: executable, arguments: arguments, timeout: 90).exitCode
     }
 }
 

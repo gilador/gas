@@ -122,4 +122,12 @@ final class UsageSnapshotTests: XCTestCase {
     func testHeadlineNilWithoutLimits() {
         XCTAssertNil(UsageSnapshot(provider: .claude, fetchedAt: Date(), limits: [], status: .ok).headlineLimit)
     }
+
+    func testOnlySignInAndKeychainProblemsNeedSetup() {
+        XCTAssertTrue(FetchStatus.needsSignIn.needsSetup)
+        XCTAssertTrue(FetchStatus.keychainDenied.needsSetup)
+        let other: [FetchStatus] = [.ok, .stale(reason: "x"), .error(message: "x"),
+                                    .rateLimited(until: Date(), wait: 60)]
+        for status in other { XCTAssertFalse(status.needsSetup, "\(status)") }
+    }
 }
