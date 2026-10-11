@@ -91,6 +91,8 @@ if [ -n "$DMG" ]; then
   echo "$DMG"
 fi
 if [ -n "$PKG" ]; then
+  (cd "$(dirname "$PKG")" && shasum -a 256 "$(basename "$PKG")" > "$(basename "$PKG").sha256")
   echo "$PKG"
+  echo "$PKG.sha256"
 fi
 echo "Version: $VERSION"

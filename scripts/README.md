@@ -49,3 +49,12 @@ signature does not change Keychain access. A certificate puts its name, often an
 - Codex CLI signed in, for the OpenAI numbers.
 
 A Developer ID certificate + notarization (paid Apple Developer Program) removes the Open Anyway step (and enables macOS notifications).
+
+## Publish a release
+
+1. Set `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, and commit.
+2. Run `scripts/package.sh all`. It writes the pkg, the dmg and `gas-<version>.pkg.sha256` to `dist/`.
+3. Push `main`, then run `scripts/publish.sh <version>`. It checks the checksum, then creates the GitHub release `v<version>` with the three files.
+   To publish with a gh account that is not the active one: `GH_TOKEN="$(gh auth token --user <account>)" scripts/publish.sh <version>`.
+
+gas checks the latest release on GitHub. It installs a release only if the release has both `gas-<version>.pkg` and `gas-<version>.pkg.sha256`.
