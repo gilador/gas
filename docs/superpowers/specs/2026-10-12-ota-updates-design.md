@@ -27,7 +27,7 @@ Success means:
 **When a new release is found**
 - **Menu:** a line at the top says "gas ‹version› is available", with **Update** and **Later** buttons.
 - **Dots:** a small dot shows on the menu bar label and on the floating panel.
-- **Later** saves that version as skipped. The line and the dots stay hidden until a check finds a version higher than the skipped one.
+- **Later** saves that version as skipped. Automatic checks keep the line and the dots hidden until they find a version higher than the skipped one. A manual **Check for updates** ignores the skip and shows the version again.
 
 **Update**
 1. gas downloads `gas-‹version›.pkg` and `gas-‹version›.pkg.sha256` from the release to its cache folder (`~/Library/Caches/com.gilad.agentusage/updates/`).
