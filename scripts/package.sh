@@ -17,7 +17,7 @@ Signing:
     1. --identity "<name or SHA-1>"
     2. SIGN_IDENTITY environment variable
     3. scripts/sign-identity.local (one line, git-ignored)
-    4. ad-hoc (no stable identity; Keychain "Always Allow" will not survive rebuilds)
+    4. ad-hoc (no developer name in the signature; recommended for public builds)
   List available identities: security find-identity -v -p codesigning
 
 Prerequisites:
@@ -64,7 +64,7 @@ IDENTITY="${IDENTITY:--}"
 export SIGN_IDENTITY="$IDENTITY"
 
 if [ "$IDENTITY" = "-" ]; then
-  echo "package.sh: signing ad-hoc: Keychain 'Always Allow' will not survive rebuilds; put a codesign identity (name or SHA-1) in scripts/sign-identity.local" >&2
+  echo "package.sh: signing ad-hoc (no developer name in the signature)" >&2
 fi
 
 APP=$(scripts/build-release.sh)

@@ -34,8 +34,9 @@ List available identities:
 security find-identity -v -p codesigning
 ```
 
-Put the identity (name or SHA-1) you want to use by default in `scripts/sign-identity.local`. Ad-hoc signing
-works, but macOS Keychain "Always Allow" does not survive rebuilds with it.
+Ad-hoc is recommended for public builds. gas reads the Claude token through `/usr/bin/security`, so its own
+signature does not change Keychain access. A certificate puts its name, often an email address, into every build
+(`codesign -dv` shows it). To sign with one anyway, put its name or SHA-1 in `scripts/sign-identity.local`.
 
 ## What a friend needs to do
 
