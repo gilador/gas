@@ -2,6 +2,11 @@
 
 A macOS menu bar app that shows how much of your **Claude** and **OpenAI (Codex / ChatGPT)** plan you have used: the 5-hour session limit, the weekly limit, and per-model weekly limits.
 
+<p align="center">
+  <img src="docs/images/menubar.png" alt="gas in the menu bar" height="36"><br><br>
+  <img src="docs/images/menu-and-panel.png" alt="The gas menu next to the vertical floating panel" width="520">
+</p>
+
 > Unofficial. gas is not affiliated with Anthropic or OpenAI. It reads endpoints that are not documented, so a provider change can stop it until gas is updated.
 
 ## Features
@@ -9,11 +14,18 @@ A macOS menu bar app that shows how much of your **Claude** and **OpenAI (Codex 
 - **Menu bar label:** the percent for each provider, at a glance.
 - **Menu:** each limit with its percent and reset time, and the time of the next refresh.
 - **Floating panel:** a small glass strip that stays on top. Point to its edge to show a pill that switches it between a vertical and a horizontal layout.
+
+  <img src="docs/images/panel-horizontal.png" alt="The floating panel in the horizontal layout" width="420">
+
 - **Alerts:** a warning and a critical level (65% and 85% by default) that you can change.
 - **Used or Remaining:** show the percent used, or the percent left.
 - **First-time setup:** if Claude Code or Codex CLI is missing or signed out, a setup window installs it with the official installer and opens the sign-in page, after one click.
 - **Claude token renewal:** when the Claude Code token expires, gas lets Claude Code renew it (see below).
 - **Copy diagnostics:** Settings → Troubleshooting copies a report with no tokens in it.
+
+<p align="center">
+  <img src="docs/images/settings.png" alt="The Settings window" width="320">
+</p>
 
 ## Requirements
 
