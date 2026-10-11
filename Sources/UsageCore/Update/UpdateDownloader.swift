@@ -21,8 +21,13 @@ public struct UpdateDownloader: Sendable {
     /// Saves the pkg only after its SHA-256 matches the release's checksum file, so a bad download is never opened.
     public func download(_ release: ReleaseInfo) async throws -> URL {
         let fileName = release.pkgURL.lastPathComponent
-        guard let checksumData = try? await fetch(release.checksumURL),
-              let expected = Self.parseChecksum(checksumData, fileName: fileName) else {
+        let checksumData: Data
+        do {
+            checksumData = try await fetch(release.checksumURL)
+        } catch {
+            throw UpdateDownloadError.download(error.localizedDescription)
+        }
+        guard let expected = Self.parseChecksum(checksumData, fileName: fileName) else {
             throw UpdateDownloadError.checksumMissing
         }
         let pkg: Data

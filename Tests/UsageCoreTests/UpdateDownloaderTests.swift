@@ -41,13 +41,13 @@ final class UpdateDownloaderTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: directory.appendingPathComponent("gas-1.0.24.pkg").path))
     }
 
-    func testAMissingChecksumFileThrows() async {
+    func testAFailedChecksumDownloadIsADownloadError() async {
         let (downloader, _) = downloader(pkg: pkg, checksum: nil)
         do {
             _ = try await downloader.download(release)
-            XCTFail("expected a missing checksum")
+            XCTFail("expected a download error")
         } catch {
-            XCTAssertEqual(error as? UpdateDownloadError, .checksumMissing)
+            guard case .download = error as? UpdateDownloadError else { return XCTFail("got \(error)") }
         }
     }
 

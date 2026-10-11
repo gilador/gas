@@ -84,8 +84,11 @@ final class UpdateModel: ObservableObject {
         do {
             let file = try await downloader.download(release)
             UsageLog.note("update downloaded \(release.version)")
+            guard NSWorkspace.shared.open(file) else {
+                phase = .failed(release, "the Installer did not open")
+                return
+            }
             phase = .available(release)
-            NSWorkspace.shared.open(file)
         } catch {
             UsageLog.note("update download failed: \(error)")
             phase = .failed(release, Self.describe(error))
