@@ -11,3 +11,5 @@ xcuserdata/
 scripts/sign-identity.local
 *.p8
 build-release.stale/
+.claude/
+STATUS.md
