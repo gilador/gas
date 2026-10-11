@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let viewModel = UsageViewModel()
         self.viewModel = viewModel
+        UpdateModel.shared.start()
         panelController.viewModel = viewModel
         let setupModel = SetupModel(viewModel: viewModel)
         panelController.setupModel = setupModel
