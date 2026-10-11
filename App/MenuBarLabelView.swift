@@ -3,6 +3,7 @@ import UsageCore
 
 struct MenuBarLabelView: View {
     @ObservedObject var viewModel: UsageViewModel
+    @ObservedObject private var updates = UpdateModel.shared
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
@@ -21,6 +22,11 @@ struct MenuBarLabelView: View {
             }
         }
         .padding(.horizontal, 4)
+        .overlay(alignment: .topTrailing) {
+            if updates.showsDot {
+                Circle().fill(Color.accentColor).frame(width: 5, height: 5)
+            }
+        }
         .fixedSize()
     }
 

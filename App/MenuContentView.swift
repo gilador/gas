@@ -5,6 +5,7 @@ struct MenuContentView: View {
     @ObservedObject var viewModel: UsageViewModel
     let onSettings: () -> Void
     let onSetup: () -> Void
+    @ObservedObject private var updates = UpdateModel.shared
     @AppStorage("showDesktopPanel") private var showDesktopPanel = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
@@ -16,6 +17,10 @@ struct MenuContentView: View {
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
+            if updates.showsDot {
+                Divider()
+                UpdateBanner(updates: updates)
+            }
             Divider()
             if viewModel.board.isEmpty {
                 Text("Loading…")

@@ -16,6 +16,8 @@ struct PreferencesView: View {
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var copiedDiagnostics = false
+    @AppStorage(UpdateModel.autoCheckKey) private var checkForUpdates = true
+    @ObservedObject private var updates = UpdateModel.shared
     @AppStorage(ProviderSettings.renewClaudeTokenKey) private var renewClaudeToken = true
 
     var body: some View {
@@ -78,6 +80,15 @@ struct PreferencesView: View {
                                       : SMAppService.mainApp.unregister())
                     }
             }
+            Section("Updates") {
+                Toggle("Check for updates automatically", isOn: $checkForUpdates)
+                HStack {
+                    Button("Check for updates") { Task { await updates.check(manual: true) } }
+                        .disabled(updates.phase == .checking)
+                    Spacer()
+                    Text(updateStatus).font(.caption).foregroundStyle(.secondary)
+                }
+            }
             Section("Troubleshooting") {
                 Button(copiedDiagnostics ? "Copied — paste it into a message" : "Copy diagnostics", action: copyDiagnostics)
             }
@@ -87,6 +98,19 @@ struct PreferencesView: View {
         }
         .padding(20)
         .formStyle(.grouped)
+    }
+
+    private var updateStatus: String {
+        let installed = updates.installed?.description ?? "?"
+        switch updates.phase {
+        case .idle: return "Version \(installed)"
+        case .checking: return "Checking…"
+        case .upToDate: return "Up to date (\(installed))"
+        case .checkFailed(let message): return "Couldn't check: \(message)"
+        case .available(let release): return "gas \(release.version.description) is available"
+        case .downloading: return "Downloading…"
+        case .failed(_, let message): return "Update failed: \(message)"
+        }
     }
 
     private func copyDiagnostics() {

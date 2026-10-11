@@ -11,6 +11,7 @@ struct DesktopPanelView: View {
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var alerts: AlertCenter
     @ObservedObject var pointer: PointerTracker
+    @ObservedObject private var updates = UpdateModel.shared
     @AppStorage("panelTransparency") private var panelTransparency = 0.05
     @AppStorage(horizontalKey) private var horizontal = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
@@ -28,6 +29,11 @@ struct DesktopPanelView: View {
                                 : EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4))
             .frame(width: horizontal ? nil : 44, alignment: .topLeading)
             .modifier(PanelGlass(cornerRadius: 12))
+            .overlay(alignment: .topLeading) {
+                if updates.showsDot {
+                    Circle().fill(Color.accentColor).frame(width: 6, height: 6).padding(5)
+                }
+            }
             .overlay(alignment: horizontal ? .trailing : .top) { toggle }
             .onPreferenceChange(ToggleFrameKey.self) { toggleFrame = $0 }
             .opacity(1 - 0.9 * panelTransparency)
