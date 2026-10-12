@@ -22,6 +22,20 @@ struct PreferencesView: View {
 
     var body: some View {
         Form {
+            Section("Updates") {
+                Toggle("Check for updates automatically", isOn: $checkForUpdates)
+                HStack {
+                    Button("Check for updates") { Task { await updates.check(manual: true) } }
+                        .disabled(updates.phase == .checking)
+                    Spacer()
+                    if case .available = updates.phase {
+                        Button("Update available") { Task { await updates.update() } }
+                            .buttonStyle(.borderedProminent)
+                    } else {
+                        Text(updateStatus).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
             Section("Display") {
                 Picker("Show usage as", selection: $usageDisplayRaw) {
                     ForEach(UsageDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
@@ -79,15 +93,6 @@ struct PreferencesView: View {
                         try? (enabled ? SMAppService.mainApp.register()
                                       : SMAppService.mainApp.unregister())
                     }
-            }
-            Section("Updates") {
-                Toggle("Check for updates automatically", isOn: $checkForUpdates)
-                HStack {
-                    Button("Check for updates") { Task { await updates.check(manual: true) } }
-                        .disabled(updates.phase == .checking)
-                    Spacer()
-                    Text(updateStatus).font(.caption).foregroundStyle(.secondary)
-                }
             }
             Section("Troubleshooting") {
                 Button(copiedDiagnostics ? "Copied — paste it into a message" : "Copy diagnostics", action: copyDiagnostics)
