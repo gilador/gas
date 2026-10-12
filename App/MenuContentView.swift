@@ -59,6 +59,11 @@ struct MenuContentView: View {
 
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
+                        .overlay(alignment: .topTrailing) {
+                            if updates.showsDot {
+                                Circle().fill(Color.accentColor).frame(width: 5, height: 5).offset(x: 2, y: -2)
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
                 .help("Preferences")
