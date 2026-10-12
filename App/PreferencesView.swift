@@ -100,9 +100,20 @@ struct PreferencesView: View {
             Button("Done") {
                 dismiss()
             }
+            Text(versionText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
         }
         .padding(20)
         .formStyle(.grouped)
+    }
+
+    private var versionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "gas \(version) (\(build))"
     }
 
     private var updateStatus: String {
