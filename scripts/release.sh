@@ -18,10 +18,7 @@ fail() { echo "release.sh: $*" >&2; exit 1; }
 REPO="${GAS_REPO:-gilador/gas}"
 command -v gh >/dev/null 2>&1 || fail "gh not found. Install it: brew install gh"
 PERMISSION=$(gh repo view "$REPO" --json viewerPermission --jq .viewerPermission 2>/dev/null || true)
-case "$PERMISSION" in
-  ADMIN|MAINTAIN|WRITE) ;;
-  *) fail "the gh account cannot publish to $REPO (permission: ${PERMISSION:-none}). Set GH_TOKEN for an account that can." ;;
-esac
+[ "$PERMISSION" = "ADMIN" ] || fail "only repo admins release; the gh account has ${PERMISSION:-no} permission on $REPO. Set GH_TOKEN for an admin account."
 
 [ -z "$(git status --porcelain)" ] || fail "the working tree has uncommitted or untracked files. Commit, stash or remove them first."
 git fetch -q origin
