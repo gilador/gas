@@ -50,7 +50,11 @@ signature does not change Keychain access. A certificate puts its name, often an
 
 A Developer ID certificate + notarization (paid Apple Developer Program) removes the Open Anyway step (and enables macOS notifications).
 
-## Publish a release
+## Release (one command)
+
+`scripts/release.sh` takes the latest `main` from GitHub, bumps the version (1.0.25 → 1.0.26, or the version you give), runs the tests, commits and pushes the bump, builds and signs ad-hoc, and publishes the GitHub release. Run `scripts/release.sh --dry-run` first: it runs the checks and prints the new version, but changes nothing. In Claude Code, the `release` skill runs these steps for you.
+
+## Publish a release (by hand)
 
 1. Set `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, and commit.
 2. Run `scripts/package.sh all`. It writes the pkg, the dmg and `gas-<version>.pkg.sha256` to `dist/`.
