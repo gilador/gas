@@ -29,6 +29,16 @@ git checkout -q main
 git pull -q --ff-only origin main
 [ "$(git rev-parse main)" = "$(git rev-parse origin/main)" ] || fail "local main is not equal to origin/main. Push or reset it first."
 
+git fetch -q --tags origin
+LATEST_TAG=$(gh release view --repo "$REPO" --json tagName --jq .tagName 2>/dev/null || true)
+SINCE="first release"
+if [ -n "$LATEST_TAG" ]; then
+  RELEASED=$(git rev-parse "$LATEST_TAG^{commit}" 2>/dev/null) || fail "the latest release tag $LATEST_TAG is not in this repo. Run: git fetch --tags"
+  NEW_COMMITS=$(git rev-list --count "$RELEASED..main")
+  [ "$NEW_COMMITS" -gt 0 ] || fail "main ($(git rev-parse --short main)) has no commits after $LATEST_TAG ($(git rev-parse --short "$RELEASED")); nothing new to release"
+  SINCE="$NEW_COMMITS commit(s) after $LATEST_TAG"
+fi
+
 CURRENT=$(sed -n 's/.*MARKETING_VERSION: "\(.*\)"/\1/p' project.yml | head -1)
 BUILD=$(sed -n 's/.*CURRENT_PROJECT_VERSION: "\(.*\)"/\1/p' project.yml | head -1)
 [ -n "$VERSION" ] || VERSION="${CURRENT%.*}.$(( ${CURRENT##*.} + 1 ))"
@@ -38,7 +48,7 @@ if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1
   fail "the tag v$VERSION already exists on origin"
 fi
 
-echo "release.sh: main $(git rev-parse --short HEAD): $CURRENT ($BUILD) → $VERSION ($NEXT_BUILD), repo $REPO" >&2
+echo "release.sh: main $(git rev-parse --short HEAD) ($SINCE): $CURRENT ($BUILD) → $VERSION ($NEXT_BUILD), repo $REPO" >&2
 if [ "$DRY_RUN" = 1 ]; then
   echo "release.sh: dry run, nothing changed" >&2
   exit 0
