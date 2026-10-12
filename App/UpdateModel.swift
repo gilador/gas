@@ -51,6 +51,7 @@ final class UpdateModel: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.check(manual: false) }
         }
+        if let timer { RunLoop.main.add(timer, forMode: .common) }
     }
 
     func check(manual: Bool) async {

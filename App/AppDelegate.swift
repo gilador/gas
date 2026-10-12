@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController?
     private let panelController = DesktopPanelController()
     private var defaultsObserver: NSObjectProtocol?
+    private let criticalAlert = CriticalAlertPresenter()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let viewModel = UsageViewModel()
@@ -30,19 +31,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         viewModel.alerts.onFirstAlert = { [weak self] in self?.panelController.showForAlert() }
         viewModel.alerts.onAllAlertsEnded = { [weak self] in self?.panelController.hideAfterAlertIfUnpinned() }
-        viewModel.alerts.onCritical = { [weak viewModel] crossings in
+        viewModel.alerts.onCritical = { [weak viewModel, weak self] crossings in
             // macOS notifications replace the dialog whenever the system allows them.
             guard viewModel?.notifications.permission != .allowed else { return }
-            DispatchQueue.main.async {
-                let alert = NSAlert()
-                alert.alertStyle = .critical
-                alert.messageText = "Critical gas limit reached"
-                alert.informativeText = crossings.map { "\($0.provider.displayName) · \($0.limit.label) is at \($0.limit.displayPercent)%." }.joined(separator: "\n")
-                alert.addButton(withTitle: "OK")
-                NSApp.activate(ignoringOtherApps: true)
-                alert.window.center()
-                alert.runModal()
-            }
+            let text = crossings.map { "\($0.provider.displayName) · \($0.limit.label) is at \($0.limit.displayPercent)%." }.joined(separator: "\n")
+            Task { @MainActor in self?.criticalAlert.show(text: text) }
         }
         applyPanelVisibility()
         defaultsObserver = NotificationCenter.default.addObserver(

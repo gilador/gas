@@ -72,6 +72,7 @@ final class UsageViewModel: ObservableObject {
                 await self?.refresh()
             }
         }
+        if let timer { RunLoop.main.add(timer, forMode: .common) }
         nextTick = Date().addingTimeInterval(RefreshIntervals.seconds)
     }
 
