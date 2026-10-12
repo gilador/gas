@@ -3,7 +3,7 @@
 A macOS menu bar app that shows how much of your **Claude** and **OpenAI (Codex / ChatGPT)** plan you have used: the 5-hour session limit, the weekly limit, and per-model weekly limits.
 
 <p align="center">
-  <img src="docs/images/menubar.png" alt="gas in the menu bar" height="36"><br><br>
+  <img width="105" height="26" alt="image" src="https://github.com/user-attachments/assets/017c6623-d5d2-48bc-adb0-629e05b2704f" alt="gas in the menu bar" height="36"><br><br>
   <img src="docs/images/menu-and-panel.png" alt="The gas menu next to the vertical floating panel" width="520">
 </p>
 
