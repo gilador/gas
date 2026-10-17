@@ -6,8 +6,6 @@ enum UsageDisplayMode: String, CaseIterable {
 
     static let key = "usageDisplay"
 
-    var title: String { self == .used ? "Used" : "Remaining" }
-
     func percent(for limit: UsageLimit) -> Int {
         self == .used ? limit.displayPercent : max(0, 100 - limit.displayPercent)
     }
@@ -17,5 +15,5 @@ enum UsageDisplayMode: String, CaseIterable {
         return self == .used ? used : 1 - used
     }
 
-    static func current(_ raw: String) -> UsageDisplayMode { UsageDisplayMode(rawValue: raw) ?? .used }
+    static func current(_ raw: String) -> UsageDisplayMode { UsageDisplayMode(rawValue: raw) ?? .remaining }
 }

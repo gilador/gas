@@ -40,6 +40,12 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
         return (providerWide.isEmpty ? limits : providerWide).max(by: { $0.percentUsed < $1.percentUsed })
     }
 
+    public var sessionLimit: UsageLimit? { limits.first { $0.id == "session" } }
+
+    public var weeklyLimit: UsageLimit? { limits.first { $0.id == "weekly_all" } }
+
+    public var scopedLimit: UsageLimit? { limits.first { $0.id.hasPrefix("weekly_scoped") } }
+
     /// Keeps the previous good limits (and their timestamp) when a refresh fails transiently.
     public func mergingLastGood(previous: UsageSnapshot?) -> UsageSnapshot {
         guard let previous, previous.provider == provider,

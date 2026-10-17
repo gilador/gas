@@ -4,7 +4,7 @@ import UsageCore
 struct MenuBarLabelView: View {
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject private var updates = UpdateModel.shared
-    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }

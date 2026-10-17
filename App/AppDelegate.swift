@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let criticalAlert = CriticalAlertPresenter()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.register(defaults: ["showDesktopPanel": true])
         let viewModel = UsageViewModel()
         self.viewModel = viewModel
         UpdateModel.shared.start()

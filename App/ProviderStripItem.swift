@@ -6,7 +6,8 @@ struct ProviderStripItem: View {
     let snapshot: UsageSnapshot
     var alert: AlertCenter.ActiveAlert? = nil
     var horizontal = false
-    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    var extended = false
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     private static let barSize = CGSize(width: 8, height: 84)
@@ -23,7 +24,7 @@ struct ProviderStripItem: View {
         VStack(spacing: 4) {
             icon
             percent
-            bar
+            if extended { doubleBar } else { bar }
             age
         }
         .frame(maxWidth: .infinity)
@@ -37,7 +38,7 @@ struct ProviderStripItem: View {
                 age
             }
             .frame(width: 34)
-            horizontalBar
+            if extended { horizontalDoubleBar } else { horizontalBar }
             percent
                 .fixedSize()
         }
@@ -78,9 +79,16 @@ struct ProviderStripItem: View {
 
     private var headline: UsageLimit? { snapshot.headlineLimit }
 
-    private var session: UsageLimit? { snapshot.limits.first { $0.id == "session" } }
+    private var session: UsageLimit? { snapshot.sessionLimit }
 
-    private var weekly: UsageLimit? { snapshot.limits.first { $0.id == "weekly_all" } }
+    private var weekly: UsageLimit? { snapshot.weeklyLimit }
+
+    /// A provider without a session or weekly limit gets one bar, never an empty slot.
+    private var doubleBarSlots: [UsageLimit?] {
+        let limits = [session, weekly].compactMap { $0 }
+        if !limits.isEmpty { return limits }
+        return [headline]
+    }
 
     /// The shorter fill goes in front so both layers stay visible, whichever window each one is.
     private var layers: (back: UsageLimit?, front: UsageLimit?) {
@@ -90,9 +98,7 @@ struct ProviderStripItem: View {
         return sorted.count > 1 ? (sorted[0], sorted[1]) : (nil, sorted.first)
     }
 
-    private var scoped: UsageLimit? {
-        snapshot.limits.first { $0.id.hasPrefix("weekly_scoped") }
-    }
+    private var scoped: UsageLimit? { snapshot.scopedLimit }
 
     private var percentText: String {
         headline.map { "\(mode.percent(for: $0))%" } ?? "—"
@@ -132,6 +138,62 @@ struct ProviderStripItem: View {
             }
         }
         .frame(width: Self.barSize.width, height: Self.barSize.height)
+    }
+
+    private func singleBar(_ limit: UsageLimit?) -> some View {
+        ZStack(alignment: .bottom) {
+            Capsule().fill(.white.opacity(0.15))
+            if let limit {
+                Capsule()
+                    .fill(LimitPalette.frontLayerColor(for: limit))
+                    .frame(height: Self.barSize.height * mode.fraction(for: limit))
+            }
+            if let scoped, let limit, limit.id == weekly?.id {
+                Color.clear
+                    .frame(width: 10, height: 10)
+                    .overlay(alignment: .leading) {
+                        PointerTriangle().fill(LimitPalette.color(for: scoped)).frame(width: 6, height: 7)
+                            .rotationEffect(.degrees(180)).padding(.leading, 1)
+                    }
+                    .contentShape(Rectangle())
+                    .help(usageHelp(scoped))
+                    .offset(x: Self.barSize.width / 2 + 5, y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
+            }
+        }
+        .frame(width: Self.barSize.width, height: Self.barSize.height)
+        .help(limit.map(usageHelp) ?? "")
+    }
+
+    private var doubleBar: some View {
+        HStack(spacing: 4) {
+            ForEach(Array(doubleBarSlots.enumerated()), id: \.offset) { _, limit in
+                VStack(spacing: 2) {
+                    singleBar(limit)
+                    barLetter(limit)
+                }
+            }
+        }
+    }
+
+    /// Turned per bar rather than as a pair, so the letters stay upright.
+    private var horizontalDoubleBar: some View {
+        VStack(spacing: 2) {
+            ForEach(Array(doubleBarSlots.enumerated()), id: \.offset) { _, limit in
+                HStack(spacing: 3) {
+                    barLetter(limit)
+                    singleBar(limit)
+                        .rotationEffect(.degrees(90))
+                        .frame(width: Self.barSize.height, height: Self.barSize.width + 6)
+                }
+            }
+        }
+    }
+
+    private func barLetter(_ limit: UsageLimit?) -> some View {
+        Text(limit?.id == "session" ? "h" : limit?.id == "weekly_all" ? "w" : "")
+            .font(.system(size: 9, weight: .medium))
+            .foregroundStyle(.secondary)
+            .frame(width: Self.barSize.width + 2)
     }
 
     /// The vertical bar turned 90° clockwise, so both layouts show exactly the same bar.

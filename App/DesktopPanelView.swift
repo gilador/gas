@@ -3,6 +3,7 @@ import UsageCore
 
 struct DesktopPanelView: View {
     static let horizontalKey = "panelHorizontal"
+    static let extendedKey = "panelExtended"
     /// The flip pill shows once the pointer is this close to its hit area: about 10 pt past a "0%" label.
     private static let revealMargin: CGFloat = 14
     /// From the glass edge to the pill's center.
@@ -14,6 +15,7 @@ struct DesktopPanelView: View {
     @ObservedObject private var updates = UpdateModel.shared
     @AppStorage("panelTransparency") private var panelTransparency = 0.05
     @AppStorage(horizontalKey) private var horizontal = false
+    @AppStorage(extendedKey) private var extended = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     let onTap: () -> Void
@@ -90,7 +92,8 @@ struct DesktopPanelView: View {
                     Rectangle().fill(.white.opacity(0.15))
                         .frame(width: horizontal ? 1 : 26, height: horizontal ? 26 : 1)
                 }
-                ProviderStripItem(snapshot: snapshot, alert: alerts.active[snapshot.provider], horizontal: horizontal)
+                ProviderStripItem(snapshot: snapshot, alert: alerts.active[snapshot.provider], horizontal: horizontal,
+                                  extended: extended)
             }
         }
     }

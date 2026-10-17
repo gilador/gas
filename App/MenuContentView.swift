@@ -6,7 +6,7 @@ struct MenuContentView: View {
     let onSettings: () -> Void
     let onSetup: () -> Void
     @ObservedObject private var updates = UpdateModel.shared
-    @AppStorage("showDesktopPanel") private var showDesktopPanel = false
+    @AppStorage("showDesktopPanel") private var showDesktopPanel = true
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
 
@@ -100,7 +100,7 @@ struct MenuContentView: View {
 
 struct LimitRow: View {
     let limit: UsageLimit
-    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     var body: some View {

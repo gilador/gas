@@ -13,12 +13,12 @@ A macOS menu bar app that shows how much of your **Claude** and **OpenAI (Codex 
 
 - **Menu bar label:** the percent for each provider, at a glance.
 - **Menu:** each limit with its percent and reset time, and the time of the next refresh.
-- **Floating panel:** a small glass strip that stays on top. Point to its edge to show a pill that switches it between a vertical and a horizontal layout.
+- **Floating panel:** a small glass strip that stays on top, shown by default. Point to its edge to show a pill that switches it between a vertical and a horizontal layout. In Settings → Display, Separate bars splits each provider's bar into separate session and weekly bars; a plan with only a weekly limit shows one bar.
 
   <img src="docs/images/panel-horizontal.png" alt="The floating panel in the horizontal layout" width="420">
 
 - **Alerts:** a warning and a critical level (65% and 85% by default) that you can change.
-- **Used or Remaining:** show the percent used, or the percent left.
+- **Remaining or Used:** show the percent left (the default), or the percent used.
 - **First-time setup:** if Claude Code or Codex CLI is missing or signed out, a setup window installs it with the official installer and opens the sign-in page, after one click.
 - **Claude token renewal:** when the Claude Code token expires, gas lets Claude Code renew it (see below).
 - **Copy diagnostics:** Settings → Troubleshooting copies a report with no tokens in it.
