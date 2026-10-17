@@ -14,6 +14,7 @@ final class DesktopPanelController {
     private var setupWindow: NSWindow?
     private var setupCloseObserver: NSObjectProtocol?
     private var menuPopover: NSPopover?
+    private var dragStart: (mouse: NSPoint, origin: NSPoint)?
     private static let size = NSSize(width: 44, height: 280)
     // nonisolated: immutable Sendable constants referenced from the @Sendable didMove observer closure.
     nonisolated private static let originXKey = "desktopPanelOriginX"
@@ -127,7 +128,9 @@ final class DesktopPanelController {
 
         let pointer = PointerTracker()
         let host = TrackingHostingView(rootView: DesktopPanelView(viewModel: viewModel, alerts: viewModel.alerts, pointer: pointer,
-                                                                  onTap: { [weak self] in self?.toggleMenu() }))
+                                                                  onTap: { [weak self] in self?.toggleMenu() },
+                                                                  onDragStart: { [weak self] in self?.beginDrag() },
+                                                                  onDragMove: { [weak self] in self?.continueDrag() }))
         host.tracker = pointer
         host.sizingOptions = [.preferredContentSize]
         panel.acceptsMouseMovedEvents = true
@@ -147,6 +150,19 @@ final class DesktopPanelController {
             MainActor.assumeIsolated { self?.keepTopRight() }
         }
         return panel
+    }
+
+    private func beginDrag() {
+        guard let panel else { return }
+        dragStart = (NSEvent.mouseLocation, panel.frame.origin)
+    }
+
+    /// Screen coordinates, because the view's own coordinates move with the window.
+    private func continueDrag() {
+        guard let panel, let dragStart else { return }
+        let mouse = NSEvent.mouseLocation
+        panel.setFrameOrigin(NSPoint(x: dragStart.origin.x + mouse.x - dragStart.mouse.x,
+                                     y: dragStart.origin.y + mouse.y - dragStart.mouse.y))
     }
 
     /// AppKit keeps the bottom-left corner when the content changes size; a layout flip keeps the top-right one,
