@@ -130,4 +130,20 @@ final class UsageSnapshotTests: XCTestCase {
                                     .rateLimited(until: Date(), wait: 60)]
         for status in other { XCTAssertFalse(status.needsSetup, "\(status)") }
     }
+
+    func testNamedLimitAccessors() {
+        let snap = UsageSnapshot(provider: .claude, fetchedAt: Date(),
+                                 limits: [limit("session", 40), limit("weekly_all", 60), limit("weekly_scoped#Fable", 95)],
+                                 status: .ok)
+        XCTAssertEqual(snap.sessionLimit?.percentUsed, 40)
+        XCTAssertEqual(snap.weeklyLimit?.percentUsed, 60)
+        XCTAssertEqual(snap.scopedLimit?.id, "weekly_scoped#Fable")
+    }
+
+    func testWeeklyOnlySnapshotHasNoSessionLimit() {
+        let snap = UsageSnapshot(provider: .openai, fetchedAt: Date(), limits: [limit("weekly_all", 60)], status: .ok)
+        XCTAssertNil(snap.sessionLimit)
+        XCTAssertEqual(snap.weeklyLimit?.id, "weekly_all")
+        XCTAssertNil(snap.scopedLimit)
+    }
 }

@@ -4,16 +4,20 @@ enum OpenAIUsageMapper {
     static func map(_ rateLimit: OpenAIUsageResponse.RateLimit?,
                     warning: Double, critical: Double) -> [UsageLimit] {
         guard let rateLimit else { return [] }
-        var limits: [UsageLimit] = []
-        if let window = rateLimit.primaryWindow {
-            limits.append(limit(window, id: "session", fallback: "Session",
-                                warning: warning, critical: critical))
+        let windows: [(window: OpenAIUsageResponse.Window, id: String, fallback: String)] = [
+            rateLimit.primaryWindow.map { ($0, "session", "Session") },
+            rateLimit.secondaryWindow.map { ($0, "weekly_all", "Weekly") },
+        ].compactMap { $0 }
+        let byLength = windows.map { idForLength($0.window.limitWindowSeconds) ?? $0.id }
+        let ids = Set(byLength).count == byLength.count ? byLength : windows.map(\.id)
+        return zip(windows, ids).map { entry, id in
+            limit(entry.window, id: id, fallback: entry.fallback, warning: warning, critical: critical)
         }
-        if let window = rateLimit.secondaryWindow {
-            limits.append(limit(window, id: "weekly_all", fallback: "Weekly",
-                                warning: warning, critical: critical))
-        }
-        return limits
+    }
+
+    private static func idForLength(_ seconds: Int?) -> String? {
+        guard let seconds else { return nil }
+        return seconds < 86_400 ? "session" : "weekly_all"
     }
 
     static func label(windowSeconds: Int?, fallback: String) -> String {

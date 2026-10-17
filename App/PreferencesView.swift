@@ -11,7 +11,8 @@ struct PreferencesView: View {
     @AppStorage("warningThreshold") private var warningThreshold = 65.0
     @AppStorage("criticalThreshold") private var criticalThreshold = 85.0
     @AppStorage("panelTransparency") private var panelTransparency = 0.05
-    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.used.rawValue
+    @AppStorage(DesktopPanelView.extendedKey) private var panelExtended = false
+    @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -37,10 +38,11 @@ struct PreferencesView: View {
                 }
             }
             Section("Display") {
-                Picker("Show usage as", selection: $usageDisplayRaw) {
-                    ForEach(UsageDisplayMode.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
-                }
-                .pickerStyle(.segmented)
+                Toggle("Show remaining", isOn: Binding(
+                    get: { UsageDisplayMode.current(usageDisplayRaw) == .remaining },
+                    set: { usageDisplayRaw = ($0 ? UsageDisplayMode.remaining : .used).rawValue }))
+                Toggle("Separate bars", isOn: $panelExtended)
+                    .help("Floating panel: a session bar and a weekly bar side by side for each provider.")
             }
             Section("Providers") {
                 ForEach(ProviderID.displayOrder, id: \.self) { provider in

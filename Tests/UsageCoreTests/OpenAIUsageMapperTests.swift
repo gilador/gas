@@ -52,4 +52,30 @@ final class OpenAIUsageMapperTests: XCTestCase {
                                            warning: 80, critical: 95)
         XCTAssertEqual(limits.map(\.severity), [.warning, .critical])
     }
+
+    func testWeeklyOnlyPrimaryWindowMapsToWeekly() {
+        let limits = OpenAIUsageMapper.map(rateLimit(primary: window(40, seconds: 604_800), secondary: nil),
+                                           warning: 80, critical: 95)
+        XCTAssertEqual(limits.map(\.id), ["weekly_all"])
+        XCTAssertEqual(limits.map(\.label), ["Weekly"])
+    }
+
+    func testShortSecondaryWindowMapsToSession() {
+        let limits = OpenAIUsageMapper.map(rateLimit(primary: window(40, seconds: 604_800), secondary: window(10)),
+                                           warning: 80, critical: 95)
+        XCTAssertEqual(limits.map(\.id), ["weekly_all", "session"])
+    }
+
+    func testClashingWindowsKeepPositionalIds() {
+        let limits = OpenAIUsageMapper.map(
+            rateLimit(primary: window(40, seconds: 604_800), secondary: window(50, seconds: 604_800)),
+            warning: 80, critical: 95)
+        XCTAssertEqual(limits.map(\.id), ["session", "weekly_all"])
+    }
+
+    func testUnknownLengthKeepsPositionalId() {
+        let limits = OpenAIUsageMapper.map(rateLimit(primary: window(40, seconds: nil), secondary: nil),
+                                           warning: 80, critical: 95)
+        XCTAssertEqual(limits.map(\.id), ["session"])
+    }
 }

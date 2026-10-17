@@ -3,6 +3,7 @@ import UsageCore
 
 struct DesktopPanelView: View {
     static let horizontalKey = "panelHorizontal"
+    static let extendedKey = "panelExtended"
     /// The flip pill shows once the pointer is this close to its hit area: about 10 pt past a "0%" label.
     private static let revealMargin: CGFloat = 14
     /// From the glass edge to the pill's center.
@@ -14,17 +15,22 @@ struct DesktopPanelView: View {
     @ObservedObject private var updates = UpdateModel.shared
     @AppStorage("panelTransparency") private var panelTransparency = 0.05
     @AppStorage(horizontalKey) private var horizontal = false
+    @AppStorage(extendedKey) private var extended = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     let onTap: () -> Void
+    let onDragStart: () -> Void
+    let onDragMove: () -> Void
     @State private var toggleFrame: CGRect = .zero
+    @State private var pressing = false
+    @State private var dragging = false
 
     var body: some View {
         let _ = (claudeEnabled, openaiEnabled)
         let layout = horizontal ? AnyLayout(HStackLayout(spacing: 6)) : AnyLayout(VStackLayout(spacing: 6))
         layout { content }
             .contentShape(Rectangle())
-            .onTapGesture { onTap() }
+            .gesture(tapOrDrag)
             .padding(horizontal ? EdgeInsets(top: 7, leading: 6, bottom: 7, trailing: 16)
                                 : EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4))
             .frame(width: horizontal ? nil : 44, alignment: .topLeading)
@@ -38,6 +44,26 @@ struct DesktopPanelView: View {
             .onPreferenceChange(ToggleFrameKey.self) { toggleFrame = $0 }
             .opacity(1 - 0.9 * panelTransparency)
             .environment(\.colorScheme, .dark)
+    }
+
+    /// The strip-wide tap takes the mouse-down from AppKit's drag-by-background, so the strip moves the window itself.
+    private var tapOrDrag: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { value in
+                if !pressing {
+                    pressing = true
+                    onDragStart()
+                }
+                if dragging || hypot(value.translation.width, value.translation.height) > 3 {
+                    dragging = true
+                    onDragMove()
+                }
+            }
+            .onEnded { _ in
+                if !dragging { onTap() }
+                pressing = false
+                dragging = false
+            }
     }
 
     private var toggle: some View {
@@ -66,7 +92,8 @@ struct DesktopPanelView: View {
                     Rectangle().fill(.white.opacity(0.15))
                         .frame(width: horizontal ? 1 : 26, height: horizontal ? 26 : 1)
                 }
-                ProviderStripItem(snapshot: snapshot, alert: alerts.active[snapshot.provider], horizontal: horizontal)
+                ProviderStripItem(snapshot: snapshot, alert: alerts.active[snapshot.provider], horizontal: horizontal,
+                                  extended: extended)
             }
         }
     }
