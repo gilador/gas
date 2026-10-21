@@ -18,6 +18,11 @@ These rules apply to everyone who works on this repo, people and coding agents (
 - No comments, except one short line that explains a non-obvious WHY. Never mention tasks or tickets in code.
 - Match the code around your change.
 
+## Commits and pull requests
+
+- Commit messages and PR titles use `type(scope): summary`, for example `feat(settings): About section with a GitHub link` or `fix(panel): the floating panel can be dragged again`. Types: `feat`, `fix`, `docs`, `build`, `chore`, `refactor`, `test`, `release`.
+- PRs are squash-merged, so the PR title becomes the commit on `main`. Give it the same form.
+
 ## Security
 
 - Never read, print, log or commit token values.
