@@ -99,13 +99,29 @@ struct PreferencesView: View {
             Section("Troubleshooting") {
                 Button(copiedDiagnostics ? "Copied — paste it into a message" : "Copy diagnostics", action: copyDiagnostics)
             }
-            Button("Done") {
-                dismiss()
+            Section("About") {
+                Text("gas is free and open source, made for the community 🫶")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Link(destination: URL(string: "https://github.com/gilador/gas")!) {
+                    HStack(spacing: 6) {
+                        Image("GitHubIcon").resizable().renderingMode(.template)
+                            .frame(width: 14, height: 14)
+                        Text("gilador/gas on GitHub")
+                    }
+                }
+                Text(versionText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Text(versionText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity)
+            HStack {
+                Spacer()
+                Button("Done") {
+                    dismiss()
+                }
+                Spacer()
+            }
         }
         .padding(20)
         .formStyle(.grouped)
