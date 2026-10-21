@@ -47,6 +47,8 @@ fi
 
 echo "release.sh: main $(git rev-parse --short HEAD) ($SINCE): $CURRENT ($BUILD) → $VERSION ($NEXT_BUILD), repo $REPO" >&2
 if [ "$DRY_RUN" = 1 ]; then
+  echo "release.sh: release notes:" >&2
+  scripts/release-notes.sh "${LATEST_TAG:-$(git rev-list --max-parents=0 origin/main | tail -1)}" origin/main >&2
   echo "release.sh: dry run, nothing changed" >&2
   exit 0
 fi

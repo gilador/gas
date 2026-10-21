@@ -17,7 +17,7 @@ A release is public: it creates a GitHub release that every installed gas offers
 
    With an admin account active, `scripts/release.sh --dry-run` is enough. It prints `main <sha> (<n> commit(s) after <last tag>): <old> (<build>) → <new> (<build>)`. To pick a version, add it: `scripts/release.sh --dry-run 1.1.0`.
 
-3. **Confirm.** Tell the user the new version, the commit, and the commits since the last release. Wait for a yes.
+3. **Confirm.** Tell the user the new version, the commit, and the commits since the last release, and show the release notes the dry run printed. Wait for a yes.
 
 4. **Release.** Run the same command without `--dry-run`. It takes a few minutes: it runs the tests, commits and pushes the version bump, builds, signs ad-hoc, and publishes the pkg, the dmg and the `.sha256` file.
 
