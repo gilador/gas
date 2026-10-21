@@ -12,5 +12,10 @@ for file in "${FILES[@]}"; do
 done
 (cd dist && shasum -a 256 -c "gas-$VERSION.pkg.sha256") >&2
 
+PREV=$(gh release view --repo "$REPO" --json tagName --jq .tagName 2>/dev/null || true)
+[ -n "$PREV" ] || PREV=$(git rev-list --max-parents=0 HEAD | tail -1)
+NOTES=$(mktemp)
+scripts/release-notes.sh "$PREV" HEAD >"$NOTES"
+
 gh release create "v$VERSION" "${FILES[@]}" --repo "$REPO" --target main \
-  --title "gas $VERSION" --notes-file scripts/release-notes.md
+  --title "gas $VERSION" --notes-file "$NOTES"
