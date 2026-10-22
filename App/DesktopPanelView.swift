@@ -4,10 +4,11 @@ import UsageCore
 struct DesktopPanelView: View {
     static let horizontalKey = "panelHorizontal"
     static let extendedKey = "panelExtended"
-    /// The flip pill shows once the pointer is this close to its hit area: about 10 pt past a "0%" label.
-    private static let revealMargin: CGFloat = 14
-    /// From the glass edge to the pill's center.
-    private static let pillInset: CGFloat = 10
+    /// From the glass edge to the handle's center.
+    private static let handleInset: CGFloat = 10
+
+    /// The rotate arrow sits right after the handle (above it when horizontal).
+    private static let rotateSize: CGFloat = 12
 
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var alerts: AlertCenter
@@ -18,11 +19,10 @@ struct DesktopPanelView: View {
     @AppStorage(extendedKey) private var extended = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
+    @State private var rotateFrame: CGRect = .zero
     let onTap: () -> Void
     let onDragStart: () -> Void
     let onDragMove: () -> Void
-    @State private var toggleFrame: CGRect = .zero
-    @State private var pressing = false
     @State private var dragging = false
 
     var body: some View {
@@ -30,56 +30,65 @@ struct DesktopPanelView: View {
         let layout = horizontal ? AnyLayout(HStackLayout(spacing: 6)) : AnyLayout(VStackLayout(spacing: 6))
         layout { content }
             .contentShape(Rectangle())
-            .gesture(tapOrDrag)
+            .onTapGesture(perform: onTap)
             .padding(horizontal ? EdgeInsets(top: 7, leading: 6, bottom: 7, trailing: 16)
                                 : EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4))
-            .frame(width: horizontal ? nil : 44, alignment: .topLeading)
+            .frame(width: horizontal ? nil : (extended ? 80 : 44), alignment: .topLeading)
             .modifier(PanelGlass(cornerRadius: 12))
             .overlay(alignment: .topLeading) {
                 if updates.showsDot {
                     Circle().fill(Color.accentColor).frame(width: 6, height: 6).padding(5)
                 }
             }
-            .overlay(alignment: horizontal ? .trailing : .top) { toggle }
-            .onPreferenceChange(ToggleFrameKey.self) { toggleFrame = $0 }
+            .overlay(alignment: horizontal ? .trailing : .top) { handle }
+            .onPreferenceChange(RotateFrameKey.self) { rotateFrame = $0 }
             .opacity(1 - 0.9 * panelTransparency)
             .environment(\.colorScheme, .dark)
     }
 
-    /// The strip-wide tap takes the mouse-down from AppKit's drag-by-background, so the strip moves the window itself.
-    private var tapOrDrag: some Gesture {
+    private var controlsVisible: Bool { pointer.location != nil }
+
+    private var handle: some View {
+        DragHandle(horizontal: horizontal, visible: controlsVisible)
+            .gesture(drag)
+            .overlay(alignment: horizontal ? .top : .trailing) {
+                rotate.offset(x: horizontal ? 0 : Self.rotateSize, y: horizontal ? -Self.rotateSize : 0)
+            }
+            .offset(x: horizontal ? DragHandle.hitThickness / 2 - Self.handleInset : 0,
+                    y: horizontal ? 0 : Self.handleInset - DragHandle.hitThickness / 2)
+    }
+
+    private var drag: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .global)
-            .onChanged { value in
-                if !pressing {
-                    pressing = true
+            .onChanged { _ in
+                if !dragging {
+                    dragging = true
                     onDragStart()
                 }
-                if dragging || hypot(value.translation.width, value.translation.height) > 3 {
-                    dragging = true
-                    onDragMove()
-                }
+                onDragMove()
             }
-            .onEnded { _ in
-                if !dragging { onTap() }
-                pressing = false
-                dragging = false
-            }
+            .onEnded { _ in dragging = false }
     }
 
-    private var toggle: some View {
-        LayoutToggle(horizontal: horizontal, visible: toggleVisible) { horizontal.toggle() }
+    private var rotate: some View {
+        RotateArrow()
+            .stroke(.white, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+            .frame(width: 9, height: 8)
+            .opacity(rotateHovered ? 0.9 : 0)
+            .frame(width: Self.rotateSize, height: Self.rotateSize)
+            .contentShape(Rectangle())
+            .onTapGesture { horizontal.toggle() }
+            .help(horizontal ? "Vertical layout" : "Horizontal layout")
+            .animation(.easeOut(duration: 0.15), value: rotateHovered)
             .background(GeometryReader { proxy in
-                Color.clear.preference(key: ToggleFrameKey.self, value: proxy.frame(in: .global))
+                Color.clear.preference(key: RotateFrameKey.self, value: proxy.frame(in: .global))
             })
-            .offset(x: horizontal ? LayoutToggle.hitThickness / 2 - Self.pillInset : 0,
-                    y: horizontal ? 0 : Self.pillInset - LayoutToggle.hitThickness / 2)
     }
 
-    private var toggleVisible: Bool {
-        guard let pointer = pointer.location, toggleFrame != .zero else { return false }
-        let dx = max(toggleFrame.minX - pointer.x, 0, pointer.x - toggleFrame.maxX)
-        let dy = max(toggleFrame.minY - pointer.y, 0, pointer.y - toggleFrame.maxY)
-        return hypot(dx, dy) <= Self.revealMargin
+    /// SwiftUI hover is silent in this never-active app, so the tracked pointer decides.
+    private var rotateHovered: Bool {
+        guard let pointer = pointer.location, rotateFrame != .zero else { return false }
+        return rotateFrame.insetBy(dx: -2, dy: -2).contains(pointer)
     }
 
     @ViewBuilder
@@ -90,7 +99,7 @@ struct DesktopPanelView: View {
             ForEach(Array(viewModel.visibleSnapshots.enumerated()), id: \.element.provider) { index, snapshot in
                 if index > 0 {
                     Rectangle().fill(.white.opacity(0.15))
-                        .frame(width: horizontal ? 1 : 26, height: horizontal ? 26 : 1)
+                        .frame(width: horizontal ? 1 : (extended ? 54 : 26), height: horizontal ? 26 : 1)
                 }
                 ProviderStripItem(snapshot: snapshot, alert: alerts.active[snapshot.provider], horizontal: horizontal,
                                   extended: extended)
@@ -99,32 +108,46 @@ struct DesktopPanelView: View {
     }
 }
 
-/// A pill near the top edge (right edge when horizontal) that flips the layout; hidden until the pointer is near.
-private struct LayoutToggle: View {
+/// The pill on the top edge (right edge when horizontal) that moves the panel; shown while the pointer is inside.
+private struct DragHandle: View {
     static let hitThickness: CGFloat = 12
 
     let horizontal: Bool
     let visible: Bool
-    let action: () -> Void
 
     var body: some View {
         Capsule()
             .fill(.white)
-            .frame(width: horizontal ? 5 : 30, height: horizontal ? 24 : 5)
+            .frame(width: horizontal ? 5 : 16, height: horizontal ? 16 : 5)
             .opacity(visible ? 0.9 : 0)
-            .frame(width: horizontal ? Self.hitThickness : 36, height: horizontal ? 26 : Self.hitThickness)
+            .frame(width: horizontal ? Self.hitThickness : 18, height: horizontal ? 18 : Self.hitThickness)
             .contentShape(Rectangle())
-            .onTapGesture(perform: action)
-            .help(horizontal ? "Vertical layout" : "Horizontal layout")
+            .help("Drag to move")
             .animation(.easeOut(duration: 0.15), value: visible)
     }
 }
 
 /// Views that do not report still pass the default into reduce, so keep the one real value.
-private struct ToggleFrameKey: PreferenceKey {
+private struct RotateFrameKey: PreferenceKey {
     static let defaultValue: CGRect = .zero
     static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
         let next = nextValue()
         if next != .zero { value = next }
+    }
+}
+
+/// An arc over the top whose head points down on the right, like the corner of a turning card.
+private struct RotateArrow: Shape {
+    func path(in rect: CGRect) -> Path {
+        let radius = rect.width / 2 - 1
+        let center = CGPoint(x: rect.midX, y: rect.minY + radius + 1)
+        let end = CGPoint(x: center.x + radius, y: center.y)
+        let head = rect.width * 0.3
+        var path = Path()
+        path.addArc(center: center, radius: radius, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+        path.move(to: CGPoint(x: end.x - head, y: end.y - head * 0.6))
+        path.addLine(to: CGPoint(x: end.x, y: end.y + head * 0.4))
+        path.addLine(to: CGPoint(x: end.x + head, y: end.y - head * 0.6))
+        return path
     }
 }

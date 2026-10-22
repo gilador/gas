@@ -3,7 +3,6 @@ import UsageCore
 
 struct ProviderSection: View {
     let snapshot: UsageSnapshot
-    var nextRefresh: Date? = nil
     var onRetry: (() -> Void)? = nil
     var onSetup: (() -> Void)? = nil
 
@@ -20,10 +19,6 @@ struct ProviderSection: View {
                 Button("Set up…", action: onSetup)
                     .buttonStyle(.link)
                     .font(.caption)
-            }
-            if let nextRefresh {
-                Text("Next refresh \(nextRefresh.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
     }

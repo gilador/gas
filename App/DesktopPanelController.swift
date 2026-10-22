@@ -122,7 +122,7 @@ final class DesktopPanelController {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = false
-        panel.isMovableByWindowBackground = true
+        panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
         panel.isFloatingPanel = false
 
@@ -166,7 +166,7 @@ final class DesktopPanelController {
     }
 
     /// AppKit keeps the bottom-left corner when the content changes size; a layout flip keeps the top-right one,
-    /// where the flip pill sits in both layouts, so the pointer stays on it.
+    /// where the rotate icon sits in both layouts, so the pointer stays on it.
     private func keepTopRight() {
         guard let panel, let topRight else { return }
         var frame = panel.frame

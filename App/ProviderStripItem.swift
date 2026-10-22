@@ -11,6 +11,11 @@ struct ProviderStripItem: View {
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     private static let barSize = CGSize(width: 8, height: 84)
+    private static let barGap: CGFloat = 2
+    /// The compact bar draws 14 pt wide, because its weekly tick widens the stack; separate bars match it.
+    private static let separateBarWidth: CGFloat = 14
+    /// Shorter by the h/w letter row and its spacing, so both layouts are the same height.
+    private static let separateBarHeight: CGFloat = barSize.height - 8
 
     var body: some View {
         Group {
@@ -23,8 +28,12 @@ struct ProviderStripItem: View {
     private var verticalBody: some View {
         VStack(spacing: 4) {
             icon
-            percent
-            if extended { doubleBar } else { bar }
+            if extended {
+                doubleBar
+            } else {
+                percent
+                bar
+            }
             age
         }
         .frame(maxWidth: .infinity)
@@ -38,9 +47,13 @@ struct ProviderStripItem: View {
                 age
             }
             .frame(width: 34)
-            if extended { horizontalDoubleBar } else { horizontalBar }
-            percent
-                .fixedSize()
+            if extended {
+                horizontalDoubleBar
+            } else {
+                horizontalBar
+                percent
+                    .fixedSize()
+            }
         }
         .padding(.horizontal, 4)
     }
@@ -61,8 +74,16 @@ struct ProviderStripItem: View {
     }
 
     private var percent: some View {
-        Text(percentText)
+        percentLabel(percentText)
+    }
+
+    private func percentLabel(_ text: String) -> some View {
+        Text(text)
             .font(.system(size: 11, weight: .semibold).monospacedDigit())
+    }
+
+    private func limitPercent(_ limit: UsageLimit?) -> String {
+        limit.map { "\(mode.percent(for: $0))%" } ?? "—"
     }
 
     private var age: some View {
@@ -143,10 +164,11 @@ struct ProviderStripItem: View {
     private func singleBar(_ limit: UsageLimit?) -> some View {
         ZStack(alignment: .bottom) {
             Capsule().fill(.white.opacity(0.15))
+                .frame(width: Self.separateBarWidth)
             if let limit {
                 Capsule()
                     .fill(LimitPalette.frontLayerColor(for: limit))
-                    .frame(height: Self.barSize.height * mode.fraction(for: limit))
+                    .frame(width: Self.separateBarWidth, height: Self.separateBarHeight * mode.fraction(for: limit))
             }
             if let scoped, let limit, limit.id == weekly?.id {
                 Color.clear
@@ -157,17 +179,19 @@ struct ProviderStripItem: View {
                     }
                     .contentShape(Rectangle())
                     .help(usageHelp(scoped))
-                    .offset(x: Self.barSize.width / 2 + 5, y: -(Self.barSize.height * mode.fraction(for: scoped)) + 5)
+                    .offset(x: Self.separateBarWidth / 2 + 5, y: -(Self.separateBarHeight * mode.fraction(for: scoped)) + 5)
             }
         }
-        .frame(width: Self.barSize.width, height: Self.barSize.height)
+        .frame(width: Self.separateBarWidth, height: Self.separateBarHeight)
         .help(limit.map(usageHelp) ?? "")
     }
 
     private var doubleBar: some View {
-        HStack(spacing: 4) {
+        HStack(alignment: .top, spacing: 4) {
             ForEach(Array(doubleBarSlots.enumerated()), id: \.offset) { _, limit in
                 VStack(spacing: 2) {
+                    percentLabel(limitPercent(limit))
+                        .fixedSize()
                     singleBar(limit)
                     barLetter(limit)
                 }
@@ -177,13 +201,16 @@ struct ProviderStripItem: View {
 
     /// Turned per bar rather than as a pair, so the letters stay upright.
     private var horizontalDoubleBar: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: Self.barGap) {
             ForEach(Array(doubleBarSlots.enumerated()), id: \.offset) { _, limit in
                 HStack(spacing: 3) {
                     barLetter(limit)
                     singleBar(limit)
                         .rotationEffect(.degrees(90))
-                        .frame(width: Self.barSize.height, height: Self.barSize.width + 6)
+                        .frame(width: Self.separateBarHeight, height: Self.separateBarWidth)
+                    percentLabel(limitPercent(limit))
+                        .fixedSize()
+                        .frame(height: Self.separateBarWidth)
                 }
             }
         }
@@ -193,7 +220,7 @@ struct ProviderStripItem: View {
         Text(limit?.id == "session" ? "h" : limit?.id == "weekly_all" ? "w" : "")
             .font(.system(size: 9, weight: .medium))
             .foregroundStyle(.secondary)
-            .frame(width: Self.barSize.width + 2)
+            .frame(width: Self.separateBarWidth, height: Self.barSize.width)
     }
 
     /// The vertical bar turned 90° clockwise, so both layouts show exactly the same bar.
@@ -219,7 +246,7 @@ struct ProviderStripItem: View {
         var lines = snapshot.limits.map { limit -> String in
             var line = "\(limit.label) · \(mode.percent(for: limit))% \(mode == .used ? "used" : "left")"
             if let reset = limit.resetsAt {
-                line += " · resets \(reset.formatted(.relative(presentation: .named)))"
+                line += " · resets \(ResetTime.text(for: reset, now: .now))"
             }
             return line
         }

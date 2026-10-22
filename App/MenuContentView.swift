@@ -6,6 +6,7 @@ struct MenuContentView: View {
     let onSettings: () -> Void
     let onSetup: () -> Void
     @ObservedObject private var updates = UpdateModel.shared
+    @State private var hoversRefresh = false
     @AppStorage("showDesktopPanel") private var showDesktopPanel = true
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
@@ -27,35 +28,45 @@ struct MenuContentView: View {
             } else {
                 ForEach(Array(viewModel.visibleSnapshots.enumerated()), id: \.element.provider) { index, snapshot in
                     if index > 0 { Divider() }
-                    ProviderSection(snapshot: snapshot, nextRefresh: viewModel.nextRefresh(for: snapshot.provider),
+                    ProviderSection(snapshot: snapshot,
                                     onRetry: { Task { await viewModel.refresh(manual: true) } },
                                     onSetup: onSetup)
                 }
                 if let updated = viewModel.board.latestFetchedAt {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
-                        Text("Updated \(RelativeAge.compact(from: updated, now: context.date))")
+                        Text(footer(updated: updated, now: context.date))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
             Divider()
             HStack(spacing: 14) {
-                Button { Task { await viewModel.refresh(manual: true) } } label: {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        ZStack {
-                            Image(systemName: "arrow.clockwise")
-                            if let end = viewModel.manualDebounceEnd(now: context.date) {
-                                let remaining = max(0, end.timeIntervalSince(context.date))
-                                PieWedge(fraction: min(1, remaining / 60))
-                                    .fill(.white.opacity(0.3))
-                                    .frame(width: 22, height: 22)
-                            }
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let waiting = viewModel.manualDebounceEnd(now: context.date) != nil
+                    Button { Task { await viewModel.refresh(manual: true) } } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(waiting)
+                    .help(waiting ? "" : "Refresh now")
+                    // A disabled button gets no hover, so a clear layer on top reads it while the button can't be clicked anyway.
+                    .overlay {
+                        if waiting {
+                            Color.clear.contentShape(Rectangle()).onHover { hoversRefresh = $0 }
                         }
                     }
-                    .frame(width: 24, height: 24)
                 }
-                .buttonStyle(.plain)
-                .help("Refresh now")
+                .overlay(alignment: .bottomLeading) {
+                    if hoversRefresh {
+                        TimelineView(.periodic(from: .now, by: 1)) { context in
+                            if let end = viewModel.manualDebounceEnd(now: context.date) {
+                                HoverHint(text: waitText(until: end, now: context.date))
+                            }
+                        }
+                        .offset(y: -28)
+                    }
+                }
 
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
@@ -84,6 +95,18 @@ struct MenuContentView: View {
         .frame(width: 280)
     }
 
+    /// One shared timer refreshes every provider, so the soonest refresh is the one shown.
+    private func footer(updated: Date, now: Date) -> String {
+        let updatedText = "Updated \(RelativeAge.compact(from: updated, now: now))"
+        guard let next = viewModel.visibleSnapshots.map({ viewModel.nextRefresh(for: $0.provider) }).min() else { return updatedText }
+        return "\(updatedText) · Next refresh \(RefreshCountdown.text(until: next, now: now))"
+    }
+
+    private func waitText(until end: Date, now: Date) -> String {
+        let seconds = max(1, Int(end.timeIntervalSince(now).rounded(.up)))
+        return "Try again in \(seconds) second\(seconds == 1 ? "" : "s")"
+    }
+
     private func confirmQuit() {
         let alert = NSAlert()
         alert.messageText = "Quit gas?"
@@ -102,6 +125,7 @@ struct LimitRow: View {
     let limit: UsageLimit
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
+    @State private var showsTimeLeft = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -112,26 +136,41 @@ struct LimitRow: View {
             }
             LimitBar(fraction: mode.fraction(for: limit), color: LimitPalette.color(for: limit))
             if let reset = limit.resetsAt {
-                Text("Resets \(reset.formatted(.relative(presentation: .named)))")
-                    .font(.caption2).foregroundStyle(.secondary)
+                HStack(spacing: 3) {
+                    TimelineView(.everyMinute) { context in
+                        Text("Resets \(ResetTime.text(for: reset, now: context.date))")
+                    }
+                    Image(systemName: "info.circle")
+                        .contentShape(Rectangle())
+                        .onHover { showsTimeLeft = $0 }
+                }
+                .font(.caption2).foregroundStyle(.secondary)
+                .overlay(alignment: .bottomLeading) {
+                    if showsTimeLeft {
+                        TimelineView(.periodic(from: .now, by: 1)) { context in
+                            HoverHint(text: ResetTime.remaining(until: reset, now: context.date))
+                        }
+                        .offset(y: -18)
+                    }
+                }
             }
         }
     }
 }
 
-/// A pie slice from 12 o'clock whose leading edge sweeps clockwise as `fraction` shrinks to zero.
-struct PieWedge: Shape {
-    var fraction: Double
+/// A hint drawn inside the menu: a popover is its own window, and opening it ends the hover that showed it.
+struct HoverHint: View {
+    let text: String
 
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        guard fraction > 0 else { return path }
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        path.move(to: center)
-        path.addArc(center: center, radius: min(rect.width, rect.height) / 2,
-                    startAngle: .degrees(-90 + 360 * (1 - fraction)), endAngle: .degrees(270),
-                    clockwise: false)
-        path.closeSubpath()
-        return path
+    var body: some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.15)))
+            .fixedSize()
+            .allowsHitTesting(false)
     }
 }

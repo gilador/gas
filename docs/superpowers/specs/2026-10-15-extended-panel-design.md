@@ -10,7 +10,7 @@ Some users want to read the two limits apart. A new **Extended** mode looks the 
 
 ## Behavior
 - **Setting:** a toggle in Settings → Display, "Separate bars", under "Show remaining". Both Display settings are toggles. Off by default. Stored in `@AppStorage("panelExtended")`. The panel switches at once.
-- **Same strip as compact:** icon, the one headline percent (the limit that blocks first), the bars, the age. The vertical panel stays 44 pt wide; the two 8 pt bars sit 4 pt apart.
+- **Same strip as compact:** icon, then one column per bar (its own percent above, the bar, the h/w letter), the age. No headline percent. The vertical panel is 80 pt wide so two "100%" labels (about 33 pt each) fit; horizontally each row is letter, bar, percent.
 - **Orientation is separate.** The flip pill still switches vertical and horizontal. In the horizontal panel the pair is turned 90° clockwise like the compact bar, so session is on top and weekly below.
 - **Bars:** session on the left, weekly on the right. Each is filled green, orange or red by its own severity, like the compact front layer. The per-model pointer (`weekly_scoped`) sits on the outer side of the weekly bar. Each bar has its own tooltip. A small letter names each bar: "h" under the session bar and "w" under the weekly bar (to the left of each bar in the horizontal panel, where the bars are turned one by one so the letters stay upright).
 - **Weekly-only plans (Codex):** when a provider reports no session limit, it shows **one** bar, the weekly one, the same as the compact strip. No empty slot. The same holds for a provider that reports only a session limit.
