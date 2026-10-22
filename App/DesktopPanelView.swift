@@ -33,7 +33,7 @@ struct DesktopPanelView: View {
             .onTapGesture(perform: onTap)
             .padding(horizontal ? EdgeInsets(top: 7, leading: 6, bottom: 7, trailing: 16)
                                 : EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4))
-            .frame(width: horizontal ? nil : 44, alignment: .topLeading)
+            .frame(width: horizontal ? nil : (extended ? 80 : 44), alignment: .topLeading)
             .modifier(PanelGlass(cornerRadius: 12))
             .overlay(alignment: .topLeading) {
                 if updates.showsDot {
@@ -99,7 +99,7 @@ struct DesktopPanelView: View {
             ForEach(Array(viewModel.visibleSnapshots.enumerated()), id: \.element.provider) { index, snapshot in
                 if index > 0 {
                     Rectangle().fill(.white.opacity(0.15))
-                        .frame(width: horizontal ? 1 : 26, height: horizontal ? 26 : 1)
+                        .frame(width: horizontal ? 1 : (extended ? 54 : 26), height: horizontal ? 26 : 1)
                 }
                 ProviderStripItem(snapshot: snapshot, alert: alerts.active[snapshot.provider], horizontal: horizontal,
                                   extended: extended)
