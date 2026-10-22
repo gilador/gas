@@ -12,6 +12,7 @@ struct PreferencesView: View {
     @AppStorage("criticalThreshold") private var criticalThreshold = 85.0
     @AppStorage("panelTransparency") private var panelTransparency = 0.05
     @AppStorage(DesktopPanelView.extendedKey) private var panelExtended = false
+    @AppStorage(DesktopPanelView.horizontalKey) private var panelHorizontal = false
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
@@ -43,6 +44,7 @@ struct PreferencesView: View {
                     set: { usageDisplayRaw = ($0 ? UsageDisplayMode.remaining : .used).rawValue }))
                 Toggle("Separate bars", isOn: $panelExtended)
                     .help("Floating panel: a session bar and a weekly bar side by side for each provider.")
+                Toggle("Horizontal panel", isOn: $panelHorizontal)
             }
             Section("Providers") {
                 ForEach(ProviderID.displayOrder, id: \.self) { provider in
