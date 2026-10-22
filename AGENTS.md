@@ -12,6 +12,7 @@ These rules apply to everyone who works on this repo, people and coding agents (
 - To run a Debug test copy, sign it ad-hoc **without** the hardened runtime: `codesign --force --deep --sign - build/Build/Products/Debug/AgentUsageApp.app`. With `--options runtime`, dyld rejects the Debug dylib and the app crashes at launch.
 - Write the test first for logic in `UsageCore`, watch it fail, then make it pass. Keep all tests passing.
 - Larger features get a spec in `docs/superpowers/specs/` and a plan in `docs/superpowers/plans/` before code.
+- A decision that shapes how gas looks or works, or that is easy to undo by accident, gets an ADR in `docs/adr/` (see its README). Read the related ADRs before changing such behavior.
 
 ## Code style
 
