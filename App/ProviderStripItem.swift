@@ -219,7 +219,7 @@ struct ProviderStripItem: View {
         var lines = snapshot.limits.map { limit -> String in
             var line = "\(limit.label) · \(mode.percent(for: limit))% \(mode == .used ? "used" : "left")"
             if let reset = limit.resetsAt {
-                line += " · resets \(reset.formatted(.relative(presentation: .named)))"
+                line += " · resets \(ResetTime.text(for: reset, now: .now))"
             }
             return line
         }
