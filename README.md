@@ -3,8 +3,7 @@
 A macOS menu bar app that shows how much of your **Claude** and **OpenAI (Codex / ChatGPT)** plan you have used: the 5-hour session limit, the weekly limit, and per-model weekly limits.
 
 <p align="center">
-  <img width="105" height="26" alt="image" src="https://github.com/user-attachments/assets/017c6623-d5d2-48bc-adb0-629e05b2704f" alt="gas in the menu bar" height="36"><br><br>
-  <img src="docs/images/menu-and-panel.png" alt="The gas menu next to the vertical floating panel" width="520">
+  <img src="docs/images/menu-and-panel.png" alt="The gas menu bar label, its menu, and the floating panel" width="407">
 </p>
 
 > Unofficial. gas is not affiliated with Anthropic or OpenAI. It reads endpoints that are not documented, so a provider change can stop it until gas is updated.
@@ -13,19 +12,12 @@ A macOS menu bar app that shows how much of your **Claude** and **OpenAI (Codex 
 
 - **Menu bar label:** the percent for each provider, at a glance.
 - **Menu:** each limit with its percent and reset time, and the time of the next refresh.
-- **Floating panel:** a small glass strip that stays on top, shown by default. Point to its edge to show a pill that switches it between a vertical and a horizontal layout. In Settings → Display, Separate bars splits each provider's bar into separate session and weekly bars; a plan with only a weekly limit shows one bar.
-
-  <img src="docs/images/panel-horizontal.png" alt="The floating panel in the horizontal layout" width="420">
-
+- **Floating panel:** a small glass strip that stays on top, shown by default. Drag it by the handle that shows when you point at it; the curved arrow next to the handle switches between a vertical and a horizontal layout. In Settings → Display, Separate bars splits each provider's bar into separate session and weekly bars; a plan with only a weekly limit shows one bar.
 - **Alerts:** a warning and a critical level (65% and 85% by default) that you can change.
 - **Remaining or Used:** show the percent left (the default), or the percent used.
 - **First-time setup:** if Claude Code or Codex CLI is missing or signed out, a setup window installs it with the official installer and opens the sign-in page, after one click.
 - **Claude token renewal:** when the Claude Code token expires, gas lets Claude Code renew it (see below).
 - **Copy diagnostics:** Settings → Troubleshooting copies a report with no tokens in it.
-
-<p align="center">
-  <img src="docs/images/settings.png" alt="The Settings window" width="320">
-</p>
 
 ## Requirements
 
