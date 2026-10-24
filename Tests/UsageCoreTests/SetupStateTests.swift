@@ -42,6 +42,46 @@ final class SetupStateTests: XCTestCase {
         XCTAssertEqual(CLITool.codex.parseLoginStatus(output: "", exitCode: nil), .unknown)
     }
 
+    func testGrokToolIsTheGrokCLIForXAI() {
+        XCTAssertEqual(CLITool.grok.provider, .xai)
+        XCTAssertEqual(CLITool.grok.displayName, "Grok CLI")
+        XCTAssertEqual(CLITool.grok.installerURL.absoluteString, "https://x.ai/cli/install.sh")
+        XCTAssertEqual(CLITool.grok.installerShell, "/bin/bash")
+        XCTAssertEqual(CLITool.grok.loginArguments, ["login"])
+    }
+
+    func testOnlyGrokChecksItsLoginWithoutRunningTheCLI() {
+        XCTAssertEqual(CLITool.claude.loginCheck, .command(["auth", "status"]))
+        XCTAssertEqual(CLITool.codex.loginCheck, .command(["login", "status"]))
+        XCTAssertEqual(CLITool.grok.loginCheck, .grokSignIn)
+    }
+
+    func testGrokLocatesItsOwnBinary() async {
+        let expected = "/tmp/home/.grok/bin/grok"
+        let found = await CLITool.grok.locate(home: "/tmp/home", isExecutable: { $0 == expected }, shellLookup: { _ in
+            XCTFail("Known path should avoid shell lookup")
+            return nil
+        })
+        XCTAssertEqual(found?.path, expected)
+    }
+
+    func testGrokLoginStatusComesFromTheSignInEntryAndItsExpiry() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        func status(_ result: Result<GrokAuth, Error>) -> LoginStatus {
+            CLITool.grokLoginStatus(reader: StubGrokAuthReader(result: result), now: now)
+        }
+        func auth(expiresIn seconds: TimeInterval) -> GrokAuth {
+            GrokAuth(accessToken: "fake-token", expiresAt: now.addingTimeInterval(seconds), accountFingerprint: "fp")
+        }
+        XCTAssertEqual(status(.success(auth(expiresIn: 3600))), .loggedIn)
+        XCTAssertEqual(status(.success(auth(expiresIn: 0))), .loggedOut)
+        XCTAssertEqual(status(.success(auth(expiresIn: -60))), .loggedOut)
+        XCTAssertEqual(status(.failure(GrokAuthError.notFound)), .loggedOut)
+        XCTAssertEqual(status(.failure(GrokAuthError.unreadable)), .unknown)
+        XCTAssertEqual(status(.failure(GrokAuthError.malformed)), .unknown)
+        XCTAssertEqual(status(.failure(GrokAuthError.ambiguous)), .unknown)
+    }
+
     func testLocateUsesKnownPathsBeforeShellAndFallsBackToLoginShell() async {
         let expected = "/tmp/home/.local/bin/claude"
         let known = await CLITool.claude.locate(home: "/tmp/home", isExecutable: { $0 == expected }, shellLookup: { _ in

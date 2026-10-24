@@ -15,7 +15,10 @@ struct ProviderIcon: View {
                 .frame(width: size, height: size)
                 .foregroundStyle(tint)
         } else {
-            Text(provider.glyph).font(.system(size: size))
+            Text(provider.glyph)
+                .font(.system(size: size * 0.85, weight: .semibold))
+                .frame(width: size, height: size)
+                .foregroundStyle(tint)
         }
     }
 

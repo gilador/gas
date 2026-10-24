@@ -4,6 +4,13 @@ import UsageCore
 struct SetupView: View {
     @ObservedObject var model: SetupModel
     let onDone: () -> Void
+    @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
+
+    static func shownProviders(xaiEnabled: Bool = ProviderSettings.isEnabled(.xai)) -> [ProviderID] {
+        ProviderID.displayOrder.filter { $0 != .xai || xaiEnabled }
+    }
+
+    static func height(rows: Int) -> CGFloat { 160 + 90 * CGFloat(rows) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -11,7 +18,7 @@ struct SetupView: View {
                 .font(.title2.bold())
             Text("Connect the tools gas uses to read your usage.")
                 .foregroundStyle(.secondary)
-            ForEach(ProviderID.displayOrder, id: \.self) { provider in
+            ForEach(Self.shownProviders(xaiEnabled: xaiEnabled), id: \.self) { provider in
                 if provider != .claude { Divider() }
                 row(provider)
             }
@@ -23,7 +30,8 @@ struct SetupView: View {
             }
         }
         .padding(22)
-        .frame(width: 500, height: 340)
+        .frame(width: 500, alignment: .topLeading)
+        .frame(minHeight: Self.height(rows: 2), maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func row(_ provider: ProviderID) -> some View {
@@ -78,13 +86,20 @@ struct SetupView: View {
         state == .installing || state == .waitingForSignIn || state == .readingUsage
     }
 
+    private func installerSource(_ provider: ProviderID) -> String {
+        switch provider {
+        case .claude: return "Anthropic's"
+        case .openai: return "OpenAI's"
+        case .xai: return "xAI's"
+        }
+    }
+
     private func statusText(_ state: SetupState, provider: ProviderID) -> String {
         switch state {
         case .ready: return "Ready"
         case .cliMissing:
-            let tool = provider == .claude ? "Claude Code" : "Codex CLI"
-            let source = provider == .claude ? "Anthropic's" : "OpenAI's"
-            return "\(tool) is not installed. Set up downloads \(source) official installer and opens the sign-in page."
+            let tool = CLITool.allCases.first { $0.provider == provider }?.displayName ?? provider.clientName
+            return "\(tool) is not installed. Set up downloads \(installerSource(provider)) official installer and opens the sign-in page."
         case .notLoggedIn:
             return "Not logged in. Sign in opens the sign-in page in your browser."
         case .rateLimited(let until):

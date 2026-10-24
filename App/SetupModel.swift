@@ -86,9 +86,14 @@ private struct AppSetupRunner: SetupRunner {
     }
 
     func checkLogin(_ tool: CLITool, executable: URL) async -> LoginStatus {
-        let result = await ProcessRunner.run(executable: executable, arguments: tool.statusArguments,
-                                             timeout: 10, captureOutput: true)
-        return tool.parseLoginStatus(output: result.output, exitCode: result.exitCode)
+        switch tool.loginCheck {
+        case .grokSignIn:
+            return await Task.detached { CLITool.grokLoginStatus(reader: FileGrokAuthReader()) }.value
+        case .command(let arguments):
+            let result = await ProcessRunner.run(executable: executable, arguments: arguments,
+                                                 timeout: 10, captureOutput: true)
+            return tool.parseLoginStatus(output: result.output, exitCode: result.exitCode)
+        }
     }
 
     func sleepForStatusCheck() async {
