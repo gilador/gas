@@ -139,7 +139,7 @@ struct ProviderStripItem: View {
                     .fill(LimitPalette.frontLayerColor(for: front))
                     .frame(height: Self.barSize.height * mode.fraction(for: front))
             }
-            if let weekly, back != nil {
+            if let weekly {
                 Color.clear
                     .frame(width: Self.barSize.width + 6, height: 10)
                     .overlay(Rectangle().fill(.white).frame(height: 2))

@@ -20,37 +20,48 @@ final class LineBuffer: @unchecked Sendable {
 public enum UsageLog {
     private static let network = Logger(subsystem: "com.gilad.agentusage", category: "network")
     private static let recent = LineBuffer(capacity: 50)
+    private static let secretPatterns = [
+        #"Bearer\s+\S+"#,
+        #"[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"#,
+        #"[A-Za-z0-9_\-+/=]{32,}"#
+    ].map { try! NSRegularExpression(pattern: $0) }
 
     public static func recentLines() -> [String] { recent.lines }
 
-    /// Status, Retry-After and the error type and message only; never headers, tokens or the raw body.
+    /// Only what gas derives itself: status, its category, a validated Retry-After and the body size.
     static func response(_ provider: ProviderID, _ response: HTTPURLResponse, data: Data) {
-        let retryAfter = response.value(forHTTPHeaderField: "Retry-After") ?? "-"
-        var line = "\(provider.rawValue) HTTP \(response.statusCode) retry-after=\(retryAfter)"
-        if !(200..<300).contains(response.statusCode) {
-            line += " error=\(errorSummary(data))"
-        }
-        record(line)
+        let retryAfter = RetryAfter.logValue(response.value(forHTTPHeaderField: "Retry-After"))
+        record("\(provider.rawValue) HTTP \(response.statusCode) \(category(response.statusCode)) retry-after=\(retryAfter) bytes=\(data.count)")
     }
 
     static func networkError(_ provider: ProviderID, _ error: URLError) {
         record("\(provider.rawValue) network error \(error.code.rawValue)")
     }
 
-    static func errorSummary(_ data: Data) -> String {
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let error = json["error"] as? [String: Any],
-              let type = (error["type"] ?? error["code"]) as? String else {
-            return "unrecognized body (\(data.count) bytes)"
+    static func category(_ status: Int) -> String {
+        switch status {
+        case 200..<300: return "ok"
+        case 401: return "unauthorized"
+        case 403: return "forbidden"
+        case 429: return "rate_limited"
+        case 400..<500: return "client_error"
+        case 500..<600: return "server_error"
+        default: return "other"
         }
-        guard let message = error["message"] as? String, !message.isEmpty else { return type }
-        return "\(type): \(message.prefix(200))"
+    }
+
+    static func redact(_ line: String) -> String {
+        secretPatterns.reduce(line) { text, pattern in
+            pattern.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text),
+                                             withTemplate: "[redacted]")
+        }
     }
 
     public static func note(_ line: String) { record(line) }
 
     private static func record(_ line: String) {
-        network.log("\(line, privacy: .public)")
-        recent.append("\(ISO8601DateFormatter().string(from: Date())) \(line)")
+        let safe = redact(line)
+        network.log("\(safe, privacy: .public)")
+        recent.append("\(ISO8601DateFormatter().string(from: Date())) \(safe)")
     }
 }

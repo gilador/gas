@@ -15,7 +15,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
     func testRequestsOAuthUsagePathWithBetaHeader() async throws {
         let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
         let token = ClaudeToken(accessToken: "t", expiresAt: Date().addingTimeInterval(3600))
-        let snap = try await provider(token: .success(token), client: spy).fetch()
+        let snap = try await provider(token: .success(token), client: spy).fetch().snapshot
         XCTAssertEqual(snap.status, .ok)
         XCTAssertEqual(snap.limits.count, 3)
         XCTAssertEqual(spy.calls.count, 1)
@@ -26,32 +26,32 @@ final class ClaudeUsageProviderTests: XCTestCase {
     func testSendsClaudeCodeUserAgent() async throws {
         let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
         let token = ClaudeToken(accessToken: "t", expiresAt: nil)
-        _ = try await provider(token: .success(token), client: spy).fetch()
+        _ = try await provider(token: .success(token), client: spy).fetch().snapshot
         XCTAssertEqual(spy.calls[0].headers["User-Agent"], "claude-code/2.1.281")
     }
 
     func testAccessDeniedReturnsKeychainDenied() async throws {
         let snap = try await provider(token: .failure(TokenReaderError.accessDenied),
-                                      client: SpyHTTPClient()).fetch()
+                                      client: SpyHTTPClient()).fetch().snapshot
         XCTAssertEqual(snap.status, .keychainDenied)
     }
 
     func testExpiredTokenMessageNamesClaudeCode() async throws {
         let token = ClaudeToken(accessToken: "t", expiresAt: Date().addingTimeInterval(-10))
-        let snap = try await provider(token: .success(token), client: SpyHTTPClient()).fetch()
+        let snap = try await provider(token: .success(token), client: SpyHTTPClient()).fetch().snapshot
         XCTAssertEqual(snap.status, .stale(reason: "Token expired — open Claude Code to refresh"))
     }
 
     func test401MessageNamesClaudeCode() async throws {
         let token = ClaudeToken(accessToken: "t", expiresAt: nil)
-        let snap = try await provider(token: .success(token), client: SpyHTTPClient(statusCode: 401)).fetch()
+        let snap = try await provider(token: .success(token), client: SpyHTTPClient(statusCode: 401)).fetch().snapshot
         XCTAssertEqual(snap.status, .stale(reason: "Unauthorized — open Claude Code to refresh"))
     }
 
     func test429WithRetryAfterIsRateLimited() async throws {
         let token = ClaudeToken(accessToken: "t", expiresAt: nil)
         let client = SpyHTTPClient(statusCode: 429, responseHeaders: ["Retry-After": "850"])
-        let snap = try await provider(token: .success(token), client: client).fetch()
+        let snap = try await provider(token: .success(token), client: client).fetch().snapshot
         guard case .rateLimited(let until, let wait) = snap.status else { return XCTFail("expected .rateLimited, got \(snap.status)") }
         XCTAssertEqual(wait, 850)
         XCTAssertEqual(until.timeIntervalSince(snap.fetchedAt), 850, accuracy: 0.001)
@@ -60,7 +60,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
 
     func test429WithoutRetryAfterHasZeroWait() async throws {
         let token = ClaudeToken(accessToken: "t", expiresAt: nil)
-        let snap = try await provider(token: .success(token), client: SpyHTTPClient(statusCode: 429)).fetch()
+        let snap = try await provider(token: .success(token), client: SpyHTTPClient(statusCode: 429)).fetch().snapshot
         guard case .rateLimited(_, let wait) = snap.status else { return XCTFail("expected .rateLimited") }
         XCTAssertEqual(wait, 0)
     }
@@ -73,18 +73,13 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).manualMinimumInterval, 60)
     }
 
-    func testCredentialFingerprintChangesWithTheTokenAndHidesIt() {
-        let a = provider(token: .success(ClaudeToken(accessToken: "token-a", expiresAt: nil)),
-                         client: SpyHTTPClient()).credentialFingerprint()
-        let b = provider(token: .success(ClaudeToken(accessToken: "token-b", expiresAt: nil)),
-                         client: SpyHTTPClient()).credentialFingerprint()
-        XCTAssertNotNil(a)
-        XCTAssertNotEqual(a, b)
-        XCTAssertFalse(a?.contains("token-a") ?? true)
-    }
-
-    func testCredentialFingerprintIsNilWithoutAToken() {
-        XCTAssertNil(provider(token: .failure(TokenReaderError.notFound), client: SpyHTTPClient()).credentialFingerprint())
+    func testCredentialFingerprintIsNilBecauseTheTokenHasNoAccount() async throws {
+        let claude = provider(token: .success(ClaudeToken(accessToken: "token-a", expiresAt: nil)),
+                              client: SpyHTTPClient(statusCode: 429))
+        XCTAssertNil(claude.credentialFingerprint())
+        let outcome = try await claude.fetch()
+        XCTAssertTrue(outcome.requestSent)
+        XCTAssertNil(outcome.credentialFingerprint)
     }
 
     private let expired = ClaudeToken(accessToken: "old", expiresAt: Date().addingTimeInterval(-60))
@@ -95,7 +90,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let spy = SpyHTTPClient(data: try Fixtures.data("usage_response"), statusCode: 200)
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired), .success(fresh)]),
                                          httpClient: spy, baseURL: base, renewer: renewer)
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         XCTAssertEqual(snap.status, .ok)
         XCTAssertEqual(renewer.calls, 1)
         XCTAssertEqual(spy.calls.map { $0.headers["Authorization"] }, ["Bearer fresh"])
@@ -105,7 +100,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let spy = SpyHTTPClient()
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired)]),
                                          httpClient: spy, baseURL: base, renewer: StubRenewer(result: .failed))
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         XCTAssertEqual(snap.status, .needsSignIn)
         XCTAssertTrue(spy.calls.isEmpty)
     }
@@ -114,7 +109,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let spy = SpyHTTPClient()
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired)]),
                                          httpClient: spy, baseURL: base, renewer: StubRenewer(result: .unavailable))
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         XCTAssertEqual(snap.status, .stale(reason: "Couldn't renew — open Claude Code"))
         XCTAssertTrue(spy.calls.isEmpty)
     }
@@ -123,7 +118,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let spy = SpyHTTPClient()
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired)]),
                                          httpClient: spy, baseURL: base, renewer: StubRenewer(result: .renewed))
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         XCTAssertEqual(snap.status, .stale(reason: "Couldn't renew — open Claude Code"))
         XCTAssertTrue(spy.calls.isEmpty)
     }
@@ -132,7 +127,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let renewer = StubRenewer(isEnabled: false, result: .renewed)
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(expired)]),
                                          httpClient: SpyHTTPClient(), baseURL: base, renewer: renewer)
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         XCTAssertEqual(snap.status, .stale(reason: "Token expired — open Claude Code to refresh"))
         XCTAssertEqual(renewer.calls, 0)
     }
@@ -145,7 +140,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let renewer = StubRenewer(result: .failed)
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(stale)]),
                                          httpClient: http, baseURL: base, renewer: renewer)
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         XCTAssertEqual(snap.status, .needsSignIn)
         XCTAssertEqual(renewer.calls, 1)
     }
@@ -154,11 +149,11 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let http = SequenceHTTPClient(statuses: [429])
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(stale), .success(stale), .success(relogged)]),
                                          httpClient: http, baseURL: base, renewer: StubRenewer(result: .failed))
-        _ = try await claude.fetch()
-        let again = try await claude.fetch()
+        _ = try await claude.fetch().snapshot
+        let again = try await claude.fetch().snapshot
         XCTAssertEqual(again.status, .needsSignIn)
         XCTAssertEqual(http.authorizations, ["Bearer stale"])
-        _ = try await claude.fetch()
+        _ = try await claude.fetch().snapshot
         XCTAssertEqual(http.authorizations, ["Bearer stale", "Bearer relogged"])
     }
 
@@ -166,7 +161,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let http = SequenceHTTPClient(statuses: [429, 200], data: try Fixtures.data("usage_response"))
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(stale), .success(relogged)]),
                                          httpClient: http, baseURL: base, renewer: StubRenewer(result: .renewed))
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         XCTAssertEqual(snap.status, .ok)
         XCTAssertEqual(http.authorizations, ["Bearer stale", "Bearer relogged"])
     }
@@ -176,7 +171,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let renewer = StubRenewer(result: .renewed)
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(stale)]),
                                          httpClient: http, baseURL: base, renewer: renewer)
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         guard case .rateLimited = snap.status else { return XCTFail("expected .rateLimited, got \(snap.status)") }
         XCTAssertEqual(http.authorizations, ["Bearer stale"])
         XCTAssertEqual(renewer.calls, 1)
@@ -186,8 +181,32 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let renewer = StubRenewer(isEnabled: false, result: .failed)
         let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(stale)]),
                                          httpClient: SequenceHTTPClient(statuses: [429]), baseURL: base, renewer: renewer)
-        let snap = try await claude.fetch()
+        let snap = try await claude.fetch().snapshot
         guard case .rateLimited = snap.status else { return XCTFail("expected .rateLimited, got \(snap.status)") }
         XCTAssertEqual(renewer.calls, 0)
+    }
+
+    func testARejectedTokenCountsAsASentRequest() async throws {
+        let claude = ClaudeUsageProvider(tokenReader: SequenceTokenReader([.success(stale)]),
+                                         httpClient: SequenceHTTPClient(statuses: [429]), baseURL: base,
+                                         renewer: StubRenewer(result: .failed))
+        let rejected = try await claude.fetch()
+        XCTAssertEqual(rejected.snapshot.status, .needsSignIn)
+        XCTAssertTrue(rejected.requestSent)
+        let remembered = try await claude.fetch()
+        XCTAssertEqual(remembered.snapshot.status, .needsSignIn)
+        XCTAssertFalse(remembered.requestSent)
+    }
+
+    func test429HonorsAnHTTPDateRetryAfter() async throws {
+        let date = Date().addingTimeInterval(600)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "GMT")
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+        let client = SpyHTTPClient(statusCode: 429, responseHeaders: ["Retry-After": formatter.string(from: date)])
+        let snap = try await provider(token: .success(ClaudeToken(accessToken: "t", expiresAt: nil)), client: client).fetch().snapshot
+        guard case .rateLimited(_, let wait) = snap.status else { return XCTFail("expected .rateLimited") }
+        XCTAssertEqual(wait, 600, accuracy: 2)
     }
 }

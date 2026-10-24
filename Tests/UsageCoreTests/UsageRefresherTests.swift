@@ -181,6 +181,7 @@ final class UsageRefresherTests: XCTestCase {
     func testKeychainDeniedIsNotStamped() async {
         let claude = CountingUsageProvider(id: .claude, result: .success(
             snap(.claude, status: .keychainDenied)), minimumInterval: 3600)
+        claude.requestSent = false
         let board = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
         XCTAssertNil(board.lastRequest(for: .claude))
     }
@@ -188,6 +189,7 @@ final class UsageRefresherTests: XCTestCase {
     func testNeedsSignInIsNotStamped() async {
         let claude = CountingUsageProvider(id: .claude, result: .success(
             snap(.claude, status: .needsSignIn)), minimumInterval: 3600)
+        claude.requestSent = false
         let board = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
         XCTAssertNil(board.lastRequest(for: .claude))
     }
@@ -250,6 +252,7 @@ final class UsageRefresherTests: XCTestCase {
             snap(.claude, fetchedAt: 10_000, status: .rateLimited(until: now, wait: 1555))),
                                            minimumInterval: 270)
         claude.fingerprint = fingerprint
+        claude.sentFingerprint = fingerprint
         return claude
     }
 
@@ -281,5 +284,55 @@ final class UsageRefresherTests: XCTestCase {
         let limited = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
         let json = String(decoding: try JSONEncoder().encode(limited), as: UTF8.self)
         XCTAssertFalse(json.contains("fp-4f2a"))
+    }
+
+    func testARejectedCredentialIsStampedAndNotResentBeforeTheInterval() async {
+        let claude = CountingUsageProvider(id: .claude, result: .success(snap(.claude, status: .needsSignIn)),
+                                           minimumInterval: 270)
+        let rejected = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        XCTAssertEqual(rejected.lastRequest(for: .claude), now)
+        _ = await UsageRefresher.refresh(rejected, providers: [claude], now: now.addingTimeInterval(60))
+        _ = await UsageRefresher.refresh(rejected, providers: [claude], now: now.addingTimeInterval(30), manual: true)
+        XCTAssertEqual(claude.calls, 1)
+    }
+
+    func testAnUnauthorizedResponseIsNotRetriedBeforeTheInterval() async {
+        let openai = CountingUsageProvider(id: .openai, result: .success(
+            snap(.openai, status: .stale(reason: "Unauthorized"))), minimumInterval: 270)
+        let first = await UsageRefresher.refresh(UsageBoard(), providers: [openai], now: now)
+        _ = await UsageRefresher.refresh(first, providers: [openai], now: now.addingTimeInterval(269))
+        XCTAssertEqual(openai.calls, 1)
+        _ = await UsageRefresher.refresh(first, providers: [openai], now: now.addingTimeInterval(270))
+        XCTAssertEqual(openai.calls, 2)
+    }
+
+    func testAThrowingFetchStillCounts() async {
+        let claude = CountingUsageProvider(id: .claude, result: .failure(StubError()), minimumInterval: 270)
+        let board = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        XCTAssertEqual(board.lastRequest(for: .claude), now)
+    }
+
+    func testTheWaitBelongsToTheAccountThatWasSent() async {
+        let codex = rateLimitedClaude(fingerprint: "acct-B")
+        codex.sentFingerprint = "acct-A"
+        let limited = await UsageRefresher.refresh(UsageBoard(), providers: [codex], now: now)
+        _ = await UsageRefresher.refresh(limited, providers: [codex], now: now.addingTimeInterval(600))
+        XCTAssertEqual(codex.calls, 2)
+    }
+
+    func testATokenRotationWithoutAnAccountDoesNotEndTheWait() async {
+        let claude = rateLimitedClaude(fingerprint: nil)
+        let limited = await UsageRefresher.refresh(UsageBoard(), providers: [claude], now: now)
+        _ = await UsageRefresher.refresh(limited, providers: [claude], now: now.addingTimeInterval(600))
+        XCTAssertEqual(claude.calls, 1)
+    }
+
+    func testTheRejectedCredentialKeepsTheLastGoodValues() async {
+        let previous = UsageBoard(snapshots: [snap(.claude, limits: [limit(40)], fetchedAt: 100)])
+        let claude = CountingUsageProvider(id: .claude, result: .success(
+            snap(.claude, fetchedAt: 200, status: .needsSignIn)))
+        let board = await UsageRefresher.refresh(previous, providers: [claude], now: now)
+        XCTAssertEqual(board.snapshot(for: .claude)?.limits, [limit(40)])
+        XCTAssertEqual(board.snapshot(for: .claude)?.status, .needsSignIn)
     }
 }

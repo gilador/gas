@@ -13,7 +13,7 @@ public struct ProviderLimit: Equatable, Sendable {
 public struct UsageBoard: Codable, Sendable, Equatable {
     public private(set) var snapshots: [UsageSnapshot]
     private var lastRequests: [String: Date]
-    /// In memory only: the credential hash that got the last 429, per provider.
+    /// In memory only: the account whose request got the last 429, per provider.
     private var rateLimitedCredentials: [String: String] = [:]
 
     public init(snapshots: [UsageSnapshot] = []) {

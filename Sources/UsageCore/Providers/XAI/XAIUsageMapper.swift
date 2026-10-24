@@ -1,0 +1,19 @@
+import Foundation
+
+enum XAIUsageMapper {
+    static func map(_ config: XAIBillingResponse.Config?, warning: Double, critical: Double) -> [UsageLimit] {
+        guard let config, let percent = config.creditUsagePercent else { return [] }
+        let (id, label) = period(config.currentPeriod?.type)
+        return [UsageLimit(id: id, label: label, percentUsed: percent,
+                           resetsAt: ClaudeDate.parse(config.currentPeriod?.end) ?? ClaudeDate.parse(config.billingPeriodEnd),
+                           severity: Severity.from(percent: percent, warning: warning, critical: critical))]
+    }
+
+    private static func period(_ type: String?) -> (id: String, label: String) {
+        switch type {
+        case "USAGE_PERIOD_TYPE_WEEKLY": return ("weekly_all", "Weekly (Grok CLI)")
+        case "USAGE_PERIOD_TYPE_MONTHLY": return ("monthly", "Monthly (Grok CLI)")
+        default: return ("monthly", "Grok CLI usage")
+        }
+    }
+}

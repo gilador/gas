@@ -6,8 +6,9 @@ final class RateLimitBackoffTests: XCTestCase {
         XCTAssertEqual(RateLimitBackoff.wait(retryAfter: 850, previous: nil), 850)
         XCTAssertEqual(RateLimitBackoff.wait(retryAfter: 850, previous: .rateLimited(until: Date(), wait: 3600)), 850)
     }
-    func testServerValueIsCapped() {
-        XCTAssertEqual(RateLimitBackoff.wait(retryAfter: 99_999, previous: nil), 7200)
+    func testServerValueIsHonoredUpToADay() {
+        XCTAssertEqual(RateLimitBackoff.wait(retryAfter: 10_000, previous: nil), 10_000)
+        XCTAssertEqual(RateLimitBackoff.wait(retryAfter: 99_999, previous: nil), 86_400)
     }
     func testNoHeaderStartsAtFifteenMinutes() {
         XCTAssertEqual(RateLimitBackoff.wait(retryAfter: 0, previous: nil), 900)

@@ -1,0 +1,10 @@
+{
+  "https://auth.x.ai::b1a00492-073a-47ea-816f-4c329264a828": {
+    "key": "SECRET-MARKER-1",
+    "expires_at": "2026-01-05T15:55:50.809713Z",
+    "user_id": "user-placeholder-1",
+    "refresh_token": "SECRET-MARKER-REFRESH",
+    "email": "user@example.com",
+    "token_type": "Bearer"
+  }
+}

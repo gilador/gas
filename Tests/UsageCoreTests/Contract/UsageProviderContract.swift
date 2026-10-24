@@ -35,7 +35,7 @@ enum UsageProviderContract {
         ]
         for outcome in CredentialOutcome.allCases {
             for client in clients {
-                do { _ = try await s.make(outcome, client).fetch() }
+                do { _ = try await s.make(outcome, client).fetch().snapshot }
                 catch { XCTFail("threw for \(outcome) / \(type(of: client)): \(error)", file: file, line: line) }
             }
         }
@@ -46,7 +46,7 @@ enum UsageProviderContract {
                                     file: StaticString = #filePath, line: UInt = #line) async throws {
         let p = s.make(.valid, SpyHTTPClient(data: try fixture(s), statusCode: 200))
         XCTAssertEqual(p.id, s.expectedID, file: file, line: line)
-        let snap = try await p.fetch()
+        let snap = try await p.fetch().snapshot
         XCTAssertEqual(snap.provider, s.expectedID, file: file, line: line)
     }
 
@@ -61,7 +61,7 @@ enum UsageProviderContract {
             (.valid, SpyHTTPClient(data: "{".data(using: .utf8)!, statusCode: 200))
         ]
         for (outcome, client) in cases {
-            let snap = try await s.make(outcome, client).fetch()
+            let snap = try await s.make(outcome, client).fetch().snapshot
             XCTAssertNotEqual(snap.status, .ok, "\(outcome)", file: file, line: line)
             XCTAssertTrue(snap.limits.isEmpty, "\(outcome) \(type(of: client))", file: file, line: line)
         }
@@ -70,7 +70,7 @@ enum UsageProviderContract {
     /// C4: valid fixture ⇒ expected limit count and severities derived from thresholds.
     static func c4OkMapsFixture(_ s: ProviderContractSubject,
                                 file: StaticString = #filePath, line: UInt = #line) async throws {
-        let snap = try await s.make(.valid, SpyHTTPClient(data: try fixture(s), statusCode: 200)).fetch()
+        let snap = try await s.make(.valid, SpyHTTPClient(data: try fixture(s), statusCode: 200)).fetch().snapshot
         XCTAssertEqual(snap.status, .ok, file: file, line: line)
         XCTAssertEqual(snap.limits.count, s.expectedLimitCount, file: file, line: line)
         for limit in snap.limits {
@@ -85,7 +85,7 @@ enum UsageProviderContract {
     /// C5: credential not found ⇒ .needsSignIn.
     static func c5NotFoundNeedsSignIn(_ s: ProviderContractSubject,
                                       file: StaticString = #filePath, line: UInt = #line) async throws {
-        let snap = try await s.make(.notFound, SpyHTTPClient()).fetch()
+        let snap = try await s.make(.notFound, SpyHTTPClient()).fetch().snapshot
         XCTAssertEqual(snap.status, .needsSignIn, file: file, line: line)
     }
 
@@ -93,7 +93,7 @@ enum UsageProviderContract {
     static func c6ExpiredIsStaleWithoutNetwork(_ s: ProviderContractSubject,
                                                file: StaticString = #filePath, line: UInt = #line) async throws {
         let spy = SpyHTTPClient()
-        let snap = try await s.make(.expired, spy).fetch()
+        let snap = try await s.make(.expired, spy).fetch().snapshot
         guard case .stale = snap.status else {
             return XCTFail("expected .stale, got \(snap.status)", file: file, line: line)
         }
@@ -107,15 +107,15 @@ enum UsageProviderContract {
         func isError(_ st: FetchStatus) -> Bool { if case .error = st { return true }; return false }
         func isRateLimited(_ st: FetchStatus) -> Bool { if case .rateLimited = st { return true }; return false }
 
-        let status401 = try await s.make(.valid, SpyHTTPClient(statusCode: 401)).fetch().status
+        let status401 = try await s.make(.valid, SpyHTTPClient(statusCode: 401)).fetch().snapshot.status
         XCTAssertTrue(isStale(status401), "401", file: file, line: line)
-        let status429 = try await s.make(.valid, SpyHTTPClient(statusCode: 429)).fetch().status
+        let status429 = try await s.make(.valid, SpyHTTPClient(statusCode: 429)).fetch().snapshot.status
         XCTAssertTrue(isRateLimited(status429), "429", file: file, line: line)
-        let status500 = try await s.make(.valid, SpyHTTPClient(statusCode: 500)).fetch().status
+        let status500 = try await s.make(.valid, SpyHTTPClient(statusCode: 500)).fetch().snapshot.status
         XCTAssertTrue(isError(status500), "500", file: file, line: line)
-        let statusURLError = try await s.make(.valid, ThrowingHTTPClient(error: URLError(.notConnectedToInternet))).fetch().status
+        let statusURLError = try await s.make(.valid, ThrowingHTTPClient(error: URLError(.notConnectedToInternet))).fetch().snapshot.status
         XCTAssertTrue(isStale(statusURLError), "URLError", file: file, line: line)
-        let statusBadJSON = try await s.make(.valid, SpyHTTPClient(data: "{".data(using: .utf8)!, statusCode: 200)).fetch().status
+        let statusBadJSON = try await s.make(.valid, SpyHTTPClient(data: "{".data(using: .utf8)!, statusCode: 200)).fetch().snapshot.status
         XCTAssertTrue(isError(statusBadJSON), "bad JSON", file: file, line: line)
     }
 
@@ -123,7 +123,7 @@ enum UsageProviderContract {
     static func c8SendsBearerOnce(_ s: ProviderContractSubject,
                                   file: StaticString = #filePath, line: UInt = #line) async throws {
         let spy = SpyHTTPClient(data: try fixture(s), statusCode: 200)
-        _ = try await s.make(.valid, spy).fetch()
+        _ = try await s.make(.valid, spy).fetch().snapshot
         XCTAssertEqual(spy.calls.count, 1, file: file, line: line)
         XCTAssertEqual(spy.calls.first?.headers["Authorization"], "Bearer \(token)", file: file, line: line)
     }
@@ -132,7 +132,7 @@ enum UsageProviderContract {
     static func c9FetchedAtIsNow(_ s: ProviderContractSubject,
                                  file: StaticString = #filePath, line: UInt = #line) async throws {
         let before = Date()
-        let snap = try await s.make(.valid, SpyHTTPClient(data: try fixture(s), statusCode: 200)).fetch()
+        let snap = try await s.make(.valid, SpyHTTPClient(data: try fixture(s), statusCode: 200)).fetch().snapshot
         let after = Date()
         XCTAssertGreaterThanOrEqual(snap.fetchedAt, before, file: file, line: line)
         XCTAssertLessThanOrEqual(snap.fetchedAt, after, file: file, line: line)
@@ -143,5 +143,18 @@ enum UsageProviderContract {
                                               file: StaticString = #filePath, line: UInt = #line) {
         let p = s.make(.valid, SpyHTTPClient())
         XCTAssertGreaterThanOrEqual(p.minimumInterval, 0, file: file, line: line)
+    }
+
+    /// C11: requestSent is true exactly when an HTTP request went out.
+    static func c11RequestSentMatchesTheNetwork(_ s: ProviderContractSubject,
+                                                file: StaticString = #filePath, line: UInt = #line) async throws {
+        let bodies: [(Data, Int)] = [(try fixture(s), 200), (Data(), 401), (Data(), 403), (Data(), 429), (Data(), 500)]
+        for credential in CredentialOutcome.allCases {
+            for (data, status) in bodies {
+                let spy = SpyHTTPClient(data: data, statusCode: status)
+                let outcome = try await s.make(credential, spy).fetch()
+                XCTAssertEqual(outcome.requestSent, !spy.calls.isEmpty, "\(credential) \(status)", file: file, line: line)
+            }
+        }
     }
 }

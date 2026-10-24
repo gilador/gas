@@ -3,9 +3,6 @@ import Foundation
 
 public struct ClaudeUsageProvider: UsageProvider {
     public let id: ProviderID = .claude
-    /// Just under the 5-minute tick, so timer jitter does not skip every second call.
-    public let minimumInterval: TimeInterval = 5 * 60 - 30
-    public let manualMinimumInterval: TimeInterval = 60
     public static let userAgent = "claude-code/2.1.281"
 
     private let tokenReader: TokenReader
@@ -28,44 +25,44 @@ public struct ClaudeUsageProvider: UsageProvider {
         self.renewer = renewer
     }
 
-    public func fetch() async throws -> UsageSnapshot {
+    public func fetch() async throws -> FetchOutcome {
         let now = Date()
 
         var token: ClaudeToken
         do {
             token = try tokenReader.readClaudeToken()
         } catch TokenReaderError.notFound {
-            return snapshot(now, .needsSignIn)
+            return notSent(now, .needsSignIn)
         } catch TokenReaderError.accessDenied {
-            return snapshot(now, .keychainDenied)
+            return notSent(now, .keychainDenied)
         } catch {
-            return snapshot(now, .error(message: "Keychain access error"))
+            return notSent(now, .error(message: "Keychain access error"))
         }
 
         if loggedOut.contains(Self.fingerprint(of: token)) {
-            return snapshot(now, .needsSignIn)
+            return notSent(now, .needsSignIn)
         }
 
         if let expiry = token.expiresAt, expiry <= now {
             guard let renewer, renewer.isEnabled else {
-                return snapshot(now, .stale(reason: "Token expired — open Claude Code to refresh"))
+                return notSent(now, .stale(reason: "Token expired — open Claude Code to refresh"))
             }
             switch await renewer.renew() {
             case .failed:
                 loggedOut.insert(Self.fingerprint(of: token))
-                return snapshot(now, .needsSignIn)
+                return notSent(now, .needsSignIn)
             case .unavailable:
-                return snapshot(now, .stale(reason: "Couldn't renew — open Claude Code"))
+                return notSent(now, .stale(reason: "Couldn't renew — open Claude Code"))
             case .renewed:
                 guard let renewed = try? tokenReader.readClaudeToken(),
                       (renewed.expiresAt ?? .distantFuture) > Date() else {
-                    return snapshot(now, .stale(reason: "Couldn't renew — open Claude Code"))
+                    return notSent(now, .stale(reason: "Couldn't renew — open Claude Code"))
                 }
                 token = renewed
             }
         }
 
-        return await request(with: token, now: now, mayRenew: true)
+        return FetchOutcome(snapshot: await request(with: token, now: now, mayRenew: true), requestSent: true)
     }
 
     private func request(with token: ClaudeToken, now: Date, mayRenew: Bool) async -> UsageSnapshot {
@@ -99,7 +96,7 @@ public struct ClaudeUsageProvider: UsageProvider {
                         break
                     }
                 }
-                let retryAfter = RetryAfter.seconds(from: response)
+                let retryAfter = RetryAfter.seconds(from: response, now: now)
                 return snapshot(now, .rateLimited(until: now.addingTimeInterval(retryAfter), wait: retryAfter))
             }
             guard (200..<300).contains(response.statusCode) else {
@@ -120,12 +117,12 @@ public struct ClaudeUsageProvider: UsageProvider {
         }
     }
 
-    public func credentialFingerprint() -> String? {
-        (try? tokenReader.readClaudeToken()).map(Self.fingerprint(of:))
-    }
-
     private static func fingerprint(of token: ClaudeToken) -> String {
         SHA256.hash(data: Data(token.accessToken.utf8)).prefix(8).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func notSent(_ now: Date, _ status: FetchStatus) -> FetchOutcome {
+        FetchOutcome(snapshot: snapshot(now, status), requestSent: false)
     }
 
     private func snapshot(_ now: Date, _ status: FetchStatus) -> UsageSnapshot {

@@ -46,16 +46,18 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
 
     public var scopedLimit: UsageLimit? { limits.first { $0.id.hasPrefix("weekly_scoped") } }
 
-    /// Keeps the previous good limits (and their timestamp) when a refresh fails transiently.
-    public func mergingLastGood(previous: UsageSnapshot?) -> UsageSnapshot {
+    /// Keeps the previous good limits (and their timestamp) when a refresh fails transiently
+    /// or the server rejected the credential that was sent.
+    public func mergingLastGood(previous: UsageSnapshot?, requestSent: Bool = false) -> UsageSnapshot {
         guard let previous, previous.provider == provider,
               !previous.limits.isEmpty, limits.isEmpty else { return self }
+        let keep: Bool
         switch status {
-        case .stale, .error, .rateLimited:
-            return UsageSnapshot(provider: provider, fetchedAt: previous.fetchedAt,
-                                 limits: previous.limits, status: status)
-        case .ok, .needsSignIn, .keychainDenied:
-            return self
+        case .stale, .error, .rateLimited: keep = true
+        case .needsSignIn: keep = requestSent || previous.status == .needsSignIn
+        case .ok, .keychainDenied: keep = false
         }
+        guard keep else { return self }
+        return UsageSnapshot(provider: provider, fetchedAt: previous.fetchedAt, limits: previous.limits, status: status)
     }
 }

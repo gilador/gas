@@ -7,6 +7,7 @@ final class ProviderRegistryTests: XCTestCase {
         ProviderRegistry.makeDefault(
             tokenReader: StubTokenReader(result: .failure(TokenReaderError.notFound)),
             codexAuthReader: StubCodexAuthReader(result: .failure(TokenReaderError.notFound)),
+            grokAuthReader: StubGrokAuthReader(result: .failure(GrokAuthError.notFound)),
             httpClient: SpyHTTPClient(),
             claudeBaseURL: URL(string: "https://api.anthropic.com")!,
             openAIBaseURL: URL(string: "https://chatgpt.com")!)
@@ -23,7 +24,7 @@ final class ProviderRegistryTests: XCTestCase {
 
     func testEachProviderIsWiredToItsOwnCredentialReader() async throws {
         for provider in registry().providers {
-            let snap = try await provider.fetch()
+            let snap = try await provider.fetch().snapshot
             XCTAssertEqual(snap.provider, provider.id)
             XCTAssertEqual(snap.status, .needsSignIn, "\(provider.id)")
         }

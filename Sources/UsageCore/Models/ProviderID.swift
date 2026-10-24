@@ -3,7 +3,9 @@ public enum ProviderID: String, Codable, Sendable, CaseIterable {
     case xai
     case openai
 
-    public static let displayOrder: [ProviderID] = [.claude, .openai]
+    public static let displayOrder: [ProviderID] = [.claude, .openai, .xai]
+
+    public var isEnabledByDefault: Bool { self != .xai }
 
     public var displayName: String {
         switch self {
@@ -25,7 +27,7 @@ public enum ProviderID: String, Codable, Sendable, CaseIterable {
         switch self {
         case .claude: return "Run /login in Claude Code"
         case .openai: return "Run codex login in Terminal"
-        case .xai: return "Sign in to xAI"
+        case .xai: return "Run grok login in Terminal"
         }
     }
 
@@ -33,7 +35,7 @@ public enum ProviderID: String, Codable, Sendable, CaseIterable {
         switch self {
         case .claude: return "Claude Code"
         case .openai: return "Codex CLI"
-        case .xai: return "xAI"
+        case .xai: return "Grok CLI"
         }
     }
 }

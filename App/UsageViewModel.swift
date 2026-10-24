@@ -31,6 +31,7 @@ final class UsageViewModel: ObservableObject {
         self.registry = ProviderRegistry.makeDefault(
             tokenReader: SecurityCLITokenReader(),
             codexAuthReader: FileCodexAuthReader(),
+            grokAuthReader: FileGrokAuthReader(),
             httpClient: URLSessionHTTPClient(),
             claudeBaseURL: claudeBase,
             openAIBaseURL: openAIBase,

@@ -70,7 +70,7 @@ final class UpdateModel: ObservableObject {
             case .upToDate, .skipped: phase = manual ? .upToDate : .idle
             }
         } catch {
-            UsageLog.note("update check failed: \(error)")
+            UsageLog.note("update check failed: \(Self.logCategory(error))")
             if manual { phase = .checkFailed(Self.describe(error)) }
         }
     }
@@ -91,7 +91,7 @@ final class UpdateModel: ObservableObject {
             }
             phase = .available(release)
         } catch {
-            UsageLog.note("update download failed: \(error)")
+            UsageLog.note("update download failed: \(Self.logCategory(error))")
             phase = .failed(release, Self.describe(error))
         }
     }
@@ -108,6 +108,18 @@ final class UpdateModel: ObservableObject {
             NSWorkspace.shared.open(release.pageURL)
         default:
             break
+        }
+    }
+
+    private static func logCategory(_ error: Error) -> String {
+        switch error {
+        case is URLError: return "network"
+        case ReleaseCheckError.http: return "http"
+        case ReleaseCheckError.unreadable, is DecodingError: return "decode"
+        case ReleaseCheckError.noUsableRelease: return "no_release"
+        case UpdateDownloadError.checksumMismatch, UpdateDownloadError.checksumMissing: return "checksum"
+        case UpdateDownloadError.download: return "download"
+        default: return "other"
         }
     }
 

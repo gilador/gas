@@ -6,21 +6,52 @@ public enum LoginStatus: Equatable {
     case unknown
 }
 
+public enum LoginCheck: Equatable {
+    case command([String])
+    case grokSignIn
+}
+
 public enum CLITool: String, CaseIterable {
     case claude
     case codex
+    case grok
 
-    public var provider: ProviderID { self == .claude ? .claude : .openai }
-    public var displayName: String { self == .claude ? "Claude Code" : "Codex CLI" }
-    public var installerURL: URL {
-        URL(string: self == .claude ? "https://claude.ai/install.sh" : "https://chatgpt.com/codex/install.sh")!
+    public var provider: ProviderID {
+        switch self {
+        case .claude: return .claude
+        case .codex: return .openai
+        case .grok: return .xai
+        }
     }
-    public var installerShell: String { self == .claude ? "/bin/bash" : "/bin/sh" }
+
+    public var displayName: String {
+        switch self {
+        case .claude: return "Claude Code"
+        case .codex: return "Codex CLI"
+        case .grok: return "Grok CLI"
+        }
+    }
+
+    public var installerURL: URL {
+        switch self {
+        case .claude: return URL(string: "https://claude.ai/install.sh")!
+        case .codex: return URL(string: "https://chatgpt.com/codex/install.sh")!
+        case .grok: return URL(string: "https://x.ai/cli/install.sh")!
+        }
+    }
+
+    public var installerShell: String { self == .codex ? "/bin/sh" : "/bin/bash" }
+
     public var loginArguments: [String] {
         self == .claude ? ["auth", "login", "--claudeai"] : ["login"]
     }
-    public var statusArguments: [String] {
-        self == .claude ? ["auth", "status"] : ["login", "status"]
+
+    public var loginCheck: LoginCheck {
+        switch self {
+        case .claude: return .command(["auth", "status"])
+        case .codex: return .command(["login", "status"])
+        case .grok: return .grokSignIn
+        }
     }
 
     private func knownPaths(home: String) -> [String] {
@@ -30,6 +61,8 @@ public enum CLITool: String, CaseIterable {
                     "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
         case .codex:
             return ["\(home)/.local/bin/codex", "/opt/homebrew/bin/codex", "/usr/local/bin/codex"]
+        case .grok:
+            return ["\(home)/.grok/bin/grok"]
         }
     }
 
@@ -69,6 +102,19 @@ public enum CLITool: String, CaseIterable {
             case 1: return .loggedOut
             default: return .unknown
             }
+        case .grok:
+            return .unknown
+        }
+    }
+
+    /// Grok's login status is read from its sign-in file, so setup never runs grok to ask.
+    public static func grokLoginStatus(reader: GrokAuthReader, now: Date = Date()) -> LoginStatus {
+        do {
+            return try reader.readGrokAuth().expiresAt > now ? .loggedIn : .loggedOut
+        } catch GrokAuthError.notFound {
+            return .loggedOut
+        } catch {
+            return .unknown
         }
     }
 }

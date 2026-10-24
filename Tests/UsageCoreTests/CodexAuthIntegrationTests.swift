@@ -10,7 +10,7 @@ final class CodexAuthIntegrationTests: XCTestCase {
         let provider = OpenAIUsageProvider(authReader: FileCodexAuthReader(),
                                            httpClient: URLSessionHTTPClient(),
                                            baseURL: URL(string: "https://chatgpt.com")!)
-        let snap = try await provider.fetch()
+        let snap = try await provider.fetch().snapshot
         switch snap.status {
         case .ok, .needsSignIn, .stale, .rateLimited: break
         case .error(let message): XCTFail("unexpected error: \(message)")

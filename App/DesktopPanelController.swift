@@ -98,7 +98,7 @@ final class DesktopPanelController {
             window.title = "Set up providers"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
-            window.setContentSize(NSSize(width: 500, height: 340))
+            window.setContentSize(NSSize(width: 500, height: SetupView.height(rows: SetupView.shownProviders().count)))
             window.center()
             setupCloseObserver = NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak setupModel] _ in
@@ -106,6 +106,7 @@ final class DesktopPanelController {
             }
             setupWindow = window
         }
+        setupWindow?.setContentSize(NSSize(width: 500, height: SetupView.height(rows: SetupView.shownProviders().count)))
         setupWindow?.makeKeyAndOrderFront(nil)
         setupWindow?.orderFrontRegardless()
         Task { await setupModel.inspect() }
