@@ -39,9 +39,9 @@ How it was found: the CLI logs "billing: fetched credits config" with this body 
 
 - **Lifetime.** The token was observed to live about 6 hours, refreshed only by a running Grok CLI (`auth.refresh.success` in its log). That is an observation, not a guarantee.
 - **Choosing the entry.** Use the entry for the supported issuer (`https://auth.x.ai`) and the Grok CLI client id. A missing, unsupported or ambiguous entry is an error, never "pick the first one" (dictionary order is not stable, and that could silently choose another account).
-- **Decoding.** A typed decoder for just `key` and `expires_at`, with no generic dictionary of credentials kept around. `expires_at` is ISO 8601 UTC with fractional seconds. `key` must be non-empty, bounded in length, and safe as a header value.
+- **Decoding.** A typed decoder for just `key`, `expires_at` and `user_id` (not a secret, used only for the account fingerprint), with no generic dictionary of credentials kept around. `expires_at` is ISO 8601 UTC with fractional seconds. `key` must be non-empty, bounded in length, and safe as a header value.
 - **Reading the file.** One read from a read-only descriptor. Check it is a regular file owned by the current user, not a symlink, with restrictive permissions, and bound its size. The CLI replaces the file by rename, so an open descriptor sees one consistent snapshot; `key` and `expires_at` come from the same snapshot. On a partial or missing file (an in-place write or the moment of a rename), retry once or twice briefly, then report a neutral read error. A malformed file is **not** treated as "needs sign-in".
-- **Memory.** The raw bytes, token, headers and `URLRequest` live only for one fetch. gas doesn't promise to wipe Swift/Foundation copies. Afterwards it keeps only a non-logged, non-persisted digest of the token used (see "Backoff").
+- **Memory.** The raw bytes, token, headers and `URLRequest` live only for one fetch. gas doesn't promise to wipe Swift/Foundation copies. Afterwards it keeps only the account fingerprint, a hash of the entry key and `user_id`, never of the token (see "Backoff").
 - **Logging.** The token never appears in logs, diagnostics, errors or crash text (see "Logging").
 
 ## Design
@@ -60,7 +60,7 @@ How it was found: the CLI logs "billing: fetched credits config" with this body 
 - **Renewal-needed is a stale state, not `.needsSignIn`.** Today `UsageSnapshot.mergingLastGood` drops the last good limits for `.needsSignIn`, and `UsageRefresher` doesn't record those attempts as requests, so a rejected token would be retried on every tick. An expired token, or a 401 before local expiry (possibly revoked), keeps the last good values marked stale with "Open Grok CLI to renew its sign-in", and still counts as a request for the 5-minute interval. Either add that state or change the merge and request bookkeeping, with tests. `.needsSignIn` stays for "no Grok sign-in at all" (missing file), which leads to setup.
 - 403 is **not** treated as expiry: it can mean access denied or insufficient scope (RFC 6750). It becomes `.error("Grok denied access")`.
 - 429 becomes `.rateLimited` with Retry-After, and any other failure becomes `.error`, keeping the last good values.
-- `minimumInterval` 5 minutes: billing changes slowly, and the endpoint is undocumented. This is gas's own policy, not a server allowance.
+- A 4.5-minute minimum for timer and manual refreshes alike (one 5-minute refresh, with slack for timer drift): billing changes slowly, and the endpoint is undocumented. This is gas's own policy, not a server allowance.
 
 ### HTTP request
 
@@ -85,9 +85,9 @@ How it was found: the CLI logs "billing: fetched credits config" with this body 
 
 ### UI
 
-- `ProviderID.displayOrder` gains `.xai` after OpenAI. Settings → Providers gets an xAI toggle, **off by default** at first.
-- First-time setup: if `~/.grok/auth.json` is missing, offer "Install Grok CLI" (the official `https://x.ai/cli/install.sh`, run only on the user's click, as for Codex) and then "Sign in" (`grok login` in Terminal).
-- Icon: an `xAIIcon` template asset (the glyph "✕" is the fallback).
+- `ProviderID.displayOrder` gains `.xai` after OpenAI. Settings → Providers gets an "xAI (Grok)" toggle, **off by default**, whose help says gas reads the Grok CLI's sign-in from `~/.grok/auth.json`. While it is off, xAI is hidden everywhere, including setup.
+- First-time setup, like Codex: if `~/.grok/bin/grok` is missing, "Set up" runs the official `curl -fsSL https://x.ai/cli/install.sh | bash`, only on the user's click, and then "Sign in" starts `grok login`. The login status comes only from the `auth.json` entry: present and unexpired is signed in, missing or expired is signed out, unreadable is unknown. Setup never runs grok to ask.
+- Icon: no asset and no xAI or Grok logo is bundled; `ProviderIcon` draws the "✕" glyph.
 - One bar in both panel layouts. A weekly-only provider already works in Separate bars mode.
 - ADR 0002's reset format applies ("Resets on Monday at 9am").
 
