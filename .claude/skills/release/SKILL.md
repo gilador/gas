@@ -29,6 +29,14 @@ A release is public: it creates a GitHub release that every installed gas offers
 
    The tag must be the new version, with 3 assets.
 
+   And the Homebrew cask points at it:
+
+   ```bash
+   curl -fsS https://raw.githubusercontent.com/gilador/homebrew-tap/main/Casks/gas.rb | grep -E '^  (version|sha256) '
+   ```
+
+   `version` must be the new version, and `sha256` must match `shasum -a 256 dist/gas-<version>.dmg`. If not, run `scripts/update-tap.sh <version>` (with the same `GH_TOKEN`).
+
 6. **Report.** Give the release link. Installed copies offer the update within 6 hours, or at once with Settings → Check for updates.
 
 **If something fails:** the script stops at the first error and says what to do.

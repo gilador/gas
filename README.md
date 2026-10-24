@@ -28,9 +28,19 @@ A macOS menu bar app that shows how much of your **Claude**, **OpenAI (Codex / C
 
 ## Install
 
+With [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask gilador/tap/gas
+```
+
+Or by hand:
+
 1. Download the latest `gas-<version>.pkg` from [Releases](../../releases) and open it.
 2. gas is not signed with an Apple Developer ID, so macOS blocks it the first time. Click **Done**, open **System Settings → Privacy & Security**, and click **Open Anyway**.
 3. When you update, macOS asks to let Installer modify apps. Click **Allow**.
+
+Either way, gas is not notarized, so macOS asks you to confirm it the first time it opens (step 2). After that gas updates itself, also when installed with Homebrew.
 
 ## How it works
 
