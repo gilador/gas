@@ -45,3 +45,22 @@ final class DiagnosticsReportTests: XCTestCase {
         XCTAssertTrue(report.contains("no requests since launch"))
     }
 }
+
+final class DiagnosticsReportLeakTests: XCTestCase {
+    func testReportCarriesNoServerTextOrSecrets() {
+        let marker = "sk-test-SECRET-MARKER-0123456789abcdef"
+        let url = URL(string: "https://api.example.com/usage")!
+        let response = HTTPURLResponse(url: url, statusCode: 401, httpVersion: nil,
+                                       headerFields: ["Retry-After": marker])!
+        UsageLog.response(.openai, response,
+                          data: Data(#"{"error":{"type":"DIAGTYPE","message":"DIAGMSG \#(marker)","code":"DIAGCODE"}}"#.utf8))
+        UsageLog.note("diag Bearer DIAGBEARER")
+        let report = DiagnosticsReport.render(appVersion: "1", osVersion: "1", now: Date(), keychainEntries: [],
+                                              tokenStatus: "ok · no expiry", board: UsageBoard(),
+                                              recentLog: UsageLog.recentLines())
+        for leaked in [marker, "DIAGTYPE", "DIAGMSG", "DIAGCODE", "DIAGBEARER"] {
+            XCTAssertFalse(report.contains(leaked), leaked)
+        }
+        XCTAssertTrue(report.contains("openai HTTP 401 unauthorized retry-after=- bytes="))
+    }
+}
