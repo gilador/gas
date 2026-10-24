@@ -27,6 +27,7 @@ These rules apply to everyone who works on this repo, people and coding agents (
 ## Security
 
 - Never read, print, log or commit token values.
+- Every provider meets the security baseline in `docs/adr/0004-provider-security-baseline.md`: no server text in logs or diagnostics, read-only credentials, a request floor, rate-limit waits per account, fixed HTTPS endpoints, and leak tests. Review a new provider against it before it ships.
 - The credential stores of other tools are read-only for gas: Claude Code's Keychain entry, `~/.codex/auth.json`, and `~/.grok/auth.json`. Never write them.
 - Never commit secrets, signing keys or certificates. `scripts/sign-identity.local` and `*.p8` are git-ignored on purpose.
 - Public builds are always signed ad-hoc, so no developer name or email is in the signature.

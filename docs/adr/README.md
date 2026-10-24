@@ -9,3 +9,4 @@ To add one, copy [`template.md`](template.md) to `NNNN-short-title.md` with the 
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions | Accepted |
 | [0002](0002-reset-and-refresh-time-format.md) | Reset and refresh times read as wall-clock times and countdowns | Accepted |
 | [0003](0003-panel-moves-only-by-its-handle.md) | The floating panel moves only by its handle | Accepted |
+| [0004](0004-provider-security-baseline.md) | Every provider meets the same security baseline | Accepted |
