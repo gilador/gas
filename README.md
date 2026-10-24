@@ -3,7 +3,7 @@
 A macOS menu bar app that shows how much of your **Claude**, **OpenAI (Codex / ChatGPT)** and **Grok** plan you have used: the 5-hour session limit, the weekly limit, and per-model weekly limits.
 
 <p align="center">
-  <img src="docs/images/menu-and-panel.png" alt="The gas menu bar label, its menu, and the floating panel" width="407">
+  <img src="docs/images/menu-and-panel.png" alt="The gas menu bar label and the floating panel with Claude, OpenAI and Grok" width="370">
 </p>
 
 > Unofficial. gas is not affiliated with Anthropic, OpenAI or xAI. It reads endpoints that are not documented, so a provider change can stop it until gas is updated.
