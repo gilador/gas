@@ -149,3 +149,8 @@ final class SequenceHTTPClient: UsageHTTPClient, @unchecked Sendable {
         return (data, HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!)
     }
 }
+
+struct StubGrokAuthReader: GrokAuthReader, @unchecked Sendable {
+    let result: Result<GrokAuth, Error>
+    func readGrokAuth() throws -> GrokAuth { try result.get() }
+}
