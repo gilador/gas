@@ -7,6 +7,7 @@ final class ProviderRegistryTests: XCTestCase {
         ProviderRegistry.makeDefault(
             tokenReader: StubTokenReader(result: .failure(TokenReaderError.notFound)),
             codexAuthReader: StubCodexAuthReader(result: .failure(TokenReaderError.notFound)),
+            grokAuthReader: StubGrokAuthReader(result: .failure(GrokAuthError.notFound)),
             httpClient: SpyHTTPClient(),
             claudeBaseURL: URL(string: "https://api.anthropic.com")!,
             openAIBaseURL: URL(string: "https://chatgpt.com")!)

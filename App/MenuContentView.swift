@@ -10,9 +10,10 @@ struct MenuContentView: View {
     @AppStorage("showDesktopPanel") private var showDesktopPanel = true
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
+    @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
 
     var body: some View {
-        let _ = (claudeEnabled, openaiEnabled)
+        let _ = (claudeEnabled, openaiEnabled, xaiEnabled)
         VStack(alignment: .leading, spacing: 8) {
             Text("g · a · s")
                 .font(.caption.bold())

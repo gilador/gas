@@ -19,6 +19,7 @@ struct DesktopPanelView: View {
     @AppStorage(extendedKey) private var extended = false
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
+    @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
     @State private var rotateFrame: CGRect = .zero
     let onTap: () -> Void
     let onDragStart: () -> Void
@@ -26,7 +27,7 @@ struct DesktopPanelView: View {
     @State private var dragging = false
 
     var body: some View {
-        let _ = (claudeEnabled, openaiEnabled)
+        let _ = (claudeEnabled, openaiEnabled, xaiEnabled)
         let layout = horizontal ? AnyLayout(HStackLayout(spacing: 6)) : AnyLayout(VStackLayout(spacing: 6))
         layout { content }
             .contentShape(Rectangle())

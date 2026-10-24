@@ -7,10 +7,11 @@ struct MenuBarLabelView: View {
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
+    @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
 
     var body: some View {
-        let _ = (claudeEnabled, openaiEnabled)
+        let _ = (claudeEnabled, openaiEnabled, xaiEnabled)
         HStack(spacing: 2) {
             ForEach(Array(ProviderSettings.enabled().enumerated()), id: \.element) { index, provider in
                 if index > 0 {

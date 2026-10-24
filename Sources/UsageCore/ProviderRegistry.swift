@@ -9,6 +9,7 @@ public struct ProviderRegistry {
 
     public static func makeDefault(tokenReader: TokenReader,
                                    codexAuthReader: CodexAuthReader,
+                                   grokAuthReader: GrokAuthReader,
                                    httpClient: UsageHTTPClient,
                                    claudeBaseURL: URL,
                                    openAIBaseURL: URL,
@@ -20,7 +21,8 @@ public struct ProviderRegistry {
                                 renewer: claudeRenewer),
             OpenAIUsageProvider(authReader: codexAuthReader,
                                 httpClient: httpClient,
-                                baseURL: openAIBaseURL)
+                                baseURL: openAIBaseURL),
+            XAIUsageProvider(authReader: grokAuthReader, httpClient: GrokHTTPClient())
         ])
     }
 }

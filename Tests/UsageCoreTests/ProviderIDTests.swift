@@ -2,8 +2,14 @@ import XCTest
 @testable import UsageCore
 
 final class ProviderIDTests: XCTestCase {
-    func testDisplayOrderIsClaudeThenOpenAI() {
-        XCTAssertEqual(ProviderID.displayOrder, [.claude, .openai])
+    func testDisplayOrderIsClaudeThenOpenAIThenXAI() {
+        XCTAssertEqual(ProviderID.displayOrder, [.claude, .openai, .xai])
+    }
+
+    func testOnlyXAIIsOffByDefault() {
+        XCTAssertTrue(ProviderID.claude.isEnabledByDefault)
+        XCTAssertTrue(ProviderID.openai.isEnabledByDefault)
+        XCTAssertFalse(ProviderID.xai.isEnabledByDefault)
     }
 
     func testDisplayNames() {
@@ -20,11 +26,13 @@ final class ProviderIDTests: XCTestCase {
     func testSignInHints() {
         XCTAssertEqual(ProviderID.claude.signInHint, "Run /login in Claude Code")
         XCTAssertEqual(ProviderID.openai.signInHint, "Run codex login in Terminal")
+        XCTAssertEqual(ProviderID.xai.signInHint, "Run grok login in Terminal")
     }
 
     func testClientNames() {
         XCTAssertEqual(ProviderID.claude.clientName, "Claude Code")
         XCTAssertEqual(ProviderID.openai.clientName, "Codex CLI")
+        XCTAssertEqual(ProviderID.xai.clientName, "Grok CLI")
     }
 
     func testEveryCaseHasNonEmptyMetadata() {

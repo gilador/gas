@@ -16,6 +16,7 @@ struct PreferencesView: View {
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
+    @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var copiedDiagnostics = false
     @AppStorage(UpdateModel.autoCheckKey) private var checkForUpdates = true
@@ -51,10 +52,11 @@ struct PreferencesView: View {
                     Toggle(isOn: binding(for: provider)) {
                         HStack(spacing: 6) {
                             ProviderIcon(provider: provider, size: 14)
-                            Text(provider.displayName)
+                            Text(provider == .xai ? "xAI (Grok)" : provider.displayName)
                         }
                     }
                     .disabled(isOnlyEnabled(provider))
+                    .help(provider == .xai ? "Reads the Grok CLI's sign-in from ~/.grok/auth.json to show your Grok usage." : "")
                 }
                 Toggle("Renew Claude token automatically", isOn: $renewClaudeToken)
                     .disabled(!claudeEnabled)
@@ -160,7 +162,7 @@ struct PreferencesView: View {
         switch provider {
         case .claude: return Binding(get: { claudeEnabled }, set: { claudeEnabled = $0; providersChanged(to: $0) })
         case .openai: return Binding(get: { openaiEnabled }, set: { openaiEnabled = $0; providersChanged(to: $0) })
-        case .xai: return .constant(false)
+        case .xai: return Binding(get: { xaiEnabled }, set: { xaiEnabled = $0; providersChanged(to: $0) })
         }
     }
 
