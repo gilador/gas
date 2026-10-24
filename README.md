@@ -42,7 +42,7 @@ A macOS menu bar app that shows how much of your **Claude**, **OpenAI (Codex / C
 - gas refreshes every 5 minutes. A manual refresh is possible once a minute.
 - gas only **reads** the sign-ins. It never changes them.
 - When the Claude token expires, gas runs `claude -p` one time, which is one short Haiku reply, so that Claude Code renews its own token. gas tries this at most once an hour. You can turn it off in Settings → Providers.
-- The Grok sign-in lasts about 6 hours, and only using the Grok CLI renews it. When it expires, gas keeps the last values and shows "Open Grok CLI to renew its sign-in". gas never runs Grok to read usage.
+- The Grok sign-in lasts about 6 hours, and only using the Grok CLI renews it. When it expires, gas keeps the last values and shows "Open Grok CLI to renew its sign-in". gas never runs Grok to read usage. gas shows the Grok CLI's weekly limit, the same number as `/usage` in the Grok CLI. grok.com's Usage & Billing page has a separate weekly meter with its own reset, so the two can differ.
 - After a rate limit (HTTP 429), gas waits for the time the server gives. If Claude Code turns out to be signed out, gas shows "Not logged in. Run /login in Claude Code."
 
 ## Privacy

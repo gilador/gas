@@ -11,9 +11,9 @@ enum XAIUsageMapper {
 
     private static func period(_ type: String?) -> (id: String, label: String) {
         switch type {
-        case "USAGE_PERIOD_TYPE_WEEKLY": return ("weekly_all", "Weekly")
-        case "USAGE_PERIOD_TYPE_MONTHLY": return ("monthly", "Monthly")
-        default: return ("monthly", "Usage")
+        case "USAGE_PERIOD_TYPE_WEEKLY": return ("weekly_all", "Weekly (Grok CLI)")
+        case "USAGE_PERIOD_TYPE_MONTHLY": return ("monthly", "Monthly (Grok CLI)")
+        default: return ("monthly", "Grok CLI usage")
         }
     }
 }

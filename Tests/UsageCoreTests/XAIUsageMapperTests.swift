@@ -21,7 +21,7 @@ final class XAIUsageMapperTests: XCTestCase {
     func testWeeklyPeriodIsTheWeeklyLimit() {
         let limits = map(config())
         XCTAssertEqual(limits.map(\.id), ["weekly_all"])
-        XCTAssertEqual(limits.map(\.label), ["Weekly"])
+        XCTAssertEqual(limits.map(\.label), ["Weekly (Grok CLI)"])
         XCTAssertEqual(limits.first?.percentUsed, 42.5)
         XCTAssertEqual(limits.first?.resetsAt, date("2026-01-12T09:00:00Z"))
         XCTAssertEqual(limits.first?.severity, .normal)
@@ -30,14 +30,14 @@ final class XAIUsageMapperTests: XCTestCase {
     func testMonthlyPeriod() {
         let limits = map(config(type: "USAGE_PERIOD_TYPE_MONTHLY"))
         XCTAssertEqual(limits.map(\.id), ["monthly"])
-        XCTAssertEqual(limits.map(\.label), ["Monthly"])
+        XCTAssertEqual(limits.map(\.label), ["Monthly (Grok CLI)"])
     }
 
     func testUnknownPeriodIsUsage() {
         for type in ["USAGE_PERIOD_TYPE_DAILY", "", nil] as [String?] {
             let limits = map(config(type: type))
             XCTAssertEqual(limits.map(\.id), ["monthly"], type ?? "nil")
-            XCTAssertEqual(limits.map(\.label), ["Usage"], type ?? "nil")
+            XCTAssertEqual(limits.map(\.label), ["Grok CLI usage"], type ?? "nil")
         }
     }
 

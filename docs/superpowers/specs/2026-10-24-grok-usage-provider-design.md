@@ -31,6 +31,8 @@ How it was found: the CLI logs "billing: fetched credits config" with this body 
 
 **Gotcha: an expired token does not fail.** With an expired `key`, the endpoint answered **HTTP 200 without `creditUsagePercent`**, not 401. gas must check `expires_at` first, and treat a 200 without the percent as "needs sign-in" (expired) or as an error (not expired).
 
+**It is the Grok CLI's meter, not grok.com's.** The Grok CLI's `/usage` → "Weekly limit (SuperGrok)" shows the same percent and reset. grok.com's Usage & Billing page shows a different weekly meter, with another percent and reset date. Only `format=credits` returns a percent (no format, `usage`, `weekly` and `subscription` return none), so gas labels the limit "Weekly (Grok CLI)".
+
 **The period is weekly.** `currentPeriod.type` was `USAGE_PERIOD_TYPE_WEEKLY` for this account, not monthly.
 
 ## Credentials — read-only, like Codex
