@@ -62,7 +62,7 @@ swift test
 xcodegen generate && xcodebuild -project AgentUsage.xcodeproj -scheme AgentUsageApp -destination 'platform=macOS' build
 ```
 
-To make the `.pkg` and `.dmg`, see [scripts/README.md](scripts/README.md).
+To make the `.pkg` and `.dmg`, see [docs/packaging.md](docs/packaging.md).
 
 ## License
 
