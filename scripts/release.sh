@@ -66,3 +66,4 @@ git push -q origin main
 # Public builds are always ad-hoc, so no developer name ends up in the signature.
 SIGN_IDENTITY=- scripts/package.sh all >&2
 scripts/publish.sh "$VERSION" || fail "the push worked but publishing failed. Fix it, then run: scripts/publish.sh $VERSION"
+scripts/update-tap.sh "$VERSION" || echo "release.sh: the release is out, but the Homebrew tap wasn't updated. Run: scripts/update-tap.sh $VERSION" >&2

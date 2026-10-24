@@ -20,6 +20,7 @@ Targets (default `all`):
 | `make-dmg.sh` | Wraps the app in a DMG. Builds it first, or reuses a built app path given as `$1`. |
 | `make-pkg.sh` | Wraps the app in a `.pkg` installer. Builds it first, or reuses a built app path given as `$1`. |
 | `package.sh` | The one entry point above: checks prerequisites, resolves signing, calls the scripts above. |
+| `update-tap.sh` | Points the Homebrew cask in `gilador/homebrew-tap` at a published release's `.dmg`. `release.sh` runs it. |
 
 Run `build-release.sh`, `make-dmg.sh`, or `make-pkg.sh` directly if you only need that one step.
 
@@ -52,7 +53,7 @@ A Developer ID certificate + notarization (paid Apple Developer Program) removes
 
 ## Release (one command)
 
-`scripts/release.sh` takes the latest `main` from GitHub, bumps the version (1.0.25 → 1.0.26, or the version you give), runs the tests, commits and pushes the bump, builds and signs ad-hoc, and publishes the GitHub release. Run `scripts/release.sh --dry-run` first: it runs the checks and prints the new version, but changes nothing. In Claude Code, the `release` skill runs these steps for you.
+`scripts/release.sh` takes the latest `main` from GitHub, bumps the version (1.0.25 → 1.0.26, or the version you give), runs the tests, commits and pushes the bump, builds and signs ad-hoc, and publishes the GitHub release. After publishing, it points the Homebrew cask in `gilador/homebrew-tap` at the new `.dmg` (`scripts/update-tap.sh <version>`; if that step fails, the release stays out and the script prints the command to rerun). Run `scripts/release.sh --dry-run` first: it runs the checks and prints the new version, but changes nothing. In Claude Code, the `release` skill runs these steps for you.
 
 ## Publish a release (by hand)
 
