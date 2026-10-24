@@ -61,9 +61,9 @@ struct StubUsageProvider: UsageProvider, @unchecked Sendable {
     var delay: TimeInterval = 0
     var minimumInterval: TimeInterval = 0
     var manualMinimumInterval: TimeInterval = 60
-    func fetch() async throws -> UsageSnapshot {
+    func fetch() async throws -> FetchOutcome {
         if delay > 0 { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
-        return try result.get()
+        return FetchOutcome(snapshot: try result.get(), requestSent: true)
     }
 }
 
@@ -78,6 +78,8 @@ final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
     let minimumInterval: TimeInterval
     let manualMinimumInterval: TimeInterval
     var fingerprint: String?
+    var sentFingerprint: String?
+    var requestSent = true
     private let lock = NSLock()
     private var _calls = 0
     var calls: Int { lock.lock(); defer { lock.unlock() }; return _calls }
@@ -92,7 +94,10 @@ final class CountingUsageProvider: UsageProvider, @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         _calls += 1
     }
-    func fetch() async throws -> UsageSnapshot { recordCall(); return try result.get() }
+    func fetch() async throws -> FetchOutcome {
+        recordCall()
+        return FetchOutcome(snapshot: try result.get(), requestSent: requestSent, credentialFingerprint: sentFingerprint)
+    }
     func credentialFingerprint() -> String? { fingerprint }
 }
 

@@ -64,6 +64,21 @@ final class UsageSnapshotTests: XCTestCase {
         XCTAssertEqual(fetched.mergingLastGood(previous: previous), fetched)
     }
 
+    func testMergeRejectedCredentialKeepsPreviousLimits() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
+        let fetched = snap(limits: [], fetchedAt: 200, status: .needsSignIn)
+        let merged = fetched.mergingLastGood(previous: previous, requestSent: true)
+        XCTAssertEqual(merged.limits, previous.limits)
+        XCTAssertEqual(merged.fetchedAt, Date(timeIntervalSince1970: 100))
+        XCTAssertEqual(merged.status, .needsSignIn)
+    }
+
+    func testMergeKeepsValuesOfAnAlreadyRejectedCredential() {
+        let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .needsSignIn)
+        let fetched = snap(limits: [], fetchedAt: 200, status: .needsSignIn)
+        XCTAssertEqual(fetched.mergingLastGood(previous: previous, requestSent: false).limits, previous.limits)
+    }
+
     func testMergeNeedsSignInAndKeychainDeniedReturnSelf() {
         let previous = snap(limits: [limit("session", 40)], fetchedAt: 100, status: .ok)
         for status in [FetchStatus.needsSignIn, .keychainDenied] {

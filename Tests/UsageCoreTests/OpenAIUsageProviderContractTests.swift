@@ -31,4 +31,5 @@ final class OpenAIUsageProviderContractTests: XCTestCase {
     func testC8SendsBearerOnce() async throws { try await UsageProviderContract.c8SendsBearerOnce(subject) }
     func testC9FetchedAtIsNow() async throws { try await UsageProviderContract.c9FetchedAtIsNow(subject) }
     func testC10MinimumIntervalNonNegative() { UsageProviderContract.c10MinimumIntervalNonNegative(subject) }
+    func testC11RequestSentMatchesTheNetwork() async throws { try await UsageProviderContract.c11RequestSentMatchesTheNetwork(subject) }
 }

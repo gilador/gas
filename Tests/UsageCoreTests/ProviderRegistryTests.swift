@@ -23,7 +23,7 @@ final class ProviderRegistryTests: XCTestCase {
 
     func testEachProviderIsWiredToItsOwnCredentialReader() async throws {
         for provider in registry().providers {
-            let snap = try await provider.fetch()
+            let snap = try await provider.fetch().snapshot
             XCTAssertEqual(snap.provider, provider.id)
             XCTAssertEqual(snap.status, .needsSignIn, "\(provider.id)")
         }
