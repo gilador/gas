@@ -7,11 +7,7 @@ public enum UsageRefresher {
             if case .rateLimited(let until, _)? = board.snapshot(for: provider.id)?.status, until > now {
                 return accountChanged(provider, since: board)
             }
-            let interval = manual ? provider.manualMinimumInterval : provider.minimumInterval
-            if let last = board.lastRequest(for: provider.id), now.timeIntervalSince(last) < interval {
-                return false
-            }
-            return true
+            return nextRequestDate(board, provider: provider, now: now, manual: manual) <= now
         }
 
         let fetched = await withTaskGroup(of: FetchOutcome.self, returning: [FetchOutcome].self) { group in
@@ -53,6 +49,24 @@ public enum UsageRefresher {
             updated.replace(normalized.mergingLastGood(previous: previous, requestSent: outcome.requestSent))
         }
         return updated
+    }
+
+    public static func nextRequestDate(_ board: UsageBoard, provider: any UsageProvider,
+                                       now: Date = Date(), manual: Bool = false) -> Date {
+        var next = now
+        let interval = manual ? provider.manualMinimumInterval : provider.minimumInterval
+        if let last = board.lastRequest(for: provider.id) {
+            next = max(next, last.addingTimeInterval(interval))
+        }
+        if case .rateLimited(let until, _)? = board.snapshot(for: provider.id)?.status {
+            next = max(next, until)
+        }
+        return next
+    }
+
+    public static func nextRefreshDate(_ board: UsageBoard, providers: [any UsageProvider],
+                                       now: Date = Date(), manual: Bool = false) -> Date? {
+        providers.map { nextRequestDate(board, provider: $0, now: now, manual: manual) }.min()
     }
 
     private static func accountChanged(_ provider: any UsageProvider, since board: UsageBoard) -> Bool {

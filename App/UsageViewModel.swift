@@ -20,6 +20,8 @@ final class UsageViewModel: ObservableObject {
     private var timer: Timer?
     private let pathMonitor = NWPathMonitor()
     private var wasConnected = true
+    private var recoveryTask: Task<Void, Never>?
+    @Published private var recoveringProviders: Set<ProviderID> = []
     private var inFlight: Task<Void, Never>?
 
     init() {
@@ -44,20 +46,45 @@ final class UsageViewModel: ObservableObject {
         startNetworkMonitoring()
     }
 
-    /// Refresh immediately when the network comes back (like Gmail reconnecting),
-    /// instead of waiting for the next scheduled tick.
     private func startNetworkMonitoring() {
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let connected = path.status == .satisfied
             Task { @MainActor in
-                guard let self else { return }
-                if connected && !self.wasConnected {
-                    await self.refresh(manual: false)
-                }
+                guard let self, connected != self.wasConnected else { return }
                 self.wasConnected = connected
+                self.recoveryTask?.cancel()
+                self.recoveringProviders = []
+                if connected { self.recoverConnection() }
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "com.gilad.agentusage.network"))
+    }
+
+    private func recoverConnection() {
+        recoveryTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            var pending = registry.providers.filter { ProviderSettings.isEnabled($0.id) }
+            while !pending.isEmpty {
+                if let inFlight { await inFlight.value }
+                guard !Task.isCancelled else { return }
+                pending.removeAll { !ProviderSettings.isEnabled($0.id) }
+                recoveringProviders = Set(pending.map(\.id))
+                let now = Date()
+                guard let next = UsageRefresher.nextRefreshDate(board, providers: pending, now: now) else { break }
+                let delay = next.timeIntervalSince(now)
+                if delay > 0 {
+                    do {
+                        try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    } catch { return }
+                    continue
+                }
+                pending.removeAll { UsageRefresher.nextRequestDate(self.board, provider: $0, now: now) <= now }
+                await refresh()
+            }
+            guard !Task.isCancelled else { return }
+            recoveringProviders = []
+            recoveryTask = nil
+        }
     }
 
     func start() {
@@ -77,27 +104,17 @@ final class UsageViewModel: ObservableObject {
         nextTick = Date().addingTimeInterval(RefreshIntervals.seconds)
     }
 
-    /// When the next request to this provider can happen: the next tick, unless a rate-limit deadline or the provider's minimum interval is later.
     func nextRefresh(for provider: ProviderID) -> Date {
-        var next = nextTick
-        if let last = board.lastRequest(for: provider),
-           let minimum = registry.providers.first(where: { $0.id == provider })?.minimumInterval {
-            next = max(next, last.addingTimeInterval(minimum))
-        }
-        if case .rateLimited(let until, _)? = board.snapshot(for: provider)?.status {
-            next = max(next, until)
-        }
-        return next
+        guard let registered = registry.providers.first(where: { $0.id == provider }) else { return nextTick }
+        let eligible = UsageRefresher.nextRequestDate(board, provider: registered)
+        return recoveringProviders.contains(provider) ? eligible : max(nextTick, eligible)
     }
 
-    /// Latest moment until which a manual refresh is debounced for every provider; nil when a click would fetch now.
     func manualDebounceEnd(now: Date = Date()) -> Date? {
-        let ends = registry.providers.filter { ProviderSettings.isEnabled($0.id) }.compactMap { provider -> Date? in
-            guard let last = board.lastRequest(for: provider.id) else { return nil }
-            return last.addingTimeInterval(provider.manualMinimumInterval)
-        }
-        guard let end = ends.max(), end > now else { return nil }
-        return end
+        let providers = registry.providers.filter { ProviderSettings.isEnabled($0.id) }
+        guard let next = UsageRefresher.nextRefreshDate(board, providers: providers, now: now, manual: true),
+              next > now else { return nil }
+        return next
     }
 
     func diagnosticsReport(now: Date = Date()) -> String {
@@ -129,9 +146,9 @@ final class UsageViewModel: ObservableObject {
             alerts.raise(crossings, criticalIf: thresholds.isCritical)
             WidgetCenter.shared.reloadAllTimelines()
             if manual { scheduleTimer() }
+            inFlight = nil
         }
         inFlight = task
         await task.value
-        inFlight = nil
     }
 }

@@ -43,7 +43,8 @@ public struct OpenAIUsageProvider: UsageProvider {
             headers["ChatGPT-Account-Id"] = accountID
         }
 
-        return FetchOutcome(snapshot: await request(url, headers: headers, now: now), requestSent: true,
+        let result = await request(url, headers: headers, now: now)
+        return FetchOutcome(snapshot: result.snapshot, requestSent: result.requestSent,
                             credentialFingerprint: Self.account(of: auth))
     }
 
@@ -56,40 +57,43 @@ public struct OpenAIUsageProvider: UsageProvider {
         return accountID
     }
 
-    private func request(_ url: URL, headers: [String: String], now: Date) async -> UsageSnapshot {
+    private func request(_ url: URL, headers: [String: String], now: Date) async -> FetchOutcome {
         do {
             let (data, response) = try await httpClient.get(url, headers: headers)
             UsageLog.response(.openai, response, data: data)
             if response.statusCode == 401 {
-                return snapshot(now, .stale(reason: "Unauthorized — open Codex to refresh"))
+                return outcome(now, .stale(reason: "Unauthorized — open Codex to refresh"))
             }
             if response.statusCode == 429 {
                 let retryAfter = RetryAfter.seconds(from: response, now: now)
-                return snapshot(now, .rateLimited(until: now.addingTimeInterval(retryAfter), wait: retryAfter))
+                return outcome(now, .rateLimited(until: now.addingTimeInterval(retryAfter), wait: retryAfter))
             }
             guard (200..<300).contains(response.statusCode) else {
-                return snapshot(now, .error(message: "HTTP \(response.statusCode)"))
+                return outcome(now, .error(message: "HTTP \(response.statusCode)"))
             }
             let decoded = try JSONDecoder().decode(OpenAIUsageResponse.self, from: data)
             let limits = OpenAIUsageMapper.map(decoded.rateLimit,
                                                warning: warningThreshold,
                                                critical: criticalThreshold)
-            return UsageSnapshot(provider: .openai, fetchedAt: now, limits: limits, status: .ok)
+            return FetchOutcome(snapshot: UsageSnapshot(provider: .openai, fetchedAt: now,
+                                                        limits: limits, status: .ok), requestSent: true)
         } catch let error as URLError {
             UsageLog.networkError(.openai, error)
-            return snapshot(now, .stale(reason: "Network unavailable — retrying"))
+            return outcome(now, .stale(reason: "Network unavailable — retrying"),
+                           requestSent: error.code != .notConnectedToInternet)
         } catch is DecodingError {
-            return snapshot(now, .error(message: "Couldn't read usage data"))
+            return outcome(now, .error(message: "Couldn't read usage data"))
         } catch {
-            return snapshot(now, .error(message: "Unexpected error"))
+            return outcome(now, .error(message: "Unexpected error"))
         }
     }
 
     private func notSent(_ now: Date, _ status: FetchStatus) -> FetchOutcome {
-        FetchOutcome(snapshot: snapshot(now, status), requestSent: false)
+        outcome(now, status, requestSent: false)
     }
 
-    private func snapshot(_ now: Date, _ status: FetchStatus) -> UsageSnapshot {
-        UsageSnapshot(provider: .openai, fetchedAt: now, limits: [], status: status)
+    private func outcome(_ now: Date, _ status: FetchStatus, requestSent: Bool = true) -> FetchOutcome {
+        FetchOutcome(snapshot: UsageSnapshot(provider: .openai, fetchedAt: now, limits: [], status: status),
+                     requestSent: requestSent)
     }
 }

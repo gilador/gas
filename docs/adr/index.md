@@ -11,3 +11,4 @@ To add one, copy [`template.md`](template.md) to `NNNN-short-title.md` with the 
 | [0003](0003-panel-moves-only-by-its-handle.md) | The floating panel moves only by its handle | Accepted |
 | [0004](0004-provider-security-baseline.md) | Every provider meets the same security baseline | Accepted |
 | [0005](0005-grok-usage-over-http-not-the-cli.md) | Grok usage is read over HTTP with the CLI's access token, not by driving the CLI | Accepted |
+| [0006](0006-recover-refreshes-after-network-reconnection.md) | Recover refreshes after network reconnection | Accepted |
