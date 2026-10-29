@@ -189,11 +189,11 @@ final class XAIUsageProviderTests: XCTestCase {
         XCTAssertEqual(outcome.snapshot.status, .error(message: "Couldn't read usage data"))
     }
 
-    func testNetworkErrorIsStale() async throws {
+    func testOfflineErrorIsStaleWithoutASentRequest() async throws {
         let outcome = try await provider(.success(auth()),
                                          client: ThrowingHTTPClient(error: URLError(.notConnectedToInternet))).fetch()
         XCTAssertEqual(outcome.snapshot.status, .stale(reason: "Network unavailable — retrying"))
-        XCTAssertTrue(outcome.requestSent)
+        XCTAssertFalse(outcome.requestSent)
     }
 
     func testOversizedResponseIsAnError() async throws {

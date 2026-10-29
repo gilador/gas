@@ -62,10 +62,10 @@ public struct ClaudeUsageProvider: UsageProvider {
             }
         }
 
-        return FetchOutcome(snapshot: await request(with: token, now: now, mayRenew: true), requestSent: true)
+        return await request(with: token, now: now, mayRenew: true)
     }
 
-    private func request(with token: ClaudeToken, now: Date, mayRenew: Bool) async -> UsageSnapshot {
+    private func request(with token: ClaudeToken, now: Date, mayRenew: Bool) async -> FetchOutcome {
         let url = baseURL.appendingPathComponent("api/oauth/usage")
         let headers = [
             "Authorization": "Bearer \(token.accessToken)",
@@ -78,7 +78,7 @@ public struct ClaudeUsageProvider: UsageProvider {
             let (data, response) = try await httpClient.get(url, headers: headers)
             UsageLog.response(.claude, response, data: data)
             if response.statusCode == 401 {
-                return snapshot(now, .stale(reason: "Unauthorized — open Claude Code to refresh"))
+                return outcome(now, .stale(reason: "Unauthorized — open Claude Code to refresh"))
             }
             if response.statusCode == 429 {
                 // The server also answers a logged-out token with 429; a renewal tells the two apart.
@@ -86,34 +86,37 @@ public struct ClaudeUsageProvider: UsageProvider {
                     switch await renewer.renew() {
                     case .failed:
                         loggedOut.insert(Self.fingerprint(of: token))
-                        return snapshot(now, .needsSignIn)
+                        return outcome(now, .needsSignIn)
                     case .renewed:
                         if let renewed = try? tokenReader.readClaudeToken(),
                            Self.fingerprint(of: renewed) != Self.fingerprint(of: token) {
-                            return await request(with: renewed, now: now, mayRenew: false)
+                            let retried = await request(with: renewed, now: now, mayRenew: false)
+                            if retried.requestSent { return retried }
                         }
                     case .unavailable:
                         break
                     }
                 }
                 let retryAfter = RetryAfter.seconds(from: response, now: now)
-                return snapshot(now, .rateLimited(until: now.addingTimeInterval(retryAfter), wait: retryAfter))
+                return outcome(now, .rateLimited(until: now.addingTimeInterval(retryAfter), wait: retryAfter))
             }
             guard (200..<300).contains(response.statusCode) else {
-                return snapshot(now, .error(message: "HTTP \(response.statusCode)"))
+                return outcome(now, .error(message: "HTTP \(response.statusCode)"))
             }
             let decoded = try JSONDecoder().decode(ClaudeUsageResponse.self, from: data)
             let limits = ClaudeUsageMapper.map(decoded.limits,
                                                warning: warningThreshold,
                                                critical: criticalThreshold)
-            return UsageSnapshot(provider: .claude, fetchedAt: now, limits: limits, status: .ok)
+            return FetchOutcome(snapshot: UsageSnapshot(provider: .claude, fetchedAt: now,
+                                                        limits: limits, status: .ok), requestSent: true)
         } catch let error as URLError {
             UsageLog.networkError(.claude, error)
-            return snapshot(now, .stale(reason: "Network unavailable — retrying"))
+            return outcome(now, .stale(reason: "Network unavailable — retrying"),
+                           requestSent: error.code != .notConnectedToInternet)
         } catch is DecodingError {
-            return snapshot(now, .error(message: "Couldn't read usage data"))
+            return outcome(now, .error(message: "Couldn't read usage data"))
         } catch {
-            return snapshot(now, .error(message: "Unexpected error"))
+            return outcome(now, .error(message: "Unexpected error"))
         }
     }
 
@@ -122,11 +125,12 @@ public struct ClaudeUsageProvider: UsageProvider {
     }
 
     private func notSent(_ now: Date, _ status: FetchStatus) -> FetchOutcome {
-        FetchOutcome(snapshot: snapshot(now, status), requestSent: false)
+        outcome(now, status, requestSent: false)
     }
 
-    private func snapshot(_ now: Date, _ status: FetchStatus) -> UsageSnapshot {
-        UsageSnapshot(provider: .claude, fetchedAt: now, limits: [], status: status)
+    private func outcome(_ now: Date, _ status: FetchStatus, requestSent: Bool = true) -> FetchOutcome {
+        FetchOutcome(snapshot: UsageSnapshot(provider: .claude, fetchedAt: now, limits: [], status: status),
+                     requestSent: requestSent)
     }
 }
 

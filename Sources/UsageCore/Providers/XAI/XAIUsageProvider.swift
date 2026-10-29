@@ -56,7 +56,8 @@ public struct XAIUsageProvider: UsageProvider {
             headers["x-grok-client-version"] = version
         }
 
-        return FetchOutcome(snapshot: await request(headers: headers, auth: auth, start: start), requestSent: true,
+        let result = await request(headers: headers, auth: auth, start: start)
+        return FetchOutcome(snapshot: result.snapshot, requestSent: result.requestSent,
                             credentialFingerprint: auth.accountFingerprint)
     }
 
@@ -64,39 +65,41 @@ public struct XAIUsageProvider: UsageProvider {
         (try? authReader.readGrokAuth())?.accountFingerprint
     }
 
-    private func request(headers: [String: String], auth: GrokAuth, start: Date) async -> UsageSnapshot {
+    private func request(headers: [String: String], auth: GrokAuth, start: Date) async -> FetchOutcome {
         do {
             let (data, response) = try await httpClient.get(GrokHTTPClient.billingURL, headers: headers)
             UsageLog.response(.xai, response, data: data)
             switch response.statusCode {
             case 401:
-                return snapshot(start, .stale(reason: Self.renewReason))
+                return outcome(start, .stale(reason: Self.renewReason))
             case 403:
-                return snapshot(start, .error(message: "Grok denied access"))
+                return outcome(start, .error(message: "Grok denied access"))
             case 429:
                 let retryAfter = RetryAfter.seconds(from: response, now: start)
-                return snapshot(start, .rateLimited(until: start.addingTimeInterval(retryAfter), wait: retryAfter))
+                return outcome(start, .rateLimited(until: start.addingTimeInterval(retryAfter), wait: retryAfter))
             case 200..<300:
                 break
             default:
-                return snapshot(start, .error(message: "HTTP \(response.statusCode)"))
+                return outcome(start, .error(message: "HTTP \(response.statusCode)"))
             }
             let decoded = try JSONDecoder().decode(XAIBillingResponse.self, from: data)
             let limits = XAIUsageMapper.map(decoded.config, warning: warningThreshold, critical: criticalThreshold)
             guard !limits.isEmpty else {
                 // An expired token gets a 200 without the percent, not a 401.
                 return auth.expiresAt <= now()
-                    ? snapshot(start, .stale(reason: Self.renewReason))
-                    : snapshot(start, .error(message: "Grok returned no usage"))
+                    ? outcome(start, .stale(reason: Self.renewReason))
+                    : outcome(start, .error(message: "Grok returned no usage"))
             }
-            return UsageSnapshot(provider: .xai, fetchedAt: start, limits: limits, status: .ok)
+            return FetchOutcome(snapshot: UsageSnapshot(provider: .xai, fetchedAt: start,
+                                                        limits: limits, status: .ok), requestSent: true)
         } catch let error as URLError {
             UsageLog.networkError(.xai, error)
-            return snapshot(start, .stale(reason: "Network unavailable — retrying"))
+            return outcome(start, .stale(reason: "Network unavailable — retrying"),
+                           requestSent: error.code != .notConnectedToInternet)
         } catch is DecodingError {
-            return snapshot(start, .error(message: "Couldn't read usage data"))
+            return outcome(start, .error(message: "Couldn't read usage data"))
         } catch {
-            return snapshot(start, .error(message: "Unexpected error"))
+            return outcome(start, .error(message: "Unexpected error"))
         }
     }
 
@@ -111,10 +114,11 @@ public struct XAIUsageProvider: UsageProvider {
     }
 
     private func notSent(_ start: Date, _ status: FetchStatus) -> FetchOutcome {
-        FetchOutcome(snapshot: snapshot(start, status), requestSent: false)
+        outcome(start, status, requestSent: false)
     }
 
-    private func snapshot(_ start: Date, _ status: FetchStatus) -> UsageSnapshot {
-        UsageSnapshot(provider: .xai, fetchedAt: start, limits: [], status: status)
+    private func outcome(_ start: Date, _ status: FetchStatus, requestSent: Bool = true) -> FetchOutcome {
+        FetchOutcome(snapshot: UsageSnapshot(provider: .xai, fetchedAt: start, limits: [], status: status),
+                     requestSent: requestSent)
     }
 }
