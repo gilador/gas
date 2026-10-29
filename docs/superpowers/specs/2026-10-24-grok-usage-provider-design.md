@@ -29,6 +29,8 @@ Also present and ignored: `onDemandCap`, `onDemandUsed`, `prepaidBalance`, `isUn
 
 How it was found: the CLI logs "billing: fetched credits config" with this body (the same code path that builds `/billing?format=credits`), and a direct call with a valid token returned the same fields.
 
+**Zero usage has no percent field.** At the start of a new period (seen 2026-10-29), the server leaves `creditUsagePercent` out: its protobuf JSON omits zero values. With a valid token and a known `currentPeriod.type`, a missing percent means 0%.
+
 **Gotcha: an expired token does not fail.** With an expired `key`, the endpoint answered **HTTP 200 without `creditUsagePercent`**, not 401. gas must check `expires_at` first, and treat a 200 without the percent as "needs sign-in" (expired) or as an error (not expired).
 
 **It is the Grok CLI's meter, not grok.com's.** The Grok CLI's `/usage` → "Weekly limit (SuperGrok)" shows the same percent and reset. grok.com's Usage & Billing page shows a different weekly meter, with another percent and reset date. Only `format=credits` returns a percent (no format, `usage`, `weekly` and `subscription` return none), so gas labels the limit "Weekly (Grok CLI)".

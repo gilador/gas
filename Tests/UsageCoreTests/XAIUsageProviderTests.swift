@@ -128,10 +128,10 @@ final class XAIUsageProviderTests: XCTestCase {
         XCTAssertEqual(spy.calls.count, 1)
     }
 
-    func testNoPercentBeforeExpiryIsAnError() async throws {
+    func testNoPercentBeforeExpiryIsZeroUsage() async throws {
         let outcome = try await provider(.success(auth()), client: SpyHTTPClient(data: noPercent)).fetch()
-        XCTAssertEqual(outcome.snapshot.status, .error(message: "Grok returned no usage"))
-        XCTAssertTrue(outcome.snapshot.limits.isEmpty)
+        XCTAssertEqual(outcome.snapshot.status, .ok)
+        XCTAssertEqual(outcome.snapshot.limits.map(\.percentUsed), [0])
         XCTAssertTrue(outcome.requestSent)
     }
 

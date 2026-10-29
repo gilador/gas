@@ -2,7 +2,9 @@ import Foundation
 
 enum XAIUsageMapper {
     static func map(_ config: XAIBillingResponse.Config?, warning: Double, critical: Double) -> [UsageLimit] {
-        guard let config, let percent = config.creditUsagePercent else { return [] }
+        guard let config, config.creditUsagePercent != nil || config.currentPeriod?.type != nil else { return [] }
+        // The server's protobuf JSON leaves out a zero percent, so a known period without one means none used yet.
+        let percent = config.creditUsagePercent ?? 0
         let (id, label) = period(config.currentPeriod?.type)
         return [UsageLimit(id: id, label: label, percentUsed: percent,
                            resetsAt: ClaudeDate.parse(config.currentPeriod?.end) ?? ClaudeDate.parse(config.billingPeriodEnd),

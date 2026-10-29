@@ -83,13 +83,12 @@ public struct XAIUsageProvider: UsageProvider {
                 return outcome(start, .error(message: "HTTP \(response.statusCode)"))
             }
             let decoded = try JSONDecoder().decode(XAIBillingResponse.self, from: data)
-            let limits = XAIUsageMapper.map(decoded.config, warning: warningThreshold, critical: criticalThreshold)
-            guard !limits.isEmpty else {
-                // An expired token gets a 200 without the percent, not a 401.
-                return auth.expiresAt <= now()
-                    ? outcome(start, .stale(reason: Self.renewReason))
-                    : outcome(start, .error(message: "Grok returned no usage"))
+            // An expired token gets a 200 without the percent, not a 401, so a missing percent means zero only while the token is valid.
+            if decoded.config?.creditUsagePercent == nil, auth.expiresAt <= now() {
+                return outcome(start, .stale(reason: Self.renewReason))
             }
+            let limits = XAIUsageMapper.map(decoded.config, warning: warningThreshold, critical: criticalThreshold)
+            guard !limits.isEmpty else { return outcome(start, .error(message: "Grok returned no usage")) }
             return FetchOutcome(snapshot: UsageSnapshot(provider: .xai, fetchedAt: start,
                                                         limits: limits, status: .ok), requestSent: true)
         } catch let error as URLError {

@@ -52,8 +52,17 @@ final class XAIUsageMapperTests: XCTestCase {
         XCTAssertNil(limits.first?.resetsAt)
     }
 
-    func testMissingPercentGivesNoLimits() {
-        XCTAssertTrue(map(config(nil)).isEmpty)
+    func testMissingPercentInAKnownPeriodIsZero() {
+        let limits = map(config(nil))
+        XCTAssertEqual(limits.map(\.id), ["weekly_all"])
+        XCTAssertEqual(limits.map(\.percentUsed), [0])
+        XCTAssertEqual(limits.map(\.severity), [.normal])
+    }
+
+    func testMissingPercentWithoutAPeriodGivesNoLimits() {
+        XCTAssertTrue(map(XAIBillingResponse.Config(creditUsagePercent: nil, currentPeriod: nil,
+                                                    billingPeriodEnd: nil)).isEmpty)
+        XCTAssertTrue(map(config(nil, type: nil)).isEmpty)
         XCTAssertTrue(map(nil).isEmpty)
     }
 
