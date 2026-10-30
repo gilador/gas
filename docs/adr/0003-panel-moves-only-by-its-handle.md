@@ -1,6 +1,6 @@
 # 0003. The floating panel moves only by its handle
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0007
 - **Date:** 2026-10-22
 
 ## Context

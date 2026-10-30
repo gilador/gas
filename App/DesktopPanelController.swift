@@ -130,7 +130,7 @@ final class DesktopPanelController {
         let pointer = PointerTracker()
         let host = TrackingHostingView(rootView: DesktopPanelView(viewModel: viewModel, alerts: viewModel.alerts, pointer: pointer,
                                                                   onTap: { [weak self] in self?.toggleMenu() },
-                                                                  onDragStart: { [weak self] in self?.beginDrag() },
+                                                                  onDragStart: { [weak self] in self?.beginDrag(after: $0) },
                                                                   onDragMove: { [weak self] in self?.continueDrag() }))
         host.tracker = pointer
         host.sizingOptions = [.preferredContentSize]
@@ -153,9 +153,11 @@ final class DesktopPanelController {
         return panel
     }
 
-    private func beginDrag() {
+    /// The drag starts after some movement, so the press point is the pointer minus that movement (screen y points up).
+    private func beginDrag(after translation: CGSize) {
         guard let panel else { return }
-        dragStart = (NSEvent.mouseLocation, panel.frame.origin)
+        let mouse = NSEvent.mouseLocation
+        dragStart = (NSPoint(x: mouse.x - translation.width, y: mouse.y + translation.height), panel.frame.origin)
     }
 
     /// Screen coordinates, because the view's own coordinates move with the window.
@@ -167,7 +169,7 @@ final class DesktopPanelController {
     }
 
     /// AppKit keeps the bottom-left corner when the content changes size; a layout flip keeps the top-right one,
-    /// where the rotate icon sits in both layouts, so the pointer stays on it.
+    /// where the top and right edge bands meet, so the panel stays under the pointer.
     private func keepTopRight() {
         guard let panel, let topRight else { return }
         var frame = panel.frame
