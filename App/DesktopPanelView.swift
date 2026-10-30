@@ -22,7 +22,7 @@ struct DesktopPanelView: View {
     @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
     @State private var rotateFrame: CGRect = .zero
     let onTap: () -> Void
-    let onDragStart: () -> Void
+    let onDragStart: (CGSize) -> Void
     let onDragMove: () -> Void
     @State private var dragging = false
 
@@ -36,6 +36,9 @@ struct DesktopPanelView: View {
                                 : EdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4))
             .frame(width: horizontal ? nil : (extended ? 80 : 44), alignment: .topLeading)
             .modifier(PanelGlass(cornerRadius: 12))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+            // A few points of slack keep a still click a tap that opens the menu.
+            .gesture(drag(minimumDistance: 3))
             .overlay(alignment: .topLeading) {
                 if updates.showsDot {
                     Circle().fill(Color.accentColor).frame(width: 6, height: 6).padding(5)
@@ -51,7 +54,7 @@ struct DesktopPanelView: View {
 
     private var handle: some View {
         DragHandle(horizontal: horizontal, visible: controlsVisible)
-            .gesture(drag)
+            .gesture(drag(minimumDistance: 0))
             .overlay(alignment: horizontal ? .top : .trailing) {
                 rotate.offset(x: horizontal ? 0 : Self.rotateSize, y: horizontal ? -Self.rotateSize : 0)
             }
@@ -59,12 +62,12 @@ struct DesktopPanelView: View {
                     y: horizontal ? 0 : Self.handleInset - DragHandle.hitThickness / 2)
     }
 
-    private var drag: some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .global)
-            .onChanged { _ in
+    private func drag(minimumDistance: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: minimumDistance, coordinateSpace: .global)
+            .onChanged { value in
                 if !dragging {
                     dragging = true
-                    onDragStart()
+                    onDragStart(value.translation)
                 }
                 onDragMove()
             }
@@ -109,7 +112,7 @@ struct DesktopPanelView: View {
     }
 }
 
-/// The pill on the top edge (right edge when horizontal) that moves the panel; shown while the pointer is inside.
+/// The pill on the top edge (right edge when horizontal) that shows the panel can move; shown while the pointer is inside.
 private struct DragHandle: View {
     static let hitThickness: CGFloat = 12
 
