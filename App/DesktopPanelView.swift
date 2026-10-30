@@ -4,11 +4,8 @@ import UsageCore
 struct DesktopPanelView: View {
     static let horizontalKey = "panelHorizontal"
     static let extendedKey = "panelExtended"
-    /// From the glass edge to the handle's center.
-    private static let handleInset: CGFloat = 10
-
-    /// The rotate arrow sits right after the handle (above it when horizontal).
-    private static let rotateSize: CGFloat = 12
+    /// The band along the top edge (right edge when horizontal) that holds the handle and flips the layout.
+    private static let edgeThickness: CGFloat = 12
 
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var alerts: AlertCenter
@@ -20,7 +17,7 @@ struct DesktopPanelView: View {
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
-    @State private var rotateFrame: CGRect = .zero
+    @State private var edgeFrame: CGRect = .zero
     let onTap: () -> Void
     let onDragStart: (CGSize) -> Void
     let onDragMove: () -> Void
@@ -44,22 +41,38 @@ struct DesktopPanelView: View {
                     Circle().fill(Color.accentColor).frame(width: 6, height: 6).padding(5)
                 }
             }
-            .overlay(alignment: horizontal ? .trailing : .top) { handle }
-            .onPreferenceChange(RotateFrameKey.self) { rotateFrame = $0 }
+            .overlay { edgeHighlight }
+            .overlay(alignment: horizontal ? .trailing : .top) { edge }
+            .onPreferenceChange(EdgeFrameKey.self) { edgeFrame = $0 }
             .opacity(1 - 0.9 * panelTransparency)
             .environment(\.colorScheme, .dark)
     }
 
     private var controlsVisible: Bool { pointer.location != nil }
 
-    private var handle: some View {
+    private var edge: some View {
         DragHandle(horizontal: horizontal, visible: controlsVisible)
-            .gesture(drag(minimumDistance: 0))
-            .overlay(alignment: horizontal ? .top : .trailing) {
-                rotate.offset(x: horizontal ? 0 : Self.rotateSize, y: horizontal ? -Self.rotateSize : 0)
+            .frame(maxWidth: horizontal ? Self.edgeThickness : .infinity,
+                   maxHeight: horizontal ? .infinity : Self.edgeThickness)
+            .contentShape(Rectangle())
+            .onTapGesture { horizontal.toggle() }
+            .gesture(drag(minimumDistance: 3))
+            .help(horizontal ? "Click for vertical layout" : "Click for horizontal layout")
+            .background(GeometryReader { proxy in
+                Color.clear.preference(key: EdgeFrameKey.self, value: proxy.frame(in: .global))
+            })
+    }
+
+    /// Lights the glass border along the edge band while the pointer is on it.
+    private var edgeHighlight: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .strokeBorder(.white, lineWidth: 3)
+            .mask(alignment: horizontal ? .trailing : .top) {
+                Rectangle().frame(width: horizontal ? Self.edgeThickness : nil, height: horizontal ? nil : Self.edgeThickness)
             }
-            .offset(x: horizontal ? DragHandle.hitThickness / 2 - Self.handleInset : 0,
-                    y: horizontal ? 0 : Self.handleInset - DragHandle.hitThickness / 2)
+            .opacity(edgeHovered ? 0.8 : 0)
+            .animation(.easeOut(duration: 0.15), value: edgeHovered)
+            .allowsHitTesting(false)
     }
 
     private func drag(minimumDistance: CGFloat) -> some Gesture {
@@ -74,25 +87,10 @@ struct DesktopPanelView: View {
             .onEnded { _ in dragging = false }
     }
 
-    private var rotate: some View {
-        RotateArrow()
-            .stroke(.white, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-            .frame(width: 9, height: 8)
-            .opacity(rotateHovered ? 0.9 : 0)
-            .frame(width: Self.rotateSize, height: Self.rotateSize)
-            .contentShape(Rectangle())
-            .onTapGesture { horizontal.toggle() }
-            .help(horizontal ? "Vertical layout" : "Horizontal layout")
-            .animation(.easeOut(duration: 0.15), value: rotateHovered)
-            .background(GeometryReader { proxy in
-                Color.clear.preference(key: RotateFrameKey.self, value: proxy.frame(in: .global))
-            })
-    }
-
     /// SwiftUI hover is silent in this never-active app, so the tracked pointer decides.
-    private var rotateHovered: Bool {
-        guard let pointer = pointer.location, rotateFrame != .zero else { return false }
-        return rotateFrame.insetBy(dx: -2, dy: -2).contains(pointer)
+    private var edgeHovered: Bool {
+        guard let pointer = pointer.location, edgeFrame != .zero else { return false }
+        return edgeFrame.contains(pointer)
     }
 
     @ViewBuilder
@@ -112,10 +110,8 @@ struct DesktopPanelView: View {
     }
 }
 
-/// The pill on the top edge (right edge when horizontal) that shows the panel can move; shown while the pointer is inside.
+/// The pill on the edge band that shows the panel can move; shown while the pointer is inside.
 private struct DragHandle: View {
-    static let hitThickness: CGFloat = 12
-
     let horizontal: Bool
     let visible: Bool
 
@@ -124,34 +120,15 @@ private struct DragHandle: View {
             .fill(.white)
             .frame(width: horizontal ? 5 : 16, height: horizontal ? 16 : 5)
             .opacity(visible ? 0.9 : 0)
-            .frame(width: horizontal ? Self.hitThickness : 18, height: horizontal ? 18 : Self.hitThickness)
-            .contentShape(Rectangle())
-            .help("Drag to move")
             .animation(.easeOut(duration: 0.15), value: visible)
     }
 }
 
 /// Views that do not report still pass the default into reduce, so keep the one real value.
-private struct RotateFrameKey: PreferenceKey {
+private struct EdgeFrameKey: PreferenceKey {
     static let defaultValue: CGRect = .zero
     static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
         let next = nextValue()
         if next != .zero { value = next }
-    }
-}
-
-/// An arc over the top whose head points down on the right, like the corner of a turning card.
-private struct RotateArrow: Shape {
-    func path(in rect: CGRect) -> Path {
-        let radius = rect.width / 2 - 1
-        let center = CGPoint(x: rect.midX, y: rect.minY + radius + 1)
-        let end = CGPoint(x: center.x + radius, y: center.y)
-        let head = rect.width * 0.3
-        var path = Path()
-        path.addArc(center: center, radius: radius, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
-        path.move(to: CGPoint(x: end.x - head, y: end.y - head * 0.6))
-        path.addLine(to: CGPoint(x: end.x, y: end.y + head * 0.4))
-        path.addLine(to: CGPoint(x: end.x + head, y: end.y - head * 0.6))
-        return path
     }
 }

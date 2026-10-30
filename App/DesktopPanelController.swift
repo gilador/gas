@@ -169,7 +169,7 @@ final class DesktopPanelController {
     }
 
     /// AppKit keeps the bottom-left corner when the content changes size; a layout flip keeps the top-right one,
-    /// where the rotate icon sits in both layouts, so the pointer stays on it.
+    /// where the top and right edge bands meet, so the panel stays under the pointer.
     private func keepTopRight() {
         guard let panel, let topRight else { return }
         var frame = panel.frame
