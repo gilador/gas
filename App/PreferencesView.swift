@@ -14,6 +14,7 @@ struct PreferencesView: View {
     @AppStorage(DesktopPanelView.extendedKey) private var panelExtended = false
     @AppStorage(DesktopPanelView.horizontalKey) private var panelHorizontal = false
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
+    @AppStorage(MenuBarSize.key) private var menuBarFontSize = MenuBarSize.defaultFontSize
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
@@ -40,6 +41,19 @@ struct PreferencesView: View {
                 }
             }
             Section("Display") {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Slider(value: $menuBarFontSize, in: MenuBarSize.range, step: 1) { Text("Menu bar size") }
+                        Text("\(Int(MenuBarSize.fontSize(menuBarFontSize))) pt")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                    if menuBarFontSize > MenuBarSize.recommendedMax {
+                        Text("Above \(Int(MenuBarSize.recommendedMax)) pt may be clipped in the menu bar.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                }
                 Toggle("Show remaining", isOn: Binding(
                     get: { UsageDisplayMode.current(usageDisplayRaw) == .remaining },
                     set: { usageDisplayRaw = ($0 ? UsageDisplayMode.remaining : .used).rawValue }))

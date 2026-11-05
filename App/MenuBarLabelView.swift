@@ -5,10 +5,12 @@ struct MenuBarLabelView: View {
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject private var updates = UpdateModel.shared
     @AppStorage(UsageDisplayMode.key) private var usageDisplayRaw = UsageDisplayMode.remaining.rawValue
+    @AppStorage(MenuBarSize.key) private var menuBarFontSize = MenuBarSize.defaultFontSize
     @AppStorage(ProviderSettings.key(.claude)) private var claudeEnabled = true
     @AppStorage(ProviderSettings.key(.openai)) private var openaiEnabled = true
     @AppStorage(ProviderSettings.key(.xai)) private var xaiEnabled = ProviderID.xai.isEnabledByDefault
     private var mode: UsageDisplayMode { .current(usageDisplayRaw) }
+    private var fontSize: Double { MenuBarSize.fontSize(menuBarFontSize) }
 
     var body: some View {
         let _ = (claudeEnabled, openaiEnabled, xaiEnabled)
@@ -17,9 +19,9 @@ struct MenuBarLabelView: View {
                 if index > 0 {
                     Text("|").padding(.horizontal, 1)
                 }
-                ProviderIcon(provider: provider, size: 14)
+                ProviderIcon(provider: provider, size: MenuBarSize.iconSize(for: fontSize))
                 Text(percentText(for: provider))
-                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .font(.system(size: fontSize, weight: .medium).monospacedDigit())
             }
         }
         .padding(.horizontal, 4)
