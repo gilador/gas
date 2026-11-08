@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in gas doesn't work as expected.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead. A screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Settings
+        2. ...
+  - type: input
+    id: gas-version
+    attributes:
+      label: gas version
+      description: Settings → Updates shows it.
+      placeholder: "1.0.33"
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: "26.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: providers
+    attributes:
+      label: Which providers are affected?
+      multiple: true
+      options:
+        - Claude
+        - OpenAI (Codex)
+        - xAI (Grok)
+        - Not provider-specific
+  - type: markdown
+    attributes:
+      value: Please don't paste tokens or the contents of credential files.

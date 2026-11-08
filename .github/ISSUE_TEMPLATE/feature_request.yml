@@ -1,0 +1,20 @@
+name: Feature request
+description: An idea for something gas could do.
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like gas to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why?
+      description: The moment you wished it existed. This helps get the details right.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you tried or seen elsewhere?
