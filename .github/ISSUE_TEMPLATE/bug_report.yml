@@ -7,7 +7,7 @@ body:
     id: what
     attributes:
       label: What happened?
-      description: What you saw, and what you expected instead. A screenshot helps.
+      description: What you saw, and what you expected instead.
     validations:
       required: true
   - type: textarea
@@ -17,6 +17,17 @@ body:
       placeholder: |
         1. Open Settings
         2. ...
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or a screen recording
+      description: Drag images or a video here. The menu bar and the floating panel are the most useful.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: In gas, open Settings → Troubleshooting → Copy diagnostics, and paste it here. It holds no tokens.
+      render: text
   - type: input
     id: gas-version
     attributes:
