@@ -74,6 +74,12 @@ xcodegen generate && xcodebuild -project AgentUsage.xcodeproj -scheme AgentUsage
 
 To make the `.pkg` and `.dmg`, see [docs/packaging.md](docs/packaging.md).
 
+## Feature requests and contributing
+
+- **Ideas:** [request a feature](https://github.com/gilador/gas/issues/new?template=feature_request.yml). The menu bar size slider came from one.
+- **Bugs:** [report a bug](https://github.com/gilador/gas/issues/new?template=bug_report.yml).
+- **Pull requests:** welcome. For anything bigger than a small fix, open an issue first so we can agree on the approach. Run `swift test` before you push, and see [AGENTS.md](AGENTS.md) for the project rules.
+
 ## License
 
 [MIT](LICENSE)
